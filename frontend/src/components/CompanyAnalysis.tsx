@@ -14,6 +14,7 @@ const CompanyAnalysis: React.FC<CompanyAnalysisProps> = ({
   const [companyName, setCompanyName] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [fileGenerating, setFileGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,6 +48,25 @@ const CompanyAnalysis: React.FC<CompanyAnalysisProps> = ({
     }
   };
 
+  const handleGenerateFile = async () => {
+    if (!companyName.trim()) {
+      setError("Please enter a company name to generate analysis file");
+      return;
+    }
+
+    setFileGenerating(true);
+    setError(null);
+
+    try {
+      await ApiService.generateCompanyFile(companyName, file || undefined);
+      // Success message could be added here if needed
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to generate file");
+    } finally {
+      setFileGenerating(false);
+    }
+  };
+
   if (!isVisible) return null;
 
   return (
@@ -54,7 +74,7 @@ const CompanyAnalysis: React.FC<CompanyAnalysisProps> = ({
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex flex-col gap-2">
           <label htmlFor="file-upload" className="text-black/80">
-            Upload .txt Document
+            Upload .txt Document (Optional - enables differentiation analysis)
           </label>
           <div className="relative">
             <input
@@ -69,7 +89,9 @@ const CompanyAnalysis: React.FC<CompanyAnalysisProps> = ({
                 Choose File
               </span>
               <span className="text-black-400">
-                {file ? file.name : "No file selected"}
+                {file
+                  ? `${file.name} (Differentiation analysis enabled)`
+                  : "No file selected (Basic analysis)"}
               </span>
             </div>
           </div>
@@ -85,11 +107,39 @@ const CompanyAnalysis: React.FC<CompanyAnalysisProps> = ({
           />
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || fileGenerating}
             className="px-6 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-black rounded-lg hover:from-blue-600 hover:to-blue-700 disabled:opacity-50"
           >
             {loading ? "Analyzing..." : "Analyze"}
           </button>
+        </div>
+
+        {/* Additional Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-white/20">
+          <div className="flex-1">
+            <h3 className="text-black/80 mb-2 font-medium">
+              Generate Company Analysis File
+            </h3>
+            <p className="text-black/60 text-sm mb-3">
+              Create a comprehensive analysis text file that can be uploaded
+              later for comparison with other companies.
+              {file
+                ? " Including differentiation strategies based on uploaded comparison file."
+                : " Upload a file above to enable differentiation analysis."}
+            </p>
+            <button
+              type="button"
+              onClick={handleGenerateFile}
+              disabled={loading || fileGenerating || !companyName.trim()}
+              className="px-6 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 disabled:opacity-50 text-sm font-medium"
+            >
+              {fileGenerating
+                ? "Generating..."
+                : file
+                ? "📄 Generate Differentiation Analysis File"
+                : "📄 Generate Basic Analysis File"}
+            </button>
+          </div>
         </div>
       </form>
 

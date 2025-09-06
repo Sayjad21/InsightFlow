@@ -1,67 +1,79 @@
-import type { Service } from '../types';
+import type { Service } from "../types";
 
 export const services: Service[] = [
   {
     id: 1,
-    title: 'Automated Competitive Monitoring',
-    description: 'Gathering of public information on competitors (websites, news, social media, simulated internal databases)',
-    icon: 'layers',
+    title: "Automated Competitive Monitoring",
+    description:
+      "Gathering of public information on competitors (websites, news, social media, simulated internal databases)",
+    icon: "layers",
     details: {
-      overview: 'Our custom blockchain development services provide end-to-end solutions tailored to your specific business requirements. We build secure, scalable, and efficient blockchain networks that can transform your operations.',
+      overview:
+        "Our automated competitive monitoring service continuously tracks and analyzes competitor activities across multiple channels. We gather public information from websites, news articles, social media, and other sources to provide real-time insights into your competitive landscape.",
       benefits: [
-        'Improved security and transparency',
-        'Enhanced efficiency and reduced costs',
-        'Customized to your specific business requirements',
-        'Scalable architecture for future growth'
+        "Real-time competitive intelligence",
+        "Comprehensive multi-channel monitoring",
+        "Automated data collection and analysis",
+        "Early warning system for competitive threats",
       ],
       features: [
-        'Private and consortium blockchain networks',
-        'Smart contract development and auditing',
-        'Consensus mechanism customization',
-        'Integration with existing systems'
-      ]
-    }
+        "Website and content monitoring",
+        "Social media activity tracking",
+        "News and press release analysis",
+        "Product launch and pricing monitoring",
+        "LinkedIn company page analysis",
+        "Automated reporting and alerts",
+      ],
+    },
   },
   {
     id: 2,
-    title: 'Differentiation Strategy',
-    description: 'Analysis of collected information to provide strategic recommendations (pricing, product, positioning, innovation)',
-    icon: 'users',
+    title: "Differentiation Strategy",
+    description:
+      "Analysis of collected information to provide strategic recommendations (pricing, product, positioning, innovation)",
+    icon: "users",
     details: {
-      overview: 'Our blockchain consulting services help businesses understand how blockchain can solve their problems. We provide strategic guidance, technical expertise, and implementation roadmaps to ensure successful blockchain adoption.',
+      overview:
+        "Our differentiation strategy service analyzes your competitive landscape to identify unique positioning opportunities. We provide data-driven strategic recommendations for pricing, product development, market positioning, and innovation to help you stand out in your industry.",
       benefits: [
-        'Clear blockchain adoption strategy',
-        'Risk assessment and mitigation',
-        'Competitive advantage in your industry',
-        'Expert guidance from industry specialists'
+        "Clear competitive differentiation strategy",
+        "Data-driven pricing and positioning recommendations",
+        "Market opportunity identification",
+        "Innovation roadmap for competitive advantage",
       ],
       features: [
-        'Blockchain feasibility assessment',
-        'Technology selection and architecture planning',
-        'Implementation roadmap development',
-        'Staff training and knowledge transfer'
-      ]
-    }
+        "Competitive pricing analysis and recommendations",
+        "Product positioning and value proposition development",
+        "Market gap analysis and opportunity identification",
+        "Strategic innovation recommendations",
+        "Brand differentiation strategies",
+        "Go-to-market strategy optimization",
+      ],
+    },
   },
   {
     id: 3,
-    title: 'Strategic Document Generation',
-    description: 'Automated creation of structured documents (such as SWOT, Porter’s Five Forces, BCG Matrix, etc.) ready for reporting use',
-    icon: 'database',
+    title: "Strategic Document Generation",
+    description:
+      "Automated creation of structured documents (such as SWOT, Porter’s Five Forces, BCG Matrix, etc.) ready for reporting use",
+    icon: "database",
     details: {
-      overview: 'Our enterprise blockchain solutions are designed to meet the complex needs of large organizations. We develop high-performance, secure, and compliant blockchain systems that integrate seamlessly with your enterprise architecture.',
+      overview:
+        "Our strategic document generation service creates comprehensive business analysis reports using established strategic frameworks. We automatically generate professional documents including SWOT analysis, Porter's Five Forces, BCG Matrix, PESTEL analysis, and McKinsey 7S models, complete with visualizations and actionable insights.",
       benefits: [
-        'Enhanced data integrity and security',
-        'Streamlined business processes',
-        'Reduced operational costs',
-        'Improved compliance and auditability'
+        "Professional strategic analysis documents",
+        "Multiple strategic frameworks in one report",
+        "Visual charts and diagrams included",
+        "Ready-to-use business presentations",
       ],
       features: [
-        'Enterprise-grade security and performance',
-        'Seamless integration with legacy systems',
-        'Compliance with industry regulations',
-        'High throughput and low latency solutions'
-      ]
-    }
-  }
+        "SWOT analysis with visual matrix",
+        "Porter's Five Forces assessment",
+        "BCG Matrix positioning analysis",
+        "PESTEL environmental analysis",
+        "McKinsey 7S organizational framework",
+        "Exportable charts and visualizations",
+      ],
+    },
+  },
 ];

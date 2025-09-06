@@ -51,20 +51,93 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
             {service.title}
           </h2>
 
-          {/* Strategic Recommendations */}
-          {isStrategyService && analysisResult && (
-            <div className="mt-8 space-y-6 bg-white/5 p-6 rounded-xl">
+          {/* Service Overview (always shown) */}
+          <div className="mb-6 bg-white/5 p-6 rounded-xl">
+            <h3 className="text-xl font-semibold text-blue-400 mb-3">
+              Overview
+            </h3>
+            <p className="text-gray-300 mb-4">{service.details.overview}</p>
+
+            <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <h3 className="text-xl font-semibold text-blue-400 mb-2">
-                  Differentiation Strategy for {analysisResult.company_name}
-                </h3>
-                <p
-                  className="text-gray-300"
-                  dangerouslySetInnerHTML={{
-                    __html: analysisResult.strategy_recommendations,
-                  }}
-                />
+                <h4 className="font-medium text-green-400 mb-2">
+                  Key Benefits
+                </h4>
+                <ul className="list-disc list-inside text-gray-300 space-y-1">
+                  {service.details.benefits.map((benefit, i) => (
+                    <li key={i}>{benefit}</li>
+                  ))}
+                </ul>
               </div>
+              <div>
+                <h4 className="font-medium text-yellow-400 mb-2">Features</h4>
+                <ul className="list-disc list-inside text-gray-300 space-y-1">
+                  {service.details.features.map((feature, i) => (
+                    <li key={i}>{feature}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Strategic Recommendations */}
+          {isStrategyService && (
+            <div className="mt-8 space-y-6 bg-white/5 p-6 rounded-xl">
+              {analysisResult && analysisResult.strategy_recommendations ? (
+                <div>
+                  <h3 className="text-xl font-semibold text-blue-400 mb-2">
+                    Differentiation Strategy for {analysisResult.company_name}
+                  </h3>
+                  <p
+                    className="text-gray-300"
+                    dangerouslySetInnerHTML={{
+                      __html: analysisResult.strategy_recommendations,
+                    }}
+                  />
+                </div>
+              ) : (
+                <div>
+                  <h3 className="text-xl font-semibold text-blue-400 mb-2">
+                    Generate Your Differentiation Strategy
+                  </h3>
+                  <p className="text-gray-300 mb-4">
+                    To see personalized differentiation strategies, please run a
+                    company analysis using the form above. Our AI will analyze
+                    your company's competitive landscape and provide strategic
+                    recommendations for:
+                  </p>
+                  <ul className="list-disc list-inside text-gray-300 space-y-2 ml-4">
+                    <li>
+                      <strong>Pricing Strategy:</strong> Competitive pricing
+                      recommendations based on market analysis
+                    </li>
+                    <li>
+                      <strong>Product Positioning:</strong> How to position your
+                      products/services uniquely in the market
+                    </li>
+                    <li>
+                      <strong>Innovation Opportunities:</strong> Areas where you
+                      can differentiate through innovation
+                    </li>
+                    <li>
+                      <strong>Market Positioning:</strong> Strategic positioning
+                      relative to competitors
+                    </li>
+                    <li>
+                      <strong>Value Proposition:</strong> Unique value
+                      propositions that set you apart
+                    </li>
+                  </ul>
+                  <div className="mt-4 p-4 bg-blue-500/20 rounded-lg">
+                    <p className="text-blue-200 font-medium">💡 Pro Tip:</p>
+                    <p className="text-gray-300">
+                      Upload relevant company documents or provide detailed
+                      company information for more accurate strategic
+                      recommendations.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

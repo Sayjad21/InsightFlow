@@ -38,7 +38,7 @@ export class ApiService {
       console.error("API Error:", error);
       if (error instanceof TypeError && error.message.includes("fetch")) {
         throw new Error(
-          "Network error: Unable to connect to server. Make sure the backend is running on http://localhost:8000"
+          "Network error: Unable to connect to server. Make sure the backend is running on http://localhost:8080"
         );
       }
       throw error;
@@ -70,5 +70,80 @@ export class ApiService {
     }
 
     return response.json();
+  }
+
+  /**
+   * Generate and download company analysis text file
+   * @param companyName - Name of the company to analyze
+   * @param file - Optional file for differentiation analysis
+   * @returns Promise that resolves when download starts
+   */
+  static async generateCompanyFile(
+    companyName: string,
+    file?: File
+  ): Promise<void> {
+    try {
+      const formData = new FormData();
+      formData.append("company_name", companyName);
+
+      if (file) {
+        formData.append("file", file);
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/generate-company-file`,
+        {
+          method: "POST",
+          body: formData,
+          // Don't set Content-Type for FormData - let browser set it with boundary
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API Error: ${response.status} - ${errorText}`);
+      }
+
+      // Get the file content as blob
+      const blob = await response.blob();
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+
+      // Get filename from response headers or create one
+      const contentDisposition = response.headers.get("content-disposition");
+      let filename = `${companyName.replace(
+        /[^a-zA-Z0-9-_]/g,
+        "_"
+      )}_analysis.txt`;
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(
+          /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/
+        );
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, "");
+        }
+      }
+
+      link.download = filename;
+
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Clean up
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("File Generation Error:", error);
+      if (error instanceof TypeError && error.message.includes("fetch")) {
+        throw new Error(
+          "Network error: Unable to connect to server. Make sure the backend is running on http://localhost:8080"
+        );
+      }
+      throw error;
+    }
   }
 }
