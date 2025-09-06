@@ -1,6 +1,7 @@
 package com.insightflow.services;
 
 import com.insightflow.utils.AiUtil;
+import com.insightflow.utils.TavilyUtil;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.openqa.selenium.By;
@@ -43,6 +44,9 @@ public class ScrapingService {
     @Autowired
     private AiUtil aiUtil;
 
+    @Autowired
+    private TavilyUtil tavilyUtil;
+
     private final Random random = new Random();
     private final String[] userAgents = {
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:119.0) Gecko/20100101 Firefox/119.0",
@@ -72,16 +76,16 @@ public class ScrapingService {
                     throw new RuntimeException("Request interrupted due to rate limiting", e);
                 }
             }
-            
+
             // Reset hourly counter
             if (currentTime - lastRequestTime > 3600000) { // 1 hour
                 requestCount = 0;
             }
-            
+
             if (requestCount >= MAX_REQUESTS_PER_HOUR) {
                 throw new RuntimeException("Hourly request limit exceeded. Please wait before making more requests.");
             }
-            
+
             lastRequestTime = currentTime;
             requestCount++;
         }
@@ -103,8 +107,10 @@ public class ScrapingService {
 
             driver = new ChromeDriver(options);
 
-            // Remove Firefox-specific JS for navigator.webdriver (Chrome handles this differently)
-            ((JavascriptExecutor) driver).executeScript("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})");
+            // Remove Firefox-specific JS for navigator.webdriver (Chrome handles this
+            // differently)
+            ((JavascriptExecutor) driver)
+                    .executeScript("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})");
 
             driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(60));
             driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(15));
@@ -116,19 +122,19 @@ public class ScrapingService {
             // Login with human-like behavior
             logger.info("Navigating to LinkedIn login page");
             driver.get("https://www.linkedin.com/login");
-            
+
             // Random delay to simulate reading
             Thread.sleep(1000 + random.nextInt(2000));
-            
+
             wait.until(ExpectedConditions.presenceOfElementLocated(By.id("username")));
             logger.info("Entering login credentials");
-            
+
             // Type credentials with human-like delays
             typeHumanLike(driver.findElement(By.id("username")), linkedinEmail);
             Thread.sleep(500 + random.nextInt(1000));
             typeHumanLike(driver.findElement(By.id("password")), linkedinPassword);
             Thread.sleep(1000 + random.nextInt(1500));
-            
+
             driver.findElement(By.xpath("//button[@type='submit']")).click();
             wait.until(ExpectedConditions.or(
                     ExpectedConditions.urlContains("linkedin.com/feed"),
@@ -297,7 +303,7 @@ public class ScrapingService {
                         .map(element -> cleanPostText(element.text().trim()))
                         .filter(text -> isValidPost(text, name, irrelevantPostPattern))
                         .collect(Collectors.toList());
-                        
+
                 if (posts.isEmpty()) {
                     posts = soup.select("div.update-components-text span, div.feed-shared-text span")
                             .stream()
@@ -347,14 +353,13 @@ public class ScrapingService {
 
             // Prepare optimized content for LLM analysis
             String optimizedContent = prepareContentForLLM(companyName, name, description, posts);
-            
+
             // LLM analysis with enhanced prompt
             String template = aiUtil.getLinkedInAnalysisTemplate();
             Map<String, Object> variables = Map.of(
-                "content", optimizedContent, 
-                "company_name", companyName,
-                "post_count", posts.size()
-            );
+                    "content", optimizedContent,
+                    "company_name", companyName,
+                    "post_count", posts.size());
             String content;
             try {
                 content = aiUtil.invokeWithTemplate(template, variables);
@@ -398,26 +403,26 @@ public class ScrapingService {
     private Pattern createIrrelevantPostPattern(String companyName) {
         // Build pattern for common irrelevant content
         StringBuilder patternBuilder = new StringBuilder("(?i)^(");
-        
+
         // Common promotional/engagement patterns
         patternBuilder.append("drop your emoji|register now|sign up here|brb, adding|")
-                     .append("watch the full conversation|choose from|life just got|less scrolling|")
-                     .append("join us|check out|upcoming|event|webinar|demo|register|subscribe|")
-                     .append("click here|learn more|find out|discover|explore|")
-                     .append("congratulations|thank you|thanks|welcome|excited to|thrilled to|")
-                     .append("don't miss|limited time|act now|book now|save the date|")
-                     .append("follow us|like this|share this|comment below|")
-                     
-        // Date patterns and generic announcements
-                     .append("\\d{4}|january|february|march|april|may|june|july|august|september|october|november|december|")
-                     .append("monday|tuesday|wednesday|thursday|friday|saturday|sunday|")
-                     .append("today|tomorrow|yesterday|this week|next week|last week|")
-                     
-        // Short/incomplete content
-                     .append("\\w{1,3}|coming soon|stay tuned|more to come|updates|news|announcement")
-                     
-                     .append(")$");
-        
+                .append("watch the full conversation|choose from|life just got|less scrolling|")
+                .append("join us|check out|upcoming|event|webinar|demo|register|subscribe|")
+                .append("click here|learn more|find out|discover|explore|")
+                .append("congratulations|thank you|thanks|welcome|excited to|thrilled to|")
+                .append("don't miss|limited time|act now|book now|save the date|")
+                .append("follow us|like this|share this|comment below|")
+
+                // Date patterns and generic announcements
+                .append("\\d{4}|january|february|march|april|may|june|july|august|september|october|november|december|")
+                .append("monday|tuesday|wednesday|thursday|friday|saturday|sunday|")
+                .append("today|tomorrow|yesterday|this week|next week|last week|")
+
+                // Short/incomplete content
+                .append("\\w{1,3}|coming soon|stay tuned|more to come|updates|news|announcement")
+
+                .append(")$");
+
         return Pattern.compile(patternBuilder.toString());
     }
 
@@ -426,11 +431,11 @@ public class ScrapingService {
      */
     private String cleanPostText(String text) {
         return text.replaceAll("hashtag\\s*#\\w+", "") // Remove hashtags
-                  .replaceAll("http[s]?://\\S+", "") // Remove URLs
-                  .replaceAll("[^\\p{ASCII}]", "") // Remove non-ASCII (emojis, etc.)
-                  .replaceAll("\\s+", " ") // Normalize spaces
-                  .replaceAll("\\.\\.\\.", "...") // Clean ellipsis
-                  .trim();
+                .replaceAll("http[s]?://\\S+", "") // Remove URLs
+                .replaceAll("[^\\p{ASCII}]", "") // Remove non-ASCII (emojis, etc.)
+                .replaceAll("\\s+", " ") // Normalize spaces
+                .replaceAll("\\.\\.\\.", "...") // Clean ellipsis
+                .trim();
     }
 
     /**
@@ -438,16 +443,18 @@ public class ScrapingService {
      */
     private boolean isValidPost(String text, String companyName, Pattern irrelevantPattern) {
         return !text.isBlank() &&
-               !text.equalsIgnoreCase(companyName) &&
-               !irrelevantPattern.matcher(text).matches() &&
-               text.length() > 30 && // Reduced minimum length
-               text.split("\\s+").length > 5 && // Require >5 words
-               !text.matches("^[A-Z\\s]+$") && // Not all caps
-               text.contains(" "); // Must contain spaces (not just one word)
+                !text.equalsIgnoreCase(companyName) &&
+                !irrelevantPattern.matcher(text).matches() &&
+                text.length() > 30 && // Reduced minimum length
+                text.split("\\s+").length > 5 && // Require >5 words
+                !text.matches("^[A-Z\\s]+$") && // Not all caps
+                text.contains(" "); // Must contain spaces (not just one word)
     }
 
     private String getLinkedInCompanyId(String companyName) {
         String normalizedName = companyName.toLowerCase().trim();
+
+        // Existing hardcoded fallback for common companies
         switch (normalizedName) {
             case "tesla":
                 return "tesla-motors";
@@ -470,48 +477,74 @@ public class ScrapingService {
             case "netflix":
                 return "netflix";
             default:
-                return normalizedName.replaceAll("[^a-z0-9-]", "");
+                // Dynamic search using TavilyUtil
+                try {
+                    logger.info("Searching for LinkedIn company page for: {}", companyName);
+                    List<Map<String, Object>> searchResults = tavilyUtil
+                            .search("site:linkedin.com/company " + companyName, 3);
+
+                    for (Map<String, Object> result : searchResults) {
+                        String url = (String) result.get("url");
+                        if (url != null && url.contains("linkedin.com/company/")) {
+                            // Extract slug after /company/
+                            String slug = url.substring(url.indexOf("/company/") + 9);
+                            // Remove trailing parts like query parameters or sub-paths
+                            slug = slug.replaceAll("[/?#].*", "");
+                            if (!slug.isEmpty()) {
+                                logger.info("Dynamically found LinkedIn slug for {}: {}", companyName, slug);
+                                return slug;
+                            }
+                        }
+                    }
+                    logger.warn("No valid LinkedIn page found for {}; using normalized name", companyName);
+                    return normalizedName.replaceAll("[^a-z0-9-]", "");
+                } catch (Exception e) {
+                    logger.error("Failed to dynamically find LinkedIn ID for {}: {}", companyName, e.getMessage(), e);
+                    // Fallback to normalized name
+                    return normalizedName.replaceAll("[^a-z0-9-]", "");
+                }
         }
     }
 
     /**
      * Prepares optimized content for LLM analysis with strategic context
      */
-    private String prepareContentForLLM(String companyName, String profileName, String description, List<String> posts) {
+    private String prepareContentForLLM(String companyName, String profileName, String description,
+            List<String> posts) {
         StringBuilder content = new StringBuilder();
-        
+
         // Company basic info with competitive context
         content.append("=== COMPANY PROFILE ===\n");
         content.append("Company: ").append(companyName).append("\n");
         if (!profileName.equals(companyName)) {
             content.append("LinkedIn Profile: ").append(profileName).append("\n");
         }
-        
+
         // Add industry context for competitive analysis
         String industryContext = getIndustryContext(companyName, description, posts);
         if (!industryContext.isEmpty()) {
             content.append("Industry Context: ").append(industryContext).append("\n");
         }
         content.append("\n");
-        
+
         // Company description with key metrics extraction
         if (!description.isEmpty()) {
             content.append("=== COMPANY DESCRIPTION ===\n");
             String enhancedDescription = extractKeyMetrics(description);
             content.append(enhancedDescription).append("\n\n");
         }
-        
+
         // Strategic post analysis (deduplicated and prioritized)
         if (!posts.isEmpty()) {
             content.append("=== STRATEGIC ACTIVITIES ANALYSIS ===\n");
             content.append("Total posts analyzed: ").append(posts.size()).append("\n\n");
-            
+
             // Prioritize and deduplicate posts strategically
             List<String> strategicPosts = prioritizeStrategicPosts(posts);
-            
+
             // Group by strategic themes, not just categories
             Map<String, List<String>> strategicThemes = analyzeStrategicThemes(strategicPosts);
-            
+
             for (Map.Entry<String, List<String>> theme : strategicThemes.entrySet()) {
                 content.append("STRATEGIC THEME - ").append(theme.getKey().toUpperCase()).append(":\n");
                 for (String post : theme.getValue()) {
@@ -523,10 +556,10 @@ public class ScrapingService {
             content.append("=== ACTIVITIES ===\n");
             content.append("No recent LinkedIn posts available for analysis\n\n");
         }
-        
+
         return content.toString();
     }
-    
+
     /**
      * Provides industry context for competitive analysis
      */
@@ -536,58 +569,58 @@ public class ScrapingService {
     private String getIndustryContext(String companyName, String description, List<String> posts) {
         // Analyze content to determine industry context
         String combined = (companyName + " " + description + " " + String.join(" ", posts)).toLowerCase();
-        
+
         List<String> industries = new ArrayList<>();
         Map<String, String> competitors = new HashMap<>();
-        
+
         // Technology indicators
-        if (combined.contains("artificial intelligence") || combined.contains(" ai ") || 
-            combined.contains("machine learning") || combined.contains("gpt") || combined.contains("llm")) {
+        if (combined.contains("artificial intelligence") || combined.contains(" ai ") ||
+                combined.contains("machine learning") || combined.contains("gpt") || combined.contains("llm")) {
             industries.add("AI/ML");
             competitors.put("AI/ML", "Google, OpenAI, Anthropic, Microsoft");
         }
-        
+
         if (combined.contains("cloud") || combined.contains("azure") || combined.contains("aws")) {
             industries.add("Cloud Computing");
             competitors.put("Cloud Computing", "AWS, Microsoft Azure, Google Cloud");
         }
-        
+
         if (combined.contains("social") || combined.contains("platform") || combined.contains("network")) {
             industries.add("Social Media/Platforms");
             competitors.put("Social Media/Platforms", "Meta, Twitter/X, TikTok, LinkedIn");
         }
-        
+
         if (combined.contains("search") || combined.contains("advertising") || combined.contains("marketing")) {
             industries.add("Digital Advertising");
             competitors.put("Digital Advertising", "Google, Meta, Amazon, Microsoft");
         }
-        
+
         if (combined.contains("electric") || combined.contains("automotive") || combined.contains("vehicle")) {
             industries.add("Electric Vehicles");
             competitors.put("Electric Vehicles", "Tesla, BYD, Toyota, Volkswagen");
         }
-        
+
         if (combined.contains("entertainment") || combined.contains("streaming") || combined.contains("media")) {
             industries.add("Digital Media");
             competitors.put("Digital Media", "Netflix, Disney, Amazon Prime, Apple");
         }
-        
+
         // Build context string
         if (industries.isEmpty()) {
             return "Technology sector with various digital services";
         }
-        
+
         String primaryIndustry = industries.get(0);
         String competitorList = competitors.get(primaryIndustry);
         return primaryIndustry + (competitorList != null ? ", competing with " + competitorList : "");
     }
-    
+
     /**
      * Extracts key metrics and scale indicators from description
      */
     private String extractKeyMetrics(String description) {
         StringBuilder enhanced = new StringBuilder(description);
-        
+
         // Look for and highlight key metrics
         String desc = description.toLowerCase();
         if (desc.contains("countries")) {
@@ -599,101 +632,113 @@ public class ScrapingService {
         if (desc.contains("billion") || desc.contains("million")) {
             enhanced.append("\n[SCALE INDICATOR: Large numbers mentioned - potential revenue/users]");
         }
-        
+
         return enhanced.toString();
     }
-    
+
     /**
      * Prioritizes posts based on strategic importance
      */
     private List<String> prioritizeStrategicPosts(List<String> posts) {
         return posts.stream()
-            .filter(post -> isStrategicallySignificant(post))
-            .sorted((a, b) -> getStrategicScore(b) - getStrategicScore(a))
-            .limit(10) // Limit to top 10 most strategic posts
-            .collect(Collectors.toList());
+                .filter(post -> isStrategicallySignificant(post))
+                .sorted((a, b) -> getStrategicScore(b) - getStrategicScore(a))
+                .limit(10) // Limit to top 10 most strategic posts
+                .collect(Collectors.toList());
     }
-    
+
     /**
      * Checks if a post is strategically significant
      */
     private boolean isStrategicallySignificant(String post) {
         String postLower = post.toLowerCase();
-        return postLower.contains("launch") || postLower.contains("partnership") || 
-               postLower.contains("expansion") || postLower.contains("acquisition") ||
-               postLower.contains("investment") || postLower.contains("milestone") ||
-               postLower.contains("market") || postLower.contains("growth") ||
-               postLower.contains("competition") || postLower.contains("strategy") ||
-               postLower.contains("billion") || postLower.contains("million") ||
-               postLower.contains("global") || postLower.contains("international");
+        return postLower.contains("launch") || postLower.contains("partnership") ||
+                postLower.contains("expansion") || postLower.contains("acquisition") ||
+                postLower.contains("investment") || postLower.contains("milestone") ||
+                postLower.contains("market") || postLower.contains("growth") ||
+                postLower.contains("competition") || postLower.contains("strategy") ||
+                postLower.contains("billion") || postLower.contains("million") ||
+                postLower.contains("global") || postLower.contains("international");
     }
-    
+
     /**
      * Scores posts by strategic importance
      */
     private int getStrategicScore(String post) {
         int score = 0;
         String postLower = post.toLowerCase();
-        
+
         // High-value strategic indicators
-        if (postLower.contains("acquisition") || postLower.contains("merger")) score += 10;
-        if (postLower.contains("partnership") || postLower.contains("alliance")) score += 8;
-        if (postLower.contains("launch") || postLower.contains("release")) score += 7;
-        if (postLower.contains("expansion") || postLower.contains("market")) score += 6;
-        if (postLower.contains("investment") || postLower.contains("funding")) score += 6;
-        if (postLower.contains("billion") || postLower.contains("million")) score += 5;
-        if (postLower.contains("global") || postLower.contains("international")) score += 4;
-        if (postLower.contains("competition") || postLower.contains("vs") || postLower.contains("versus")) score += 4;
-        
+        if (postLower.contains("acquisition") || postLower.contains("merger"))
+            score += 10;
+        if (postLower.contains("partnership") || postLower.contains("alliance"))
+            score += 8;
+        if (postLower.contains("launch") || postLower.contains("release"))
+            score += 7;
+        if (postLower.contains("expansion") || postLower.contains("market"))
+            score += 6;
+        if (postLower.contains("investment") || postLower.contains("funding"))
+            score += 6;
+        if (postLower.contains("billion") || postLower.contains("million"))
+            score += 5;
+        if (postLower.contains("global") || postLower.contains("international"))
+            score += 4;
+        if (postLower.contains("competition") || postLower.contains("vs") || postLower.contains("versus"))
+            score += 4;
+
         return score;
     }
-    
+
     /**
      * Analyzes posts for strategic themes
      */
     private Map<String, List<String>> analyzeStrategicThemes(List<String> posts) {
         Map<String, List<String>> themes = new HashMap<>();
-        
+
         for (String post : posts) {
             String postLower = post.toLowerCase();
-            
+
             if (postLower.contains("acquisition") || postLower.contains("merger") || postLower.contains("investment")) {
                 themes.computeIfAbsent("Market Consolidation", k -> new ArrayList<>()).add(post);
-            } else if (postLower.contains("partnership") || postLower.contains("alliance") || postLower.contains("collaboration")) {
+            } else if (postLower.contains("partnership") || postLower.contains("alliance")
+                    || postLower.contains("collaboration")) {
                 themes.computeIfAbsent("Strategic Partnerships", k -> new ArrayList<>()).add(post);
-            } else if (postLower.contains("launch") || postLower.contains("release") || postLower.contains("introducing")) {
+            } else if (postLower.contains("launch") || postLower.contains("release")
+                    || postLower.contains("introducing")) {
                 themes.computeIfAbsent("Product Innovation", k -> new ArrayList<>()).add(post);
-            } else if (postLower.contains("expansion") || postLower.contains("global") || postLower.contains("international") || postLower.contains("market")) {
+            } else if (postLower.contains("expansion") || postLower.contains("global")
+                    || postLower.contains("international") || postLower.contains("market")) {
                 themes.computeIfAbsent("Market Expansion", k -> new ArrayList<>()).add(post);
-            } else if (postLower.contains("competition") || postLower.contains("vs") || postLower.contains("versus") || postLower.contains("challenge")) {
+            } else if (postLower.contains("competition") || postLower.contains("vs") || postLower.contains("versus")
+                    || postLower.contains("challenge")) {
                 themes.computeIfAbsent("Competitive Positioning", k -> new ArrayList<>()).add(post);
             } else {
                 themes.computeIfAbsent("Operational Updates", k -> new ArrayList<>()).add(post);
             }
         }
-        
+
         // Limit posts per theme to avoid redundancy
         themes.replaceAll((theme, postList) -> postList.stream().limit(3).collect(Collectors.toList()));
-        
+
         return themes;
     }
-    
+
     /**
      * Extracts strategic insight from a post
      */
     private String extractStrategicInsight(String post) {
         // Clean and focus on strategic elements
         String cleaned = post.replaceAll("\\s+", " ").trim();
-        
+
         // If short enough, return as-is
         if (cleaned.length() <= 150) {
             return cleaned;
         }
-        
+
         // Extract strategic core - first sentence plus any strategic keywords
         String[] sentences = cleaned.split("\\. ");
         StringBuilder insight = new StringBuilder();
-        
+
         // Always include first sentence
         if (sentences.length > 0) {
             insight.append(sentences[0]);
@@ -701,15 +746,15 @@ public class ScrapingService {
                 insight.append(".");
             }
         }
-        
+
         // Add sentences with strategic value
         for (int i = 1; i < sentences.length && insight.length() < 140; i++) {
             String sentence = sentences[i].toLowerCase();
-            if (sentence.contains("market") || sentence.contains("compete") || 
-                sentence.contains("customer") || sentence.contains("revenue") ||
-                sentence.contains("growth") || sentence.contains("scale") ||
-                sentence.contains("million") || sentence.contains("billion") ||
-                sentence.contains("partnership") || sentence.contains("expansion")) {
+            if (sentence.contains("market") || sentence.contains("compete") ||
+                    sentence.contains("customer") || sentence.contains("revenue") ||
+                    sentence.contains("growth") || sentence.contains("scale") ||
+                    sentence.contains("million") || sentence.contains("billion") ||
+                    sentence.contains("partnership") || sentence.contains("expansion")) {
                 insight.append(" ").append(sentences[i]);
                 if (!sentences[i].endsWith(".")) {
                     insight.append(".");
@@ -717,7 +762,7 @@ public class ScrapingService {
                 break; // Only add one strategic sentence to avoid redundancy
             }
         }
-        
+
         return insight.toString();
     }
 
@@ -726,18 +771,17 @@ public class ScrapingService {
      */
     private String createSimpleFallback(String companyName, String description, int postCount) {
         StringBuilder content = new StringBuilder();
-        
+
         content.append("#### Strategic Analysis: ").append(companyName).append("\n\n");
-        
+
         // Strategic positioning based on available data
         content.append("#### I. Strategic Positioning\n\n");
         if (!description.isEmpty() && description.length() > 20) {
             String industryContext = getIndustryContext(companyName, description, new ArrayList<>());
             content.append("**Market Position:** ");
-            String shortDesc = description.length() > 200 ? 
-                description.substring(0, 200) + "..." : description;
+            String shortDesc = description.length() > 200 ? description.substring(0, 200) + "..." : description;
             content.append(shortDesc);
-            
+
             if (!industryContext.isEmpty()) {
                 content.append("\n\n**Competitive Landscape:** ").append(industryContext);
             }
@@ -745,26 +789,26 @@ public class ScrapingService {
         } else {
             content.append("**Market Position:** Limited company description available for strategic analysis.\n\n");
         }
-        
+
         // Activity analysis
         content.append("#### II. Activity Analysis\n\n");
         if (postCount > 0) {
             content.append("**Communication Strategy:** Active LinkedIn presence with ")
-                   .append(postCount).append(" recent posts indicating ongoing strategic communications.\n\n");
+                    .append(postCount).append(" recent posts indicating ongoing strategic communications.\n\n");
             content.append("**Market Engagement:** Regular stakeholder communication suggests ")
-                   .append("focus on brand positioning and market presence.\n\n");
+                    .append("focus on brand positioning and market presence.\n\n");
         } else {
             content.append("**Communication Strategy:** Limited recent LinkedIn activity detected, ")
-                   .append("suggesting either strategic communication focus elsewhere or private company approach.\n\n");
+                    .append("suggesting either strategic communication focus elsewhere or private company approach.\n\n");
         }
-        
+
         // Strategic implications
         content.append("#### III. Strategic Intelligence\n\n");
         content.append("**Analysis Limitation:** Detailed strategic analysis requires additional data sources. ");
         content.append("Current LinkedIn activity provides limited visibility into strategic direction.\n\n");
         content.append("**Recommendation:** Supplement with financial reports, press releases, and ")
-               .append("competitive intelligence for comprehensive strategic assessment.\n");
-        
+                .append("competitive intelligence for comprehensive strategic assessment.\n");
+
         return content.toString();
     }
 

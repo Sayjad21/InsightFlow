@@ -27,6 +27,7 @@ public class FileUtil {
 
     /**
      * Saves uploaded file and returns path, mirroring UPLOAD_DIR.
+     * 
      * @param file The MultipartFile.
      * @return Saved file path.
      */
@@ -40,8 +41,13 @@ public class FileUtil {
         return targetPath.toString();
     }
 
+    public boolean fileExists(String path) {
+        return new java.io.File(path).exists();
+    }
+
     /**
      * Loads document text, mirroring loaders (TXT/PDF).
+     * 
      * @param filePath The file path.
      * @return Full text content.
      */
