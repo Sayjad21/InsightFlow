@@ -12,7 +12,6 @@ import dev.langchain4j.data.document.DocumentSplitter;
 import dev.langchain4j.data.document.splitter.DocumentSplitters;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
-import dev.langchain4j.model.language.LanguageModel;
 import dev.langchain4j.model.ollama.OllamaChatModel;
 import dev.langchain4j.rag.content.retriever.ContentRetriever;
 import dev.langchain4j.rag.content.retriever.EmbeddingStoreContentRetriever;
@@ -104,37 +103,79 @@ public class RagService {
     public Map<String, Object> analyzeCompetitor(String filePath, String companyName) {
         ConversationalRetrievalChain ragChain = filePath != null ? buildRagPipeline(filePath) : null;
 
-        // Step 1: Search (mirroring search_step)
+        // Step 1: Search (mirroring search_step) - Use specific search terms focused on
+        // the target company
         List<Map<String, Object>> searchResults = tavilyUtil
-                .search("informations sur " + companyName + " et entreprises similaires secteur santé digital", 3);
+                .search("\"" + companyName + "\" company overview business model strategy analysis", 5);
         List<String> links = searchResults.stream().map(r -> (String) r.get("url")).filter(url -> url != null)
                 .collect(Collectors.toList());
 
-        // Step 2: Extract (mirroring extract_step)
-        List<String> extractedTexts = links.stream().map(scrapingUtil::extractTextFromUrl).collect(Collectors.toList());
+        // Step 2: Extract (mirroring extract_step) - Filter out failed extractions and
+        // focus on target company
+        List<String> extractedTexts = links.stream()
+                .map(scrapingUtil::extractTextFromUrl)
+                .filter(text -> text != null && !text.trim().isEmpty()) // Filter out null/empty extractions
+                .map(text -> filterRelevantContent(text, companyName)) // Filter for relevant content
+                .filter(text -> !text.trim().isEmpty()) // Remove empty filtered results
+                .collect(Collectors.toList());
+
+        // Check if we have any successful extractions
+        if (extractedTexts.isEmpty()) {
+            // Fallback: provide general analysis without web content
+            extractedTexts.add("Limited public information available for " + companyName +
+                    ". Analysis based on general market knowledge and provided context.");
+        }
 
         // Step 3: Summarize (mirroring summarize_step)
         List<String> summaries = extractedTexts.stream().map(text -> {
             String template = aiUtil.getSummaryTemplate();
             Map<String, Object> variables = Map.of("company_name", companyName, "content", text);
-            return aiUtil.invokeWithTemplate(template, variables);
+            String summary = aiUtil.invokeWithTemplate(template, variables);
+            return convertMarkdownToHtml(summary); // Convert markdown to HTML
         }).collect(Collectors.toList());
 
         // Step 4: Strategy recommendations (mirroring strategy_step)
         String strategyRecommendations;
         String combinedSummaries = String.join("\n\n", summaries);
-        if (ragChain != null) {
-            // Mirror suggest_strategic_differentiation with RAG
-            String ragContext = ragChain
-                    .execute("Contexte stratégique général, positionnement et offre de notre entreprise");
-            String template = aiUtil.getDiffWithRagTemplate();
-            Map<String, Object> variables = Map.of(
-                    "rag_context", ragContext,
-                    "competitor_name", companyName,
-                    "competitor_summary", combinedSummaries);
-            strategyRecommendations = aiUtil.invokeWithTemplate(template, variables);
-        } else {
-            strategyRecommendations = combinedSummaries; // Fallback if no RAG
+
+        try {
+            if (ragChain != null) {
+                // Mirror suggest_strategic_differentiation with RAG
+                String ragContext = ragChain
+                        .execute("General strategic context, positioning and offerings of our company");
+
+                // Truncate context if too long to avoid timeouts
+                if (ragContext.length() > 3000) {
+                    ragContext = ragContext.substring(0, 3000) + "...";
+                }
+                if (combinedSummaries.length() > 2000) {
+                    combinedSummaries = combinedSummaries.substring(0, 2000) + "...";
+                }
+
+                String template = aiUtil.getDiffWithRagTemplate();
+                Map<String, Object> variables = Map.of(
+                        "rag_context", ragContext,
+                        "competitor_name", companyName,
+                        "competitor_summary", combinedSummaries);
+                strategyRecommendations = aiUtil.invokeWithTemplate(template, variables);
+
+                // Convert markdown to HTML and format nicely
+                strategyRecommendations = convertMarkdownToHtml(strategyRecommendations);
+            } else {
+                // Fallback without RAG - use a simpler approach
+                String simpleTemplate = "You are a strategic consultant. Based on the following competitor analysis of {{competitor_name}}, provide 3 key differentiation strategies:\n\n{{competitor_summary}}";
+                Map<String, Object> variables = Map.of(
+                        "competitor_name", companyName,
+                        "competitor_summary",
+                        combinedSummaries.length() > 2000 ? combinedSummaries.substring(0, 2000) + "..."
+                                : combinedSummaries);
+                strategyRecommendations = aiUtil.invokeWithTemplate(simpleTemplate, variables);
+                strategyRecommendations = convertMarkdownToHtml(strategyRecommendations);
+            }
+
+        } catch (Exception e) {
+            // Fallback strategy if AI call fails
+            strategyRecommendations = generateFallbackStrategy(companyName, combinedSummaries);
         }
 
         // Return mirroring original dict
@@ -144,6 +185,36 @@ public class RagService {
         result.put("strategy_recommendations", strategyRecommendations);
         result.put("links", links);
         return result;
+    }
+
+    /**
+     * Converts markdown formatting to HTML
+     * 
+     * @param text Text with markdown formatting
+     * @return Text with HTML formatting
+     */
+    private String convertMarkdownToHtml(String text) {
+        if (text == null)
+            return "";
+
+        return text
+                // Convert **bold** to <strong>bold</strong>
+                .replaceAll("\\*\\*([^\\*]+)\\*\\*", "<strong>$1</strong>")
+                // Convert *italic* to <em>italic</em>
+                .replaceAll("\\*([^\\*]+)\\*", "<em>$1</em>")
+                // Convert ### Header to <h3>Header</h3>
+                .replaceAll("###\\s*([^\n]+)", "<h3>$1</h3>")
+                // Convert ## Header to <h2>Header</h2>
+                .replaceAll("##\\s*([^\n]+)", "<h2>$1</h2>")
+                // Convert # Header to <h1>Header</h1>
+                .replaceAll("#\\s*([^\n]+)", "<h1>$1</h1>")
+                // Convert bullet points * item to • item
+                .replaceAll("^\\*\\s+", "• ")
+                .replaceAll("\n\\*\\s+", "\n• ")
+                // Convert line breaks to <br>
+                .replaceAll("\n", "<br>")
+                // Clean up multiple <br> tags
+                .replaceAll("<br>\\s*<br>", "<br><br>");
     }
 
     /**
@@ -197,7 +268,7 @@ public class RagService {
 
         // Step 1: Search
         List<Map<String, Object>> searchResults = tavilyUtil
-                .search("informations sur " + companyName + " et entreprises similaires secteur santé digital", 3);
+                .search("information about " + companyName + " and similar companies business analysis", 3);
         List<String> links = searchResults.stream()
                 .map(r -> (String) r.get("url"))
                 .filter(Objects::nonNull)
@@ -233,7 +304,7 @@ public class RagService {
         String strategyRecommendations;
         if (ragChain != null) {
             String ragContext = ragChain
-                    .execute("Contexte stratégique général, positionnement et offre de notre entreprise");
+                    .execute("General strategic context, positioning and offering of our company");
             String template = aiUtil.getDiffWithRagTemplate();
             Map<String, Object> variables = Map.of(
                     "rag_context", ragContext,
@@ -254,6 +325,97 @@ public class RagService {
         result.put("strategy_recommendations", strategyRecommendations);
 
         return result;
+    }
+
+    /**
+     * Generates a fallback strategy when AI calls fail
+     */
+    private String generateFallbackStrategy(String companyName, String combinedSummaries) {
+        StringBuilder fallback = new StringBuilder();
+        fallback.append("<h3>Differentiation Strategy Analysis for ").append(companyName).append("</h3>");
+        fallback.append("<p><strong>Analysis Status:</strong> Generated from available market intelligence data.</p>");
+
+        fallback.append("<h4>Market Intelligence Summary:</h4>");
+        fallback.append(
+                "<div style='background: #f8f9fa; padding: 10px; margin: 10px 0; border-left: 4px solid #007bff;'>");
+        fallback.append(convertMarkdownToHtml(
+                combinedSummaries.length() > 1000 ? combinedSummaries.substring(0, 1000) + "..." : combinedSummaries));
+        fallback.append("</div>");
+
+        fallback.append("<h4>Strategic Recommendations:</h4>");
+        fallback.append("<ul>");
+        fallback.append(
+                "<li><strong>Market Positioning:</strong> Focus on unique value propositions that differentiate from ")
+                .append(companyName).append(" and competitors</li>");
+        fallback.append(
+                "<li><strong>Innovation Strategy:</strong> Leverage gaps identified in competitor analysis to drive innovation</li>");
+        fallback.append(
+                "<li><strong>Customer Experience:</strong> Develop superior customer experience based on competitor weaknesses</li>");
+        fallback.append("</ul>");
+
+        fallback.append(
+                "<p><em>Note: For more detailed strategic analysis, please ensure stable AI model connectivity.</em></p>");
+
+        return fallback.toString();
+    }
+
+    /**
+     * Filter extracted content to focus on the target company
+     * and remove content about other companies that might cause confusion
+     */
+    private String filterRelevantContent(String content, String targetCompany) {
+        if (content == null || content.trim().isEmpty()) {
+            return content;
+        }
+
+        // Split content into sentences and paragraphs
+        String[] sentences = content.split("(?<=\\.)\\s+");
+        StringBuilder filteredContent = new StringBuilder();
+
+        for (String sentence : sentences) {
+            String lowerSentence = sentence.toLowerCase();
+            String lowerTarget = targetCompany.toLowerCase();
+
+            // Include sentence if it mentions the target company
+            if (lowerSentence.contains(lowerTarget)) {
+                filteredContent.append(sentence).append(" ");
+            }
+            // Include general industry context sentences (without specific company names)
+            else if (!containsCompanyNames(lowerSentence) &&
+                    (lowerSentence.contains("industry") ||
+                            lowerSentence.contains("market") ||
+                            lowerSentence.contains("sector") ||
+                            lowerSentence.contains("technology") ||
+                            lowerSentence.contains("business"))) {
+                filteredContent.append(sentence).append(" ");
+            }
+        }
+
+        // If filtered content is too short, return original content
+        String result = filteredContent.toString().trim();
+        if (result.length() < 100) {
+            return content;
+        }
+
+        return result;
+    }
+
+    /**
+     * Check if a sentence contains common company names that might cause confusion
+     */
+    private boolean containsCompanyNames(String sentence) {
+        String[] commonCompanyNames = {
+                "watson", "ibm", "google", "microsoft", "amazon", "apple",
+                "facebook", "meta", "netflix", "tesla", "nvidia", "intel",
+                "oracle", "salesforce", "adobe", "uber", "airbnb"
+        };
+
+        for (String companyName : commonCompanyNames) {
+            if (sentence.contains(companyName)) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }

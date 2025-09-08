@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -72,9 +71,15 @@ public class CompetitiveAnalysisController {
 
             Map<String, Object> result = new HashMap<>();
             result.put("company_name", companyName);
-            result.put("summaries", (List<String>) ragResult.get("summaries"));
-            result.put("sources", (List<String>) ragResult.get("links"));
+
+            // Safe casting with null checks
+            Object summariesObj = ragResult.get("summaries");
+            Object linksObj = ragResult.get("links");
+
+            result.put("summaries", summariesObj instanceof List ? summariesObj : List.of());
+            result.put("sources", linksObj instanceof List ? linksObj : List.of());
             result.put("strategy_recommendations", (String) ragResult.get("strategy_recommendations"));
+
             result.put("swot_lists", swot);
             result.put("pestel_lists", pestel);
             result.put("porter_forces", porter);

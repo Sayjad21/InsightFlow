@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import Header from "./components/Header";
 import ServiceCard from "./components/ServiceCard";
 import ServiceModal from "./components/ServiceModal";
@@ -84,7 +84,7 @@ function App() {
 
       {/* Footer */}
       <footer className="w-full py-4 text-center text-white/70 border-t border-white/10">
-        Powered by Mistral
+        Powered by Ollama, tavily
       </footer>
     </div>
   );

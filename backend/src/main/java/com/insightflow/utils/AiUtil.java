@@ -67,33 +67,36 @@ public class AiUtil {
     }
 
     public String getSummaryTemplate() {
-    return "You are an experienced strategic analyst specializing in competitor analysis.\n" +
-    "Here is the extracted content about a potential competitor of our compan{{company_name}}:\n{{content}}\n\n"
-    +
-    "Give only the key strategic elements of this competitor (target, positioning, strengths, weaknesses).";
-    }
-
-    // public String getSummaryTemplate() {
-    // return "You are an analyst. Summarize the following content about
-    // {{company_name}}.\n\n"
-    // + "Always respond in English and use concise business terms.\n"
-    // + "Return ONLY valid JSON in this format:\n"
-    // + "{\n"
-    // + " \"name\": \"{{company_name}}\",\n"
-    // + " \"target\": [ \"...\", \"...\" ],\n"
-    // + " \"positioning\": \"...\",\n"
-    // + " \"strengths\": [ \"...\", \"...\" ],\n"
-    // + " \"weaknesses\": [ \"...\", \"...\" ]\n"
-    // + "}\n\n"
-    // + "Content: {{content}}";
-    // }
+        return "You are an experienced strategic analyst specializing in competitor analysis.\n" +
+                "Here is the extracted content about {{company_name}}:\n{{content}}\n\n" +
+                "Analyze ONLY the information related to {{company_name}} from the provided content. " +
+                "Ignore any information about other companies mentioned in the text. " +
+                "Give only the key strategic elements of {{company_name}} specifically (target, positioning, strengths, weaknesses). "
+                +
+                "Always respond in English and focus strictly on {{company_name}}.";
+    } // public String getSummaryTemplate() {
+      // return "You are an analyst. Summarize the following content about
+      // {{company_name}}.\n\n"
+      // + "Always respond in English and use concise business terms.\n"
+      // + "Return ONLY valid JSON in this format:\n"
+      // + "{\n"
+      // + " \"name\": \"{{company_name}}\",\n"
+      // + " \"target\": [ \"...\", \"...\" ],\n"
+      // + " \"positioning\": \"...\",\n"
+      // + " \"strengths\": [ \"...\", \"...\" ],\n"
+      // + " \"weaknesses\": [ \"...\", \"...\" ]\n"
+      // + "}\n\n"
+      // + "Content: {{content}}";
+      // }
 
     public String getDiffWithRagTemplate() {
         return "You are Fred, an expert in strategic marketing and competitive differentiation.\n" +
                 "Internal context (from RAG for our company):\n{{rag_context}}\n\n" +
                 "External context (monitoring of competitor {{competitor_name}} and similar others):\n{{competitor_summary}}\n\n"
                 +
-                "Based on this, propose 3 concrete differentiation axes for our company (described in the RAG context) against {{competitor_name}} and its peers.";
+                "Based on this, propose 3 concrete differentiation axes for our company (described in the RAG context) against {{competitor_name}} and its peers.\n"
+                +
+                "Always respond in English and use clear, professional business language.";
     }
 
     public String getSwotTemplate() {

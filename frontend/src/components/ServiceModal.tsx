@@ -1,6 +1,7 @@
 import React from "react";
 import { X } from "lucide-react";
 import type { Service, AnalysisResult } from "../types";
+import ExportButtons from "./ExportButtons";
 
 interface ServiceModalProps {
   service: Service | null;
@@ -85,10 +86,10 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
             <div className="mt-8 space-y-6 bg-white/5 p-6 rounded-xl">
               {analysisResult && analysisResult.strategy_recommendations ? (
                 <div>
-                  <h3 className="text-xl font-semibold text-blue-400 mb-2">
+                  <h3 className="text-xl font-semibold text-blue-400 mb-4">
                     Differentiation Strategy for {analysisResult.company_name}
                   </h3>
-                  <p
+                  <div
                     className="text-gray-300"
                     dangerouslySetInnerHTML={{
                       __html: analysisResult.strategy_recommendations,
@@ -365,6 +366,9 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
               </div>
             </div>
           )}
+
+          {/* Export functionality - Only show if there's analysis data to export */}
+          {analysisResult && <ExportButtons analysisResult={analysisResult} />}
 
           <div className="mt-8"></div>
         </div>
