@@ -13,6 +13,7 @@ export interface Service {
 export interface AnalysisResult {
   company_name: string;
   summaries: string[];
+  sources: string[];
   strategy_recommendations: string;
   swot_lists: {
     strengths: string[];
@@ -47,6 +48,5 @@ export interface AnalysisResult {
     shared_values: string;
   };
   mckinsey_image: string;
-  sources: string[];
   linkedin_analysis?: string;
 }
