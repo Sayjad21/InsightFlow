@@ -3,6 +3,7 @@ package com.insightflow.controllers;
 import com.insightflow.services.RagService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -15,26 +16,25 @@ public class RagController {
     @Autowired
     private RagService ragService;
 
-    /**
-     * Analyze a competitor using optional filePath + companyName.
-     *
-     * Example API call (POST http://localhost:8000/api/rag/analyze):
-     * {
-     * "filePath": "uploads/company_report.pdf",
-     * "companyName": "Sanofi"
-     * }
-     */
     @PostMapping("/analyze")
-    public ResponseEntity<Map<String, Object>> analyzeCompetitor(@RequestBody Map<String, String> payload) {
+    public ResponseEntity<Map<String, Object>> analyzeCompetitor(
+            @RequestBody Map<String, String> payload,
+            Authentication authentication) {
+        
+        String username = authentication.getName();
+        System.out.println("RAG analysis requested by user: " + username);
+        
         try {
-            String filePath = payload.get("filePath"); // optional
-            String companyName = payload.get("companyName"); // required
+            String filePath = payload.get("filePath");
+            String companyName = payload.get("companyName");
 
             if (companyName == null || companyName.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "companyName is required"));
             }
 
             Map<String, Object> result = ragService.analyzeCompetitor(filePath, companyName);
+            result.put("requested_by", username);
+            
             return ResponseEntity.ok(result);
 
         } catch (Exception e) {

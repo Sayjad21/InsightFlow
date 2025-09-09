@@ -1,5 +1,6 @@
 package com.insightflow;
 
+import com.insightflow.controllers.CompetitiveAnalysisController;
 import com.insightflow.services.AnalysisService;
 import com.insightflow.services.RagService;
 import com.insightflow.services.ScrapingService;
@@ -7,22 +8,24 @@ import com.insightflow.services.VisualizationService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
-import com.insightflow.controllers.*;
 import org.springframework.test.web.servlet.MvcResult;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(CompetitiveAnalysisController.class)
+@AutoConfigureMockMvc(addFilters = false) // This disables Spring Security for the test
 public class CompetitiveAnalysisControllerTest {
 
     @Autowired
