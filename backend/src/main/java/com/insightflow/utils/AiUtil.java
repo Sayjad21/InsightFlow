@@ -152,4 +152,28 @@ public class AiUtil {
                 "Respond ONLY with a JSON object containing seven keys: " +
                 "`strategy`, `structure`, `systems`, `style`, `staff`, `skills`, `shared_values`.";
     }
+    public String getSentimentAnalysisTemplate() {
+        return "Analyze the sentiment of the following business information about {{company_name}}. " +
+            "Consider factors like market position, financial health, competitive landscape, and recent news. " +
+            "Provide a sentiment score between 0 (very negative) and 100 (very positive). " +
+            "Respond ONLY with a number between 0 and 100.\n\n" +
+            "Information to analyze:\n{{information}}";
+    }
+
+    public String getRiskAssessmentTemplate() {
+        return "Analyze the business risk of {{company_name}} based on the following information. " +
+            "Consider financial stability, market competition, regulatory environment, technological disruption, " +
+            "and operational factors. Provide a risk rating between 0 (very low risk) and 10 (very high risk). " +
+            "Respond ONLY with a number between 0 and 10.\n\n" +
+            "Information to analyze:\n{{information}}";
+    }
+
+    public String getCombinedAnalysisTemplate() {
+        return "Analyze the following business information about {{company_name}} and provide:\n" +
+            "1. A sentiment score between 0-100 (0=very negative, 100=very positive)\n" +
+            "2. A risk rating between 0-10 (0=very low risk, 10=very high risk)\n" +
+            "Respond ONLY with a JSON object in this exact format:\n" +
+            "{\"sentiment_score\": 75, \"risk_rating\": 3.5}\n\n" +
+            "Information to analyze:\n{{information}}";
+}
 }
