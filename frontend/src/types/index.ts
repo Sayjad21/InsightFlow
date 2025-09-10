@@ -65,6 +65,50 @@ export interface UserAnalysis {
   id: string;
   companyName: string;
   analysisDate: string;
-  status: "completed" | "pending" | "failed";
+  status: "COMPLETED" | "PENDING" | "FAILED";
+  errorMessage?: string;
+
+  // Analysis results (stored directly in UserAnalysis, not nested)
+  summaries?: string[];
+  sources?: string[];
+  strategyRecommendations?: string;
+  swotLists?: {
+    strengths: string[];
+    weaknesses: string[];
+    opportunities: string[];
+    threats: string[];
+  };
+  swotImage?: string;
+  pestelImage?: string;
+  porterForces?: {
+    rivalry: string[];
+    newEntrants: string[];
+    substitutes: string[];
+    buyerPower: string[];
+    supplierPower: string[];
+  };
+  porterImage?: string;
+  bcgMatrix?: {
+    [key: string]: {
+      marketShare: number;
+      growthRate: number;
+    };
+  };
+  bcgImage?: string;
+  mckinsey7s?: {
+    strategy: string;
+    structure: string;
+    systems: string;
+    style: string;
+    staff: string;
+    skills: string;
+    sharedValues: string;
+  };
+  mckinseyImage?: string;
+  linkedinAnalysis?: string;
+  uploadedFileName?: string;
+  uploadedFileId?: string;
+
+  // Legacy support - for backwards compatibility
   result?: AnalysisResult;
 }

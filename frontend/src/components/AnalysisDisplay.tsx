@@ -27,13 +27,15 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
       {/* Company Summary */}
       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
         <h3 className="text-xl font-bold text-gray-900 mb-4">
-          {companyName || analysisResult.company_name} - Executive Summary
+          {companyName || analysisResult.company_name} - Key Insights
         </h3>
         <div className="space-y-3">
           {analysisResult.summaries.map((summary, index) => (
-            <p key={index} className="text-gray-700 leading-relaxed">
-              {summary}
-            </p>
+            <div
+              key={index}
+              className="text-gray-700 leading-relaxed prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ __html: summary }}
+            />
           ))}
         </div>
       </div>
@@ -48,9 +50,12 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
             Strategic Recommendations
           </h4>
         </div>
-        <p className="text-gray-700 leading-relaxed">
-          {analysisResult.strategy_recommendations}
-        </p>
+        <div
+          className="text-gray-700 leading-relaxed prose prose-sm max-w-none"
+          dangerouslySetInnerHTML={{
+            __html: analysisResult.strategy_recommendations,
+          }}
+        />
       </div>
 
       {/* SWOT Analysis */}
@@ -148,9 +153,20 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
         {analysisResult.swot_image && (
           <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
             <img
-              src={analysisResult.swot_image}
+              src={
+                analysisResult.swot_image.startsWith("data:")
+                  ? analysisResult.swot_image
+                  : `data:image/png;base64,${analysisResult.swot_image}`
+              }
               alt="SWOT Analysis Diagram"
-              className="w-full h-64 object-cover rounded-lg"
+              className="w-full max-w-4xl mx-auto rounded-lg shadow-sm"
+              onError={(e) => {
+                console.error(
+                  "Failed to load SWOT image:",
+                  analysisResult.swot_image
+                );
+                e.currentTarget.style.display = "none";
+              }}
             />
           </div>
         )}
@@ -197,9 +213,20 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
         {analysisResult.porter_image && (
           <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
             <img
-              src={analysisResult.porter_image}
+              src={
+                analysisResult.porter_image.startsWith("data:")
+                  ? analysisResult.porter_image
+                  : `data:image/png;base64,${analysisResult.porter_image}`
+              }
               alt="Porter's Five Forces Diagram"
-              className="w-full h-64 object-cover rounded-lg"
+              className="w-full max-w-4xl mx-auto rounded-lg shadow-sm"
+              onError={(e) => {
+                console.error(
+                  "Failed to load Porter image:",
+                  analysisResult.porter_image
+                );
+                e.currentTarget.style.display = "none";
+              }}
             />
           </div>
         )}
@@ -236,9 +263,20 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
         {analysisResult.mckinsey_image && (
           <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
             <img
-              src={analysisResult.mckinsey_image}
+              src={
+                analysisResult.mckinsey_image.startsWith("data:")
+                  ? analysisResult.mckinsey_image
+                  : `data:image/png;base64,${analysisResult.mckinsey_image}`
+              }
               alt="McKinsey 7S Framework Diagram"
-              className="w-full h-64 object-cover rounded-lg"
+              className="w-full max-w-4xl mx-auto rounded-lg shadow-sm"
+              onError={(e) => {
+                console.error(
+                  "Failed to load McKinsey image:",
+                  analysisResult.mckinsey_image
+                );
+                e.currentTarget.style.display = "none";
+              }}
             />
           </div>
         )}
@@ -283,9 +321,20 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
           {analysisResult.bcg_image && (
             <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
               <img
-                src={analysisResult.bcg_image}
+                src={
+                  analysisResult.bcg_image.startsWith("data:")
+                    ? analysisResult.bcg_image
+                    : `data:image/png;base64,${analysisResult.bcg_image}`
+                }
                 alt="BCG Matrix Diagram"
-                className="w-full h-64 object-cover rounded-lg"
+                className="w-full max-w-4xl mx-auto rounded-lg shadow-sm"
+                onError={(e) => {
+                  console.error(
+                    "Failed to load BCG image:",
+                    analysisResult.bcg_image
+                  );
+                  e.currentTarget.style.display = "none";
+                }}
               />
             </div>
           )}
@@ -298,7 +347,12 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
           <h4 className="text-lg font-semibold text-blue-900 mb-3">
             LinkedIn Analysis
           </h4>
-          <p className="text-blue-800">{analysisResult.linkedin_analysis}</p>
+          <div
+            className="text-blue-800 prose prose-sm max-w-none"
+            dangerouslySetInnerHTML={{
+              __html: analysisResult.linkedin_analysis,
+            }}
+          />
         </div>
       )}
 

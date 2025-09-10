@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { ApiService } from "../services/api";
+import { useAuth } from "../contexts/AuthContext";
+import { useAnalysis } from "../hooks/useAnalysis";
 import type { AnalysisResult } from "../types";
 
 interface CompanyAnalysisProps {
@@ -13,32 +15,29 @@ const CompanyAnalysis: React.FC<CompanyAnalysisProps> = ({
 }) => {
   const [companyName, setCompanyName] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [loading, setLoading] = useState(false);
   const [fileGenerating, setFileGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const { isAuthenticated } = useAuth();
+  const { analyzeCompany, isLoading: loading, error } = useAnalysis();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!companyName.trim()) return;
 
-    setLoading(true);
-    setError(null);
-
     try {
-      const result = await ApiService.analyzeCompany(
+      const result = await analyzeCompany(
         companyName,
-        file || undefined
+        file || undefined,
+        isAuthenticated // Save to history if user is authenticated
       );
       if (onAnalysisComplete) {
         onAnalysisComplete(result);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      // Error is handled by the useAnalysis hook
       if (onAnalysisComplete) {
         onAnalysisComplete(null);
       }
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -50,18 +49,20 @@ const CompanyAnalysis: React.FC<CompanyAnalysisProps> = ({
 
   const handleGenerateFile = async () => {
     if (!companyName.trim()) {
-      setError("Please enter a company name to generate analysis file");
+      setFileError("Please enter a company name to generate analysis file");
       return;
     }
 
     setFileGenerating(true);
-    setError(null);
+    setFileError(null);
 
     try {
       await ApiService.generateCompanyFile(companyName, file || undefined);
       // Success message could be added here if needed
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to generate file");
+      setFileError(
+        err instanceof Error ? err.message : "Failed to generate file"
+      );
     } finally {
       setFileGenerating(false);
     }
@@ -143,9 +144,9 @@ const CompanyAnalysis: React.FC<CompanyAnalysisProps> = ({
         </div>
       </form>
 
-      {error && (
+      {(error || fileError) && (
         <div className="p-4 bg-red-500/20 border border-red-500 rounded-lg text-red-200">
-          {error}
+          {error || fileError}
         </div>
       )}
     </div>

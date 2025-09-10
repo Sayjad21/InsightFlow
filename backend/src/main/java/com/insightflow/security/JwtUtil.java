@@ -25,10 +25,17 @@ public class JwtUtil {
     }
 
     public String generateToken(String username) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + expiration);
+
+        System.out.println("JWT Generation - Current time: " + now);
+        System.out.println("JWT Generation - Expiry time: " + expiryDate);
+        System.out.println("JWT Generation - Expiration milliseconds: " + expiration);
+
         return Jwts.builder()
-                .setSubject(username)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + expiration))
+                .subject(username)
+                .issuedAt(now)
+                .expiration(expiryDate)
                 .signWith(getSigningKey()) // Uses the key directly, no need for SignatureAlgorithm in recent versions
                 .compact();
     }
@@ -38,8 +45,21 @@ public class JwtUtil {
     }
 
     public boolean validateToken(String token, String username) {
-        final String extractedUsername = extractUsername(token);
-        return (extractedUsername.equals(username) && !isTokenExpired(token));
+        try {
+            final String extractedUsername = extractUsername(token);
+            boolean usernameMatches = extractedUsername.equals(username);
+            boolean tokenNotExpired = !isTokenExpired(token);
+
+            System.out.println("JWT Validation - Username from token: " + extractedUsername);
+            System.out.println("JWT Validation - Expected username: " + username);
+            System.out.println("JWT Validation - Username matches: " + usernameMatches);
+            System.out.println("JWT Validation - Token not expired: " + tokenNotExpired);
+
+            return usernameMatches && tokenNotExpired;
+        } catch (Exception e) {
+            System.out.println("JWT Validation - Error: " + e.getMessage());
+            return false;
+        }
     }
 
     private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
@@ -51,11 +71,19 @@ public class JwtUtil {
         return Jwts.parser()
                 .verifyWith(getSigningKey()) // Use verifyWith for the key in recent versions
                 .build()
-                .parseSignedClaims(token)    // Use parseSignedClaims for JWS (Signed JWT)
+                .parseSignedClaims(token) // Use parseSignedClaims for JWS (Signed JWT)
                 .getPayload();
     }
 
     private boolean isTokenExpired(String token) {
-        return extractClaim(token, Claims::getExpiration).before(new Date());
+        Date expiration = extractClaim(token, Claims::getExpiration);
+        Date now = new Date();
+        boolean expired = expiration.before(now);
+
+        System.out.println("JWT Expiration Check - Token expires at: " + expiration);
+        System.out.println("JWT Expiration Check - Current time: " + now);
+        System.out.println("JWT Expiration Check - Is expired: " + expired);
+
+        return expired;
     }
 }

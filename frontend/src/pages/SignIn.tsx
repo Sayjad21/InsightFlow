@@ -37,11 +37,13 @@ const SignIn: React.FC = () => {
 
     if (!validateForm()) return;
 
-    const success = await login(email, password);
-    if (success) {
+    try {
+      await login(email, password);
       navigate("/dashboard");
-    } else {
-      setErrors({ password: "Invalid email or password" });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Login failed";
+      setErrors({ password: errorMessage });
     }
   };
 

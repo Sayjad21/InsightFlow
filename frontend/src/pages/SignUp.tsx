@@ -1,15 +1,23 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, UserPlus } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  User,
+  ArrowRight,
+  UserPlus,
+} from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
 
 const SignUp: React.FC = () => {
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -20,76 +28,78 @@ const SignUp: React.FC = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
     // Clear error when user starts typing
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
-    
+
     if (!formData.firstName.trim()) {
-      newErrors.firstName = 'First name is required';
+      newErrors.firstName = "First name is required";
     }
-    
+
     if (!formData.lastName.trim()) {
-      newErrors.lastName = 'Last name is required';
+      newErrors.lastName = "Last name is required";
     }
-    
+
     if (!formData.email) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = "Please enter a valid email address";
     }
-    
+
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = "Password is required";
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = "Password must be at least 6 characters";
     } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-      newErrors.password = 'Password must contain at least one uppercase letter, lowercase letter, and number';
+      newErrors.password =
+        "Password must contain at least one uppercase letter, lowercase letter, and number";
     }
-    
+
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
+      newErrors.confirmPassword = "Please confirm your password";
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = "Passwords do not match";
     }
-    
+
     if (!agreedToTerms) {
-      newErrors.terms = 'You must agree to the terms and conditions';
+      newErrors.terms = "You must agree to the terms and conditions";
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
-    
-    const success = await signup(
-      formData.firstName,
-      formData.lastName,
-      formData.email,
-      formData.password
-    );
-    
-    if (success) {
-      navigate('/dashboard');
-    } else {
-      setErrors({ email: 'An account with this email already exists' });
+
+    try {
+      await signup(
+        formData.firstName,
+        formData.lastName,
+        formData.email,
+        formData.password
+      );
+      navigate("/dashboard");
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Signup failed";
+      setErrors({ email: errorMessage });
     }
   };
 
   return (
-    <div 
+    <div
       className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8"
       style={{
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
       }}
     >
       <div className="max-w-md w-full">
@@ -101,7 +111,9 @@ const SignUp: React.FC = () => {
             </div>
           </div>
           <h2 className="text-3xl font-bold text-white mb-2">Create Account</h2>
-          <p className="text-white/80 text-lg">Join InsightFlow and start analyzing companies</p>
+          <p className="text-white/80 text-lg">
+            Join InsightFlow and start analyzing companies
+          </p>
         </div>
 
         {/* Sign Up Form */}
@@ -110,7 +122,10 @@ const SignUp: React.FC = () => {
             {/* Name Fields */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-white mb-2">
+                <label
+                  htmlFor="firstName"
+                  className="block text-sm font-medium text-white mb-2"
+                >
                   First Name
                 </label>
                 <div className="relative">
@@ -128,12 +143,17 @@ const SignUp: React.FC = () => {
                   />
                 </div>
                 {errors.firstName && (
-                  <p className="mt-1 text-xs text-red-300">{errors.firstName}</p>
+                  <p className="mt-1 text-xs text-red-300">
+                    {errors.firstName}
+                  </p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-white mb-2">
+                <label
+                  htmlFor="lastName"
+                  className="block text-sm font-medium text-white mb-2"
+                >
                   Last Name
                 </label>
                 <div className="relative">
@@ -158,7 +178,10 @@ const SignUp: React.FC = () => {
 
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-white mb-2">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-white mb-2"
+              >
                 Email Address
               </label>
               <div className="relative">
@@ -182,7 +205,10 @@ const SignUp: React.FC = () => {
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-white mb-2">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-white mb-2"
+              >
                 Password
               </label>
               <div className="relative">
@@ -192,7 +218,7 @@ const SignUp: React.FC = () => {
                 <input
                   id="password"
                   name="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   value={formData.password}
                   onChange={handleInputChange}
                   className="block w-full pl-9 pr-10 py-2.5 bg-white/10 border border-white/30 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all duration-200 text-sm"
@@ -217,7 +243,10 @@ const SignUp: React.FC = () => {
 
             {/* Confirm Password Field */}
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-white mb-2">
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-white mb-2"
+              >
                 Confirm Password
               </label>
               <div className="relative">
@@ -227,7 +256,7 @@ const SignUp: React.FC = () => {
                 <input
                   id="confirmPassword"
                   name="confirmPassword"
-                  type={showConfirmPassword ? 'text' : 'password'}
+                  type={showConfirmPassword ? "text" : "password"}
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
                   className="block w-full pl-9 pr-10 py-2.5 bg-white/10 border border-white/30 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all duration-200 text-sm"
@@ -246,7 +275,9 @@ const SignUp: React.FC = () => {
                 </button>
               </div>
               {errors.confirmPassword && (
-                <p className="mt-1 text-xs text-red-300">{errors.confirmPassword}</p>
+                <p className="mt-1 text-xs text-red-300">
+                  {errors.confirmPassword}
+                </p>
               )}
             </div>
 
@@ -260,12 +291,18 @@ const SignUp: React.FC = () => {
                   className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-white/30 rounded bg-white/10"
                 />
                 <span className="text-sm text-white/80">
-                  I agree to the{' '}
-                  <button type="button" className="text-white hover:text-blue-200 underline">
+                  I agree to the{" "}
+                  <button
+                    type="button"
+                    className="text-white hover:text-blue-200 underline"
+                  >
                     Terms of Service
-                  </button>
-                  {' '}and{' '}
-                  <button type="button" className="text-white hover:text-blue-200 underline">
+                  </button>{" "}
+                  and{" "}
+                  <button
+                    type="button"
+                    className="text-white hover:text-blue-200 underline"
+                  >
                     Privacy Policy
                   </button>
                 </span>
@@ -298,7 +335,7 @@ const SignUp: React.FC = () => {
           {/* Sign In Link */}
           <div className="mt-6 text-center">
             <p className="text-white/80 text-sm">
-              Already have an account?{' '}
+              Already have an account?{" "}
               <Link
                 to="/signin"
                 className="text-white font-medium hover:text-blue-200 transition-colors duration-200"

@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import type { User } from "../types";
+import { ApiService } from "../services/api.js";
 
 interface AuthContextType {
   user: User | null;
@@ -12,41 +13,92 @@ interface AuthContextType {
     password: string
   ) => Promise<boolean>;
   logout: () => void;
+  handleAuthError: () => void;
   isLoading: boolean;
+  isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Mock user data
-const mockUser: User = {
-  id: "1",
-  firstName: "John",
-  lastName: "Doe",
-  email: "john.doe@example.com",
-  avatar:
-    "https://ui-avatars.com/api/?name=John+Doe&background=0D8ABC&color=fff",
-  createdAt: "2024-01-15T10:30:00Z",
-  lastLogin: new Date().toISOString(),
-};
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Check if user is authenticated on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (ApiService.isAuthenticated()) {
+        setIsLoading(true);
+        try {
+          const userProfile = await ApiService.getUserProfile();
+          setUser({
+            id: userProfile.id,
+            firstName: userProfile.firstName,
+            lastName: userProfile.lastName,
+            email: userProfile.email,
+            avatar: userProfile.avatar,
+            createdAt: userProfile.createdAt,
+            lastLogin: userProfile.lastLogin,
+          });
+          setIsAuthenticated(true);
+        } catch (error) {
+          console.error("Failed to get user profile:", error);
+          ApiService.logout();
+          setUser(null);
+          setIsAuthenticated(false);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    checkAuth();
+  }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      await ApiService.login({ email, password });
+      setIsAuthenticated(true);
 
-    if (email && password) {
-      setUser(mockUser);
+      // Try to get user profile - if this fails, still consider login successful
+      try {
+        const userProfile = await ApiService.getUserProfile();
+        setUser({
+          id: userProfile.id,
+          firstName: userProfile.firstName,
+          lastName: userProfile.lastName,
+          email: userProfile.email,
+          avatar: userProfile.avatar,
+          createdAt: userProfile.createdAt,
+          lastLogin: userProfile.lastLogin,
+        });
+      } catch (profileError) {
+        console.warn("Failed to fetch profile after login:", profileError);
+        // Set basic user info from login data
+        setUser({
+          id: "temp",
+          firstName: "",
+          lastName: "",
+          email: email,
+          avatar: `https://ui-avatars.com/api/?name=${email}&background=0D8ABC&color=fff`,
+          createdAt: new Date().toISOString(),
+          lastLogin: new Date().toISOString(),
+        });
+      }
+
       setIsLoading(false);
       return true;
+    } catch (error) {
+      console.error("Login failed:", error);
+      setUser(null);
+      setIsAuthenticated(false);
+      setIsLoading(false);
+      throw error; // Re-throw so component can show error message
     }
-    setIsLoading(false);
-    return false;
   };
 
   const signup = async (
@@ -56,31 +108,69 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     password: string
   ): Promise<boolean> => {
     setIsLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      await ApiService.signup({ firstName, lastName, email, password });
+      setIsAuthenticated(true);
 
-    if (firstName && lastName && email && password) {
-      const newUser: User = {
-        ...mockUser,
-        firstName,
-        lastName,
-        email,
-        avatar: `https://ui-avatars.com/api/?name=${firstName}+${lastName}&background=0D8ABC&color=fff`,
-      };
-      setUser(newUser);
+      // Try to get user profile - if this fails, still consider signup successful
+      try {
+        const userProfile = await ApiService.getUserProfile();
+        setUser({
+          id: userProfile.id,
+          firstName: userProfile.firstName,
+          lastName: userProfile.lastName,
+          email: userProfile.email,
+          avatar: userProfile.avatar,
+          createdAt: userProfile.createdAt,
+          lastLogin: userProfile.lastLogin,
+        });
+      } catch (profileError) {
+        console.warn("Failed to fetch profile after signup:", profileError);
+        // Set basic user info from signup data
+        setUser({
+          id: "temp",
+          firstName: firstName,
+          lastName: lastName,
+          email: email,
+          avatar: `https://ui-avatars.com/api/?name=${firstName}+${lastName}&background=0D8ABC&color=fff`,
+          createdAt: new Date().toISOString(),
+          lastLogin: new Date().toISOString(),
+        });
+      }
+
       setIsLoading(false);
       return true;
+    } catch (error) {
+      console.error("Signup failed:", error);
+      setUser(null);
+      setIsAuthenticated(false);
+      setIsLoading(false);
+      throw error; // Re-throw so component can show error message
     }
-    setIsLoading(false);
-    return false;
+  };
+  const logout = () => {
+    ApiService.logout();
+    setUser(null);
+    setIsAuthenticated(false);
   };
 
-  const logout = () => {
-    setUser(null);
+  const handleAuthError = () => {
+    console.log("Handling authentication error - logging out user");
+    logout();
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout, isLoading }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        signup,
+        logout,
+        handleAuthError,
+        isLoading,
+        isAuthenticated,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
