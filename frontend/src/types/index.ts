@@ -50,3 +50,21 @@ export interface AnalysisResult {
   mckinsey_image: string;
   linkedin_analysis?: string;
 }
+
+export interface User {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  avatar?: string;
+  createdAt: string;
+  lastLogin: string;
+}
+
+export interface UserAnalysis {
+  id: string;
+  companyName: string;
+  analysisDate: string;
+  status: "completed" | "pending" | "failed";
+  result?: AnalysisResult;
+}

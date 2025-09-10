@@ -63,31 +63,87 @@ public class RagService {
      */
     public ConversationalRetrievalChain buildRagPipeline(String filePath) {
         try {
+            // Validate file path
+            if (filePath == null || filePath.trim().isEmpty()) {
+                throw new IllegalArgumentException("File path is null or empty");
+            }
+
+            // Check if file exists
+            if (!fileUtil.fileExists(filePath)) {
+                throw new IllegalArgumentException("File does not exist: " + filePath);
+            }
+
             // Load document (mirroring loader)
             String text = fileUtil.loadDocumentText(filePath);
+
+            // Validate document content
+            if (text == null || text.trim().isEmpty()) {
+                throw new IllegalArgumentException("Document text is empty or null for file: " + filePath);
+            }
+
             Document document = Document.from(text);
 
             // Split into chunks (mirroring RecursiveCharacterTextSplitter)
             DocumentSplitter splitter = DocumentSplitters.recursive(800, 100);
             List<TextSegment> segments = splitter.split(document);
 
+            // Validate segments
+            if (segments == null || segments.isEmpty()) {
+                throw new IllegalStateException("No text segments created from document");
+            }
+
             // Embed and store (mirroring NVIDIAEmbeddings + Chroma)
             EmbeddingStore<TextSegment> embeddingStore = new InMemoryEmbeddingStore<>();
-            List<Embedding> embeddings = embeddingUtil
-                    .embedDocuments(segments.stream().map(TextSegment::text).collect(Collectors.toList()));
-            for (int i = 0; i < segments.size(); i++) {
-                embeddingStore.add(embeddings.get(i), segments.get(i));
+            List<String> texts = segments.stream().map(TextSegment::text).collect(Collectors.toList());
+
+            // Validate text content before embedding
+            texts = texts.stream()
+                    .filter(t -> t != null && !t.trim().isEmpty())
+                    .collect(Collectors.toList());
+
+            if (texts.isEmpty()) {
+                throw new IllegalStateException("No valid text content found in document segments");
+            }
+
+            List<Embedding> embeddings = embeddingUtil.embedDocuments(texts);
+
+            // Validate embeddings
+            if (embeddings == null || embeddings.size() != texts.size()) {
+                throw new IllegalStateException("Embedding count mismatch. Expected: " + texts.size() + ", Got: "
+                        + (embeddings != null ? embeddings.size() : 0));
+            }
+
+            // Store embeddings with their corresponding segments
+            for (int i = 0; i < embeddings.size(); i++) {
+                if (embeddings.get(i) != null && i < segments.size()) {
+                    embeddingStore.add(embeddings.get(i), segments.get(i));
+                }
+            }
+
+            // Validate AI model
+            OllamaChatModel llm = aiUtil.getModel();
+            if (llm == null) {
+                throw new IllegalStateException("AI model is not available");
+            }
+
+            // Validate embedding model
+            if (embeddingModel == null) {
+                throw new IllegalStateException("Embedding model is not available");
             }
 
             // Build chain (mirroring RetrievalQA)
-            OllamaChatModel llm = aiUtil.getModel(); // Ollama from AiUtil
             ContentRetriever retriever = new EmbeddingStoreContentRetriever(embeddingStore, embeddingModel);
             return ConversationalRetrievalChain.builder()
                     .chatModel(llm)
                     .contentRetriever(retriever)
                     .build();
+
         } catch (Exception e) {
-            throw new RuntimeException("Failed to build RAG pipeline", e);
+            // Log the actual error with more details
+            String errorMsg = "Failed to build RAG pipeline for file: " + filePath + ". Error: " + e.getMessage();
+            System.err.println(errorMsg);
+            e.printStackTrace();
+            throw new RuntimeException(errorMsg, e);
         }
     }
 

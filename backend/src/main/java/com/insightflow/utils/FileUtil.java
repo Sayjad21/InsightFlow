@@ -15,13 +15,18 @@ import java.util.UUID;
 @Component
 public class FileUtil {
 
-    private final Path uploadDir = Paths.get("uploaded_files");
+    private final Path uploadDir;
 
     public FileUtil() {
+        // Use absolute path to ensure files are saved in the project directory
+        String projectRoot = System.getProperty("user.dir");
+        this.uploadDir = Paths.get(projectRoot, "uploaded_files").toAbsolutePath();
+
         try {
             Files.createDirectories(uploadDir);
+            System.out.println("Upload directory initialized at: " + uploadDir.toString());
         } catch (IOException e) {
-            throw new RuntimeException("Could not create upload dir", e);
+            throw new RuntimeException("Could not create upload dir at: " + uploadDir, e);
         }
     }
 
@@ -38,7 +43,7 @@ public class FileUtil {
         String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
         Path targetPath = uploadDir.resolve(fileName);
         file.transferTo(targetPath.toFile());
-        return targetPath.toString();
+        return targetPath.toAbsolutePath().toString();
     }
 
     public boolean fileExists(String path) {

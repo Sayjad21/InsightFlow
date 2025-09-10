@@ -1,92 +1,66 @@
-import { useState } from "react";
-import Header from "./components/Header";
-import ServiceCard from "./components/ServiceCard";
-import ServiceModal from "./components/ServiceModal";
-import TestPage from "./components/TestPage";
-import { services } from "./data/services";
-import type { Service, AnalysisResult } from "./types";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext.js";
+import Home from "./pages/Home.js";
+import SignIn from "./pages/SignIn.js";
+import SignUp from "./pages/SignUp.js";
+import Dashboard from "./pages/Dashboard.js";
+import ProtectedRoute from "./components/ProtectedRoute.js";
+import PublicRoute from "./components/PublicRoute.js";
 
 function App() {
-  const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(
-    null
-  );
-  const [showTestPage, setShowTestPage] = useState(false);
-
-  const handleCardClick = (service: Service) => {
-    setSelectedService(service);
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setTimeout(() => setSelectedService(null), 300); // Clear after animation
-  };
-
-  const handleAnalysisComplete = (result: AnalysisResult | null) => {
-    setAnalysisResult(result);
-  };
-
-  // Show test page if toggled
-  if (showTestPage) {
-    return (
-      <div>
-        <button
-          onClick={() => setShowTestPage(false)}
-          className="fixed top-4 right-4 z-50 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-        >
-          Back to Main
-        </button>
-        <TestPage />
-      </div>
-    );
-  }
-
   return (
-    <div
-      className="min-h-screen text-black flex flex-col"
-      style={{
-        background:
-          "linear-gradient(135deg, #eef2ff 0%, #faf5ff 50%, #fdf2f8 100%)",
-      }}
-    >
-      {/* Test Page Button */}
-      <button
-        onClick={() => setShowTestPage(true)}
-        className="fixed top-4 right-4 z-50 px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
-      >
-        Test API
-      </button>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          {/* Public Routes */}
+          <Route
+            path="/signin"
+            element={
+              <PublicRoute>
+                <SignIn />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/signup"
+            element={
+              <PublicRoute>
+                <SignUp />
+              </PublicRoute>
+            }
+          />
 
-      <div className="container mx-auto px-4 py-16 flex-grow">
-        <Header onAnalysisComplete={handleAnalysisComplete} />
+          {/* Protected Routes */}
+          <Route
+            path="/home"
+            element={
+              <ProtectedRoute>
+                <Home />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Service Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {services.map((service) => (
-            <ServiceCard
-              key={service.id}
-              service={service}
-              onClick={() => handleCardClick(service)}
-            />
-          ))}
-        </div>
+          {/* Default redirect */}
+          <Route path="/" element={<Navigate to="/signin" replace />} />
 
-        {/* Modal */}
-        <ServiceModal
-          service={selectedService}
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
-          analysisResult={analysisResult}
-        />
-      </div>
-
-      {/* Footer */}
-      <footer className="w-full py-4 text-center text-white/70 border-t border-white/10">
-        Powered by Ollama, tavily
-      </footer>
-    </div>
+          {/* Catch all redirect */}
+          <Route path="*" element={<Navigate to="/signin" replace />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 

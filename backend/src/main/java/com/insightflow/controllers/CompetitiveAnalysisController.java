@@ -4,6 +4,7 @@ import com.insightflow.services.AnalysisService;
 import com.insightflow.services.RagService;
 import com.insightflow.services.ScrapingService;
 import com.insightflow.services.VisualizationService;
+import com.insightflow.utils.FileUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -39,67 +40,67 @@ public class CompetitiveAnalysisController {
     @Autowired
     private VisualizationService visualizationService;
 
+    @Autowired
+    private FileUtil fileUtil;
+
     @PostMapping("/analyze")
-        public ResponseEntity<Map<String, Object>> analyze(
-                @RequestPart("company_name") String companyName,
-                @RequestPart(value = "file", required = false) MultipartFile file,
-                Authentication authentication) {
-            String username = authentication.getName();
-            System.out.println("Analysis requested by user: " + username);
-            try {
-                String filePath = null;
-                if (file != null && !file.isEmpty()) {
-                    Path uploadDir = Paths.get("uploaded_files");
-                    if (!Files.exists(uploadDir)) {
-                        Files.createDirectories(uploadDir);
-                    }
-                    filePath = uploadDir.resolve(file.getOriginalFilename()).toString();
-                    Files.write(Paths.get(filePath), file.getBytes());
-                }
-
-                Map<String, Object> ragResult = ragService.analyzeCompetitor(filePath, companyName);
-
-                Map<String, List<String>> swot = analysisService.generateSwot(companyName);
-                Map<String, List<String>> pestel = analysisService.generatePestel(companyName);
-                Map<String, List<String>> porter = analysisService.generatePorterForces(companyName);
-                Map<String, Map<String, Double>> bcg = analysisService.generateBcgMatrix(companyName);
-                Map<String, String> mckinsey = analysisService.generateMckinsey7s(companyName);
-
-                String swotImage = visualizationService.generateSwotImage(swot);
-                String pestelImage = visualizationService.generatePestelImage(pestel);
-                String porterImage = visualizationService.generatePorterImage(porter);
-                String bcgImage = visualizationService.generateBcgImage(bcg);
-                String mckinseyImage = visualizationService.generateMckinseyImage(mckinsey);
-
-                String linkedinAnalysis = scrapingService.getLinkedInAnalysis(companyName);
-
-                Map<String, Object> result = new HashMap<>();
-                result.put("company_name", companyName);
-                result.put("summaries", (List<String>) ragResult.get("summaries"));
-                result.put("sources", (List<String>) ragResult.get("links"));
-                result.put("strategy_recommendations", (String) ragResult.get("strategy_recommendations"));
-                result.put("swot_lists", swot);
-                result.put("pestel_lists", pestel);
-                result.put("porter_forces", porter);
-                result.put("bcg_matrix", bcg);
-                result.put("mckinsey_7s", mckinsey);
-                result.put("swot_image", swotImage);
-                result.put("pestel_image", pestelImage);
-                result.put("porter_image", porterImage);
-                result.put("bcg_image", bcgImage);
-                result.put("mckinsey_image", mckinseyImage);
-                result.put("linkedin_analysis", linkedinAnalysis);
-                result.put("requested_by", username);
-
-                return ResponseEntity.ok(result);
-            } catch (IOException e) {
-                throw new RuntimeException("File upload failed", e);
-            } catch (Exception e) {
-                Map<String, Object> error = new HashMap<>();
-                error.put("error", "Analysis failed: " + e.getMessage());
-                return ResponseEntity.internalServerError().body(error);
+    public ResponseEntity<Map<String, Object>> analyze(
+            @RequestPart("company_name") String companyName,
+            @RequestPart(value = "file", required = false) MultipartFile file,
+            Authentication authentication) {
+        String username = authentication.getName();
+        System.out.println("Analysis requested by user: " + username);
+        try {
+            String filePath = null;
+            if (file != null && !file.isEmpty()) {
+                // Use FileUtil to properly save the file and get absolute path
+                filePath = fileUtil.saveUploadedFile(file);
+                System.out.println("File uploaded successfully to: " + filePath);
             }
+
+            Map<String, Object> ragResult = ragService.analyzeCompetitor(filePath, companyName);
+
+            Map<String, List<String>> swot = analysisService.generateSwot(companyName);
+            Map<String, List<String>> pestel = analysisService.generatePestel(companyName);
+            Map<String, List<String>> porter = analysisService.generatePorterForces(companyName);
+            Map<String, Map<String, Double>> bcg = analysisService.generateBcgMatrix(companyName);
+            Map<String, String> mckinsey = analysisService.generateMckinsey7s(companyName);
+
+            String swotImage = visualizationService.generateSwotImage(swot);
+            String pestelImage = visualizationService.generatePestelImage(pestel);
+            String porterImage = visualizationService.generatePorterImage(porter);
+            String bcgImage = visualizationService.generateBcgImage(bcg);
+            String mckinseyImage = visualizationService.generateMckinseyImage(mckinsey);
+
+            String linkedinAnalysis = scrapingService.getLinkedInAnalysis(companyName);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("company_name", companyName);
+            result.put("summaries", (List<String>) ragResult.get("summaries"));
+            result.put("sources", (List<String>) ragResult.get("links"));
+            result.put("strategy_recommendations", (String) ragResult.get("strategy_recommendations"));
+            result.put("swot_lists", swot);
+            result.put("pestel_lists", pestel);
+            result.put("porter_forces", porter);
+            result.put("bcg_matrix", bcg);
+            result.put("mckinsey_7s", mckinsey);
+            result.put("swot_image", swotImage);
+            result.put("pestel_image", pestelImage);
+            result.put("porter_image", porterImage);
+            result.put("bcg_image", bcgImage);
+            result.put("mckinsey_image", mckinseyImage);
+            result.put("linkedin_analysis", linkedinAnalysis);
+            result.put("requested_by", username);
+
+            return ResponseEntity.ok(result);
+        } catch (IOException e) {
+            throw new RuntimeException("File upload failed", e);
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Analysis failed: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(error);
         }
+    }
 
     @PostMapping("/generate-company-file")
     public ResponseEntity<Resource> generateCompanyFile(
