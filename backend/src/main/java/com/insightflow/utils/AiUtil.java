@@ -152,28 +152,46 @@ public class AiUtil {
                 "Respond ONLY with a JSON object containing seven keys: " +
                 "`strategy`, `structure`, `systems`, `style`, `staff`, `skills`, `shared_values`.";
     }
+
     public String getSentimentAnalysisTemplate() {
         return "Analyze the sentiment of the following business information about {{company_name}}. " +
-            "Consider factors like market position, financial health, competitive landscape, and recent news. " +
-            "Provide a sentiment score between 0 (very negative) and 100 (very positive). " +
-            "Respond ONLY with a number between 0 and 100.\n\n" +
-            "Information to analyze:\n{{information}}";
+                "Consider factors like market position, financial health, competitive landscape, and recent news. " +
+                "Provide a sentiment score between 0 (very negative) and 100 (very positive). " +
+                "Respond ONLY with a number between 0 and 100.\n\n" +
+                "Information to analyze:\n{{information}}";
     }
 
     public String getRiskAssessmentTemplate() {
         return "Analyze the business risk of {{company_name}} based on the following information. " +
-            "Consider financial stability, market competition, regulatory environment, technological disruption, " +
-            "and operational factors. Provide a risk rating between 0 (very low risk) and 10 (very high risk). " +
-            "Respond ONLY with a number between 0 and 10.\n\n" +
-            "Information to analyze:\n{{information}}";
+                "Consider financial stability, market competition, regulatory environment, technological disruption, " +
+                "and operational factors. Provide a risk rating between 0 (very low risk) and 10 (very high risk). " +
+                "Respond ONLY with a number between 0 and 10.\n\n" +
+                "Information to analyze:\n{{information}}";
     }
 
     public String getCombinedAnalysisTemplate() {
         return "Analyze the following business information about {{company_name}} and provide:\n" +
-            "1. A sentiment score between 0-100 (0=very negative, 100=very positive)\n" +
-            "2. A risk rating between 0-10 (0=very low risk, 10=very high risk)\n" +
-            "Respond ONLY with a JSON object in this exact format:\n" +
-            "{\"sentiment_score\": 75, \"risk_rating\": 3.5}\n\n" +
-            "Information to analyze:\n{{information}}";
-}
+                "1. A sentiment score between 0-100 (0=very negative, 100=very positive)\n" +
+                "2. A risk rating between 0-10 (0=very low risk, 10=very high risk)\n" +
+                "Respond ONLY with a JSON object in this exact format:\n" +
+                "{\"sentiment_score\": 75, \"risk_rating\": 3.5}\n\n" +
+                "Information to analyze:\n{{information}}";
+    }
+
+    public String getInvestmentRecommendationTemplate() {
+        return "You are a strategic business analyst. Based on the following comparative metrics, " +
+                "provide investment and strategic choice recommendations. Explain why someone would choose " +
+                "one company over another based on these specific metrics:\n\n" +
+                "{{metrics_data}}\n\n" +
+                "Focus on:\n" +
+                "1. Market share advantages and growth potential\n" +
+                "2. Risk profiles and stability factors\n" +
+                "3. Market sentiment and investor confidence\n" +
+                "4. Strategic positioning for different investment goals\n\n" +
+                "Provide clear, actionable insights about which company might be preferred for different " +
+                "scenarios (growth-focused, stability-focused, market leadership, etc.). " +
+                "Be specific about the metrics and provide concrete reasoning." +
+                "Always respond in English and in a professional business tone."
+                ;
+    }
 }

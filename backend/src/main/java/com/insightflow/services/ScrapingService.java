@@ -62,6 +62,30 @@ public class ScrapingService {
     private static final long MIN_REQUEST_INTERVAL = 300000; // 5 minutes between requests
     private static final int MAX_REQUESTS_PER_HOUR = 10;
 
+    /**
+     * Cleanup any orphaned Chrome processes that might interfere with new sessions
+     */
+    private void cleanupChromeProcesses() {
+        try {
+            if (System.getProperty("os.name").toLowerCase().contains("win")) {
+                // Windows cleanup
+                ProcessBuilder pb = new ProcessBuilder("taskkill", "/f", "/im", "chrome.exe");
+                pb.start().waitFor();
+                pb = new ProcessBuilder("taskkill", "/f", "/im", "chromedriver.exe");
+                pb.start().waitFor();
+            } else {
+                // Linux/Mac cleanup
+                ProcessBuilder pb = new ProcessBuilder("pkill", "-f", "chrome");
+                pb.start().waitFor();
+                pb = new ProcessBuilder("pkill", "-f", "chromedriver");
+                pb.start().waitFor();
+            }
+            logger.info("Cleaned up any orphaned Chrome processes");
+        } catch (Exception e) {
+            logger.warn("Could not clean up Chrome processes: {}", e.getMessage());
+        }
+    }
+
     public String getLinkedInAnalysis(String companyName) {
         // Rate limiting to avoid CAPTCHA
         synchronized (this) {
@@ -91,9 +115,17 @@ public class ScrapingService {
         }
 
         WebDriver driver = null;
+        String tempUserDataDir = null;
         try {
+            // Clean up any orphaned processes first
+            cleanupChromeProcesses();
+
             WebDriverManager.chromedriver().setup();
             ChromeOptions options = new ChromeOptions();
+
+            // Create unique temporary user data directory for each session
+            tempUserDataDir = System.getProperty("java.io.tmpdir") + "chrome_user_data_" +
+                    System.currentTimeMillis() + "_" + random.nextInt(10000);
 
             // Enhanced anti-detection measures
             options.addArguments("--headless=new"); // Use "--headless=new" for Chrome 109+
@@ -103,6 +135,12 @@ public class ScrapingService {
             options.addArguments("--disable-blink-features=AutomationControlled");
             options.addArguments("--window-size=" + (1920 + random.nextInt(100)) + "," + (1080 + random.nextInt(100)));
             options.addArguments("--disable-notifications");
+            options.addArguments("--user-data-dir=" + tempUserDataDir);
+            options.addArguments("--disable-background-timer-throttling");
+            options.addArguments("--disable-backgrounding-occluded-windows");
+            options.addArguments("--disable-renderer-backgrounding");
+            options.addArguments("--disable-features=TranslateUI");
+            options.addArguments("--disable-ipc-flooding-protection");
             options.addArguments("user-agent=" + userAgents[random.nextInt(userAgents.length)]);
 
             driver = new ChromeDriver(options);
@@ -383,7 +421,7 @@ public class ScrapingService {
                     .replaceAll("([a-zA-Z])<br>([a-zA-Z])", "$1 $2") // Fix split words
                     .replaceAll("<br>\\s*-", "<br>-"); // Ensure clean bullet starts
             logger.info("Successfully generated LinkedIn analysis for {}", companyName);
-            return "<strong>Analyse LinkedIn de " + companyName + "</strong><br><br>" + content;
+            return "<strong>LinkedIn Analysis of " + companyName + "</strong><br><br>" + content;
 
         } catch (Exception e) {
             logger.error("Failed to perform LinkedIn analysis for {}: {}", companyName, e.getMessage(), e);
@@ -391,8 +429,26 @@ public class ScrapingService {
                     e);
         } finally {
             if (driver != null) {
-                driver.quit();
-                logger.info("WebDriver closed");
+                try {
+                    driver.quit();
+                    logger.info("WebDriver closed");
+                } catch (Exception e) {
+                    logger.error("Error closing WebDriver: {}", e.getMessage());
+                }
+            }
+
+            // Clean up temporary user data directory
+            if (tempUserDataDir != null) {
+                try {
+                    Files.walk(Paths.get(tempUserDataDir))
+                            .sorted(java.util.Comparator.reverseOrder())
+                            .map(java.nio.file.Path::toFile)
+                            .forEach(java.io.File::delete);
+                    logger.info("Cleaned up temporary user data directory: {}", tempUserDataDir);
+                } catch (Exception e) {
+                    logger.warn("Failed to clean up temporary user data directory {}: {}", tempUserDataDir,
+                            e.getMessage());
+                }
             }
         }
     }

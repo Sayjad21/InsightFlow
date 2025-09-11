@@ -172,6 +172,66 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
         )}
       </div>
 
+      {/* PESTEL Analysis */}
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+        <div className="flex items-center mb-6">
+          <div className="p-2 bg-emerald-500 rounded-lg">
+            <BarChart3 className="h-6 w-6 text-white" />
+          </div>
+          <h4 className="text-xl font-semibold text-gray-900 ml-3">
+            PESTEL Analysis
+          </h4>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          {Object.entries(analysisResult.pestel_lists).map(
+            ([factor, items]) => (
+              <div
+                key={factor}
+                className="bg-emerald-50 rounded-lg p-4 border border-emerald-200"
+              >
+                <h5 className="font-semibold text-emerald-800 mb-2 capitalize">
+                  {factor}
+                </h5>
+                <ul className="space-y-1">
+                  {items.map((item, index) => (
+                    <li
+                      key={index}
+                      className="text-sm text-emerald-700 flex items-start"
+                    >
+                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )
+          )}
+        </div>
+
+        {/* PESTEL Image */}
+        {analysisResult.pestel_image && (
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <img
+              src={
+                analysisResult.pestel_image.startsWith("data:")
+                  ? analysisResult.pestel_image
+                  : `data:image/png;base64,${analysisResult.pestel_image}`
+              }
+              alt="PESTEL Analysis Diagram"
+              className="w-full max-w-4xl mx-auto rounded-lg shadow-sm"
+              onError={(e) => {
+                console.error(
+                  "Failed to load PESTEL image:",
+                  analysisResult.pestel_image
+                );
+                e.currentTarget.style.display = "none";
+              }}
+            />
+          </div>
+        )}
+      </div>
+
       {/* Porter's Five Forces */}
       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
         <div className="flex items-center mb-6">

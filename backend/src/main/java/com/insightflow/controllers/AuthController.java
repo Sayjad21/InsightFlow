@@ -3,6 +3,7 @@ package com.insightflow.controllers;
 import com.insightflow.models.User;
 import com.insightflow.models.UserAnalysis;
 import com.insightflow.models.UserAnalysis.SwotLists;
+import com.insightflow.models.UserAnalysis.PestelLists;
 import com.insightflow.models.UserAnalysis.PorterForces;
 import com.insightflow.models.UserAnalysis.BcgProduct;
 import com.insightflow.models.UserAnalysis.McKinsey7s;
@@ -262,6 +263,61 @@ public class AuthController {
                     }
 
                     analysis.setSwotLists(swot);
+                }
+
+                // Set PESTEL data - handle pestel_lists (snake_case from frontend)
+                Object pestelListsObj = analysisData.get("pestel_lists");
+                if (pestelListsObj == null) {
+                    pestelListsObj = analysisData.get("pestelLists"); // fallback to camelCase
+                }
+                if (pestelListsObj instanceof Map<?, ?>) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> pestelData = (Map<String, Object>) pestelListsObj;
+                    PestelLists pestel = new PestelLists();
+
+                    Object politicalObj = pestelData.get("political");
+                    if (politicalObj instanceof List<?>) {
+                        @SuppressWarnings("unchecked")
+                        List<String> political = (List<String>) politicalObj;
+                        pestel.setPolitical(political);
+                    }
+
+                    Object economicObj = pestelData.get("economic");
+                    if (economicObj instanceof List<?>) {
+                        @SuppressWarnings("unchecked")
+                        List<String> economic = (List<String>) economicObj;
+                        pestel.setEconomic(economic);
+                    }
+
+                    Object socialObj = pestelData.get("social");
+                    if (socialObj instanceof List<?>) {
+                        @SuppressWarnings("unchecked")
+                        List<String> social = (List<String>) socialObj;
+                        pestel.setSocial(social);
+                    }
+
+                    Object technologicalObj = pestelData.get("technological");
+                    if (technologicalObj instanceof List<?>) {
+                        @SuppressWarnings("unchecked")
+                        List<String> technological = (List<String>) technologicalObj;
+                        pestel.setTechnological(technological);
+                    }
+
+                    Object environmentalObj = pestelData.get("environmental");
+                    if (environmentalObj instanceof List<?>) {
+                        @SuppressWarnings("unchecked")
+                        List<String> environmental = (List<String>) environmentalObj;
+                        pestel.setEnvironmental(environmental);
+                    }
+
+                    Object legalObj = pestelData.get("legal");
+                    if (legalObj instanceof List<?>) {
+                        @SuppressWarnings("unchecked")
+                        List<String> legal = (List<String>) legalObj;
+                        pestel.setLegal(legal);
+                    }
+
+                    analysis.setPestelLists(pestel);
                 }
 
                 // Set images - handle snake_case field names

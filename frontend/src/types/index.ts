@@ -22,6 +22,14 @@ export interface AnalysisResult {
     threats: string[];
   };
   swot_image: string;
+  pestel_lists: {
+    political: string[];
+    economic: string[];
+    social: string[];
+    technological: string[];
+    environmental: string[];
+    legal: string[];
+  };
   pestel_image: string;
   porter_forces: {
     rivalry: string[];
@@ -79,6 +87,14 @@ export interface UserAnalysis {
     threats: string[];
   };
   swotImage?: string;
+  pestelLists?: {
+    political: string[];
+    economic: string[];
+    social: string[];
+    technological: string[];
+    environmental: string[];
+    legal: string[];
+  };
   pestelImage?: string;
   porterForces?: {
     rivalry: string[];

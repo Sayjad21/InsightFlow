@@ -24,6 +24,7 @@ public class UserAnalysis {
     private String strategyRecommendations;
     private SwotLists swotLists;
     private String swotImage;
+    private PestelLists pestelLists;
     private String pestelImage;
     private PorterForces porterForces;
     private String porterImage;
@@ -94,6 +95,67 @@ public class UserAnalysis {
 
         public void setThreats(List<String> threats) {
             this.threats = threats;
+        }
+    }
+
+    public static class PestelLists {
+        private List<String> political;
+        private List<String> economic;
+        private List<String> social;
+        private List<String> technological;
+        private List<String> environmental;
+        private List<String> legal;
+
+        public PestelLists() {
+        }
+
+        // Getters and Setters
+        public List<String> getPolitical() {
+            return political;
+        }
+
+        public void setPolitical(List<String> political) {
+            this.political = political;
+        }
+
+        public List<String> getEconomic() {
+            return economic;
+        }
+
+        public void setEconomic(List<String> economic) {
+            this.economic = economic;
+        }
+
+        public List<String> getSocial() {
+            return social;
+        }
+
+        public void setSocial(List<String> social) {
+            this.social = social;
+        }
+
+        public List<String> getTechnological() {
+            return technological;
+        }
+
+        public void setTechnological(List<String> technological) {
+            this.technological = technological;
+        }
+
+        public List<String> getEnvironmental() {
+            return environmental;
+        }
+
+        public void setEnvironmental(List<String> environmental) {
+            this.environmental = environmental;
+        }
+
+        public List<String> getLegal() {
+            return legal;
+        }
+
+        public void setLegal(List<String> legal) {
+            this.legal = legal;
         }
     }
 
@@ -336,6 +398,14 @@ public class UserAnalysis {
 
     public void setSwotImage(String swotImage) {
         this.swotImage = swotImage;
+    }
+
+    public PestelLists getPestelLists() {
+        return pestelLists;
+    }
+
+    public void setPestelLists(PestelLists pestelLists) {
+        this.pestelLists = pestelLists;
     }
 
     public String getPestelImage() {

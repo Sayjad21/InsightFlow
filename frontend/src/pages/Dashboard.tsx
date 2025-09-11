@@ -192,6 +192,14 @@ const Dashboard: React.FC = () => {
           threats: [],
         },
         swotImage: analysis.swotImage || "",
+        pestelLists: analysis.pestelLists || {
+          political: [],
+          economic: [],
+          social: [],
+          technological: [],
+          environmental: [],
+          legal: [],
+        },
         pestelImage: analysis.pestelImage || "",
         porterForces: analysis.porterForces || {
           rivalry: [],
@@ -230,6 +238,14 @@ const Dashboard: React.FC = () => {
           threats: [],
         },
         swotImage: analysis.result.swot_image || "",
+        pestelLists: analysis.result.pestel_lists || {
+          political: [],
+          economic: [],
+          social: [],
+          technological: [],
+          environmental: [],
+          legal: [],
+        },
         pestelImage: analysis.result.pestel_image || "",
         porterForces: analysis.result.porter_forces || {
           rivalry: [],
@@ -352,6 +368,7 @@ const Dashboard: React.FC = () => {
       strategy_recommendations: analysisData.strategyRecommendations,
       swot_lists: analysisData.swotLists,
       swot_image: analysisData.swotImage,
+      pestel_lists: analysisData.pestelLists,
       pestel_image: analysisData.pestelImage,
       porter_forces: transformedPorter,
       porter_image: analysisData.porterImage,
@@ -973,6 +990,14 @@ const Dashboard: React.FC = () => {
                         threats: [],
                       },
                       swot_image: "",
+                      pestel_lists: {
+                        political: [],
+                        economic: [],
+                        social: [],
+                        technological: [],
+                        environmental: [],
+                        legal: [],
+                      },
                       pestel_image: "",
                       porter_forces: {
                         rivalry: [],
