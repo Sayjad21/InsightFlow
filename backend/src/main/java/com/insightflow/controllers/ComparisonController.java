@@ -1,7 +1,9 @@
 package com.insightflow.controllers;
 
 import com.insightflow.dto.ComparisonRequest;
+import com.insightflow.models.ComparisonResult;
 import com.insightflow.models.UserAnalysis;
+import com.insightflow.repositories.ComparisonResultRepository;
 import com.insightflow.services.AnalysisService;
 import com.insightflow.services.ComparisonService;
 import com.insightflow.services.ComparisonVisualizationService;
@@ -44,6 +46,9 @@ public class ComparisonController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private ComparisonResultRepository comparisonResultRepository;
 
     // Get user's existing analyses for comparison selection
     @GetMapping("/analyses")
@@ -140,6 +145,10 @@ public class ComparisonController {
         if (analysisIds == null || analysisIds.size() < 2 || analysisIds.size() > 5) {
             return ResponseEntity.badRequest().body(Map.of("error", "Provide 2 to 5 analysis IDs"));
         }
+        
+        // Check if user wants to save the comparison result
+        Boolean saveResult = (Boolean) request.get("saveResult");
+        if (saveResult == null) saveResult = false;
 
         try {
             List<Map<String, Object>> analyses = new ArrayList<>();
@@ -186,8 +195,25 @@ public class ComparisonController {
             result.put("insights", comparisonData.get("insights"));
             result.put("investment_recommendations", comparisonData.get("investment_recommendations"));
             result.put("requested_by", username);
-            result.put("comparison_type", "existing_analyses");
-            result.put("saved_analysis_ids", new ArrayList<>()); // No new analyses to save
+            result.put("comparison_type", "existing");
+            result.put("saved_analysis_ids", analysisIds); // Set the analysis IDs used
+
+            // Save comparison result if requested
+            if (saveResult) {
+                try {
+                    ComparisonResult comparisonResult = createComparisonResultFromMap(result, username);
+                    comparisonResultRepository.save(comparisonResult);
+                    result.put("saved", true);
+                    result.put("savedId", comparisonResult.getId());
+                } catch (Exception e) {
+                    // Log error but don't fail the comparison
+                    System.err.println("Failed to save comparison result: " + e.getMessage());
+                    result.put("saved", false);
+                    result.put("saveError", e.getMessage());
+                }
+            } else {
+                result.put("saved", false);
+            }
 
             return ResponseEntity.ok(result);
         } catch (Exception e) {
@@ -203,6 +229,7 @@ public class ComparisonController {
             @RequestParam(value = "company_names", required = false) List<String> companyNames,
             @RequestParam(value = "analysis_ids", required = false) List<String> analysisIds,
             @RequestParam(value = "save_new_analyses", required = false, defaultValue = "false") Boolean saveNewAnalyses,
+            @RequestParam(value = "save_result", required = false, defaultValue = "false") Boolean saveResult,
             @RequestPart(value = "files", required = false) List<MultipartFile> files,
             Authentication authentication) {
         String username = authentication.getName();
@@ -361,6 +388,23 @@ public class ComparisonController {
             result.put("comparison_type", "mixed");
             result.put("saved_analysis_ids", savedAnalysisIds);
 
+            // Save comparison result if requested
+            if (saveResult != null && saveResult) {
+                try {
+                    ComparisonResult comparisonResult = createComparisonResultFromMap(result, username);
+                    comparisonResultRepository.save(comparisonResult);
+                    result.put("saved", true);
+                    result.put("savedId", comparisonResult.getId());
+                } catch (Exception e) {
+                    // Log error but don't fail the comparison
+                    System.err.println("Failed to save comparison result: " + e.getMessage());
+                    result.put("saved", false);
+                    result.put("saveError", e.getMessage());
+                }
+            } else {
+                result.put("saved", false);
+            }
+
             return ResponseEntity.ok(result);
         } catch (IOException e) {
             throw new RuntimeException("File upload failed", e);
@@ -507,6 +551,24 @@ public class ComparisonController {
             result.put("existing_analyses", request.hasAnalysisIds() ? request.getAnalysisIds().size() : 0);
             result.put("new_analyses", request.hasCompanyNames() ? request.getCompanyNames().size() : 0);
             result.put("saved_analysis_ids", savedAnalysisIds);
+
+            // Save comparison result if requested
+            Boolean saveResult = request.getSaveResult();
+            if (saveResult != null && saveResult) {
+                try {
+                    ComparisonResult comparisonResult = createComparisonResultFromMap(result, username);
+                    comparisonResultRepository.save(comparisonResult);
+                    result.put("saved", true);
+                    result.put("savedId", comparisonResult.getId());
+                } catch (Exception e) {
+                    // Log error but don't fail the comparison
+                    System.err.println("Failed to save comparison result: " + e.getMessage());
+                    result.put("saved", false);
+                    result.put("saveError", e.getMessage());
+                }
+            } else {
+                result.put("saved", false);
+            }
 
             return ResponseEntity.ok(result);
         } catch (Exception e) {
@@ -768,5 +830,310 @@ public class ComparisonController {
         }
 
         return analysis;
+    }
+
+    // Save comparison result to MongoDB
+    @PostMapping("/save")
+    public ResponseEntity<Map<String, Object>> saveComparisonResult(
+            @RequestBody Map<String, Object> comparisonData,
+            Authentication authentication) {
+        String username = authentication.getName();
+        
+        try {
+            // Create and populate ComparisonResult
+            ComparisonResult comparisonResult = new ComparisonResult();
+            comparisonResult.setRequestedBy(username);
+            comparisonResult.setComparisonType((String) comparisonData.get("comparison_type"));
+            
+            // Set saved analysis IDs
+            @SuppressWarnings("unchecked")
+            List<String> savedAnalysisIds = (List<String>) comparisonData.get("saved_analysis_ids");
+            if (savedAnalysisIds != null) {
+                comparisonResult.setSavedAnalysisIds(savedAnalysisIds);
+            }
+            
+            // Convert analyses data
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> analysesData = (List<Map<String, Object>>) comparisonData.get("analyses");
+            if (analysesData != null) {
+                List<ComparisonResult.CompanyAnalysis> companyAnalyses = convertToCompanyAnalyses(analysesData);
+                comparisonResult.setAnalyses(companyAnalyses);
+            }
+            
+            // Set metrics
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> metricsData = (List<Map<String, Object>>) comparisonData.get("metrics");
+            if (metricsData != null) {
+                List<ComparisonResult.ComparisonMetric> metrics = convertToComparisonMetrics(metricsData);
+                comparisonResult.setMetrics(metrics);
+            }
+            
+            // Set benchmarks
+            @SuppressWarnings("unchecked")
+            Map<String, Object> benchmarksData = (Map<String, Object>) comparisonData.get("benchmarks");
+            if (benchmarksData != null) {
+                ComparisonResult.ComparisonBenchmarks benchmarks = convertToBenchmarks(benchmarksData);
+                comparisonResult.setBenchmarks(benchmarks);
+            }
+            
+            // Set insights and recommendations
+            @SuppressWarnings("unchecked")
+            List<String> insights = (List<String>) comparisonData.get("insights");
+            if (insights != null) {
+                comparisonResult.setInsights(insights);
+            }
+            
+            comparisonResult.setInvestmentRecommendations((String) comparisonData.get("investment_recommendations"));
+            
+            // Set visualization data
+            comparisonResult.setRadarChart((String) comparisonData.get("radar_chart"));
+            comparisonResult.setBarGraph((String) comparisonData.get("bar_graph"));
+            comparisonResult.setScatterPlot((String) comparisonData.get("scatter_plot"));
+            
+            // Save to MongoDB
+            ComparisonResult savedResult = comparisonResultRepository.save(comparisonResult);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("id", savedResult.getId());
+            response.put("message", "Comparison result saved successfully");
+            response.put("comparisonDate", savedResult.getComparisonDate());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Failed to save comparison result: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(error);
+        }
+    }
+
+    // Get saved comparison results for user
+    @GetMapping("/saved")
+    public ResponseEntity<List<Map<String, Object>>> getSavedComparisons(
+            @RequestParam(value = "type", required = false) String comparisonType,
+            @RequestParam(value = "limit", required = false, defaultValue = "20") Integer limit,
+            Authentication authentication) {
+        String username = authentication.getName();
+        
+        try {
+            List<ComparisonResult> results;
+            
+            if (comparisonType != null && !comparisonType.isEmpty()) {
+                results = comparisonResultRepository
+                    .findByRequestedByAndComparisonTypeOrderByComparisonDateDesc(username, comparisonType);
+            } else {
+                results = comparisonResultRepository
+                    .findByRequestedByOrderByComparisonDateDesc(username);
+            }
+            
+            // Limit results if specified
+            if (limit != null && limit > 0 && results.size() > limit) {
+                results = results.subList(0, limit);
+            }
+            
+            List<Map<String, Object>> response = new ArrayList<>();
+            for (ComparisonResult result : results) {
+                Map<String, Object> summary = new HashMap<>();
+                summary.put("id", result.getId());
+                summary.put("comparisonDate", result.getComparisonDate());
+                summary.put("comparisonType", result.getComparisonType());
+                summary.put("numberOfCompanies", result.getAnalyses() != null ? result.getAnalyses().size() : 0);
+                
+                // Add company names for easy identification
+                if (result.getAnalyses() != null) {
+                    List<String> companyNames = result.getAnalyses().stream()
+                        .map(ComparisonResult.CompanyAnalysis::getCompanyName)
+                        .toList();
+                    summary.put("companyNames", companyNames);
+                }
+                
+                response.add(summary);
+            }
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Failed to retrieve saved comparisons: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(List.of(error));
+        }
+    }
+
+    // Get specific saved comparison result by ID
+    @GetMapping("/saved/{comparisonId}")
+    public ResponseEntity<ComparisonResult> getSavedComparison(
+            @PathVariable String comparisonId,
+            Authentication authentication) {
+        String username = authentication.getName();
+        
+        try {
+            Optional<ComparisonResult> resultOpt = comparisonResultRepository.findById(comparisonId);
+            if (resultOpt.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            ComparisonResult result = resultOpt.get();
+            
+            // Verify the comparison belongs to the current user
+            if (!result.getRequestedBy().equals(username)) {
+                return ResponseEntity.status(403).build();
+            }
+            
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // Delete saved comparison result
+    @DeleteMapping("/saved/{comparisonId}")
+    public ResponseEntity<Map<String, Object>> deleteSavedComparison(
+            @PathVariable String comparisonId,
+            Authentication authentication) {
+        String username = authentication.getName();
+        
+        try {
+            Optional<ComparisonResult> resultOpt = comparisonResultRepository.findById(comparisonId);
+            if (resultOpt.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            ComparisonResult result = resultOpt.get();
+            
+            // Verify the comparison belongs to the current user
+            if (!result.getRequestedBy().equals(username)) {
+                return ResponseEntity.status(403).build();
+            }
+            
+            comparisonResultRepository.delete(result);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Comparison result deleted successfully");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Failed to delete comparison result: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(error);
+        }
+    }
+
+    // Helper methods for data conversion
+    private List<ComparisonResult.CompanyAnalysis> convertToCompanyAnalyses(List<Map<String, Object>> analysesData) {
+        List<ComparisonResult.CompanyAnalysis> companyAnalyses = new ArrayList<>();
+        
+        for (Map<String, Object> analysisData : analysesData) {
+            ComparisonResult.CompanyAnalysis companyAnalysis = new ComparisonResult.CompanyAnalysis();
+            companyAnalysis.setCompanyName((String) analysisData.get("company_name"));
+            companyAnalysis.setAnalysisId((String) analysisData.get("analysis_id"));
+            
+            @SuppressWarnings("unchecked")
+            List<String> summaries = (List<String>) analysisData.get("summaries");
+            companyAnalysis.setSummaries(summaries);
+            
+            companyAnalysis.setLinkedinAnalysis((String) analysisData.get("linkedin_analysis"));
+            companyAnalysis.setStrategyRecommendations((String) analysisData.get("strategy_recommendations"));
+            
+            // Convert SWOT data
+            @SuppressWarnings("unchecked")
+            Map<String, List<String>> swotData = (Map<String, List<String>>) analysisData.get("swot_lists");
+            if (swotData != null) {
+                ComparisonResult.SwotLists swot = new ComparisonResult.SwotLists();
+                swot.setStrengths(swotData.get("strengths"));
+                swot.setWeaknesses(swotData.get("weaknesses"));
+                swot.setOpportunities(swotData.get("opportunities"));
+                swot.setThreats(swotData.get("threats"));
+                companyAnalysis.setSwotLists(swot);
+            }
+            
+            // Convert PESTEL data
+            @SuppressWarnings("unchecked")
+            Map<String, List<String>> pestelData = (Map<String, List<String>>) analysisData.get("pestel_lists");
+            if (pestelData != null) {
+                ComparisonResult.PestelLists pestel = new ComparisonResult.PestelLists();
+                pestel.setPolitical(pestelData.get("political"));
+                pestel.setEconomic(pestelData.get("economic"));
+                pestel.setSocial(pestelData.get("social"));
+                pestel.setTechnological(pestelData.get("technological"));
+                pestel.setEnvironmental(pestelData.get("environmental"));
+                pestel.setLegal(pestelData.get("legal"));
+                companyAnalysis.setPestelLists(pestel);
+            }
+            
+            companyAnalyses.add(companyAnalysis);
+        }
+        
+        return companyAnalyses;
+    }
+
+    private List<ComparisonResult.ComparisonMetric> convertToComparisonMetrics(List<Map<String, Object>> metricsData) {
+        List<ComparisonResult.ComparisonMetric> metrics = new ArrayList<>();
+        
+        for (Map<String, Object> metricData : metricsData) {
+            ComparisonResult.ComparisonMetric metric = new ComparisonResult.ComparisonMetric();
+            metric.setSentimentScore(getDoubleValue(metricData.get("sentiment_score")));
+            metric.setGrowthRate(getDoubleValue(metricData.get("growth_rate")));
+            metric.setRiskRating(getDoubleValue(metricData.get("risk_rating")));
+            metric.setMarketShare(getDoubleValue(metricData.get("market_share")));
+            metrics.add(metric);
+        }
+        
+        return metrics;
+    }
+
+    private ComparisonResult.ComparisonBenchmarks convertToBenchmarks(Map<String, Object> benchmarksData) {
+        ComparisonResult.ComparisonBenchmarks benchmarks = new ComparisonResult.ComparisonBenchmarks();
+        benchmarks.setAvgMarketShare(getDoubleValue(benchmarksData.get("avg_market_share")));
+        benchmarks.setAvgGrowthRate(getDoubleValue(benchmarksData.get("avg_growth_rate")));
+        benchmarks.setAvgRiskRating(getDoubleValue(benchmarksData.get("avg_risk_rating")));
+        benchmarks.setAvgSentimentScore(getDoubleValue(benchmarksData.get("avg_sentiment_score")));
+        return benchmarks;
+    }
+
+    private Double getDoubleValue(Object value) {
+        if (value == null) return null;
+        if (value instanceof Double) return (Double) value;
+        if (value instanceof Number) return ((Number) value).doubleValue();
+        try {
+            return Double.parseDouble(value.toString());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private ComparisonResult createComparisonResultFromMap(Map<String, Object> resultMap, String username) {
+        ComparisonResult comparisonResult = new ComparisonResult();
+        comparisonResult.setRequestedBy(username);
+        comparisonResult.setComparisonType((String) resultMap.get("comparison_type"));
+        
+        @SuppressWarnings("unchecked")
+        List<String> savedAnalysisIds = (List<String>) resultMap.get("saved_analysis_ids");
+        comparisonResult.setSavedAnalysisIds(savedAnalysisIds);
+        
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> analysesData = (List<Map<String, Object>>) resultMap.get("analyses");
+        if (analysesData != null) {
+            comparisonResult.setAnalyses(convertToCompanyAnalyses(analysesData));
+        }
+        
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> metricsData = (List<Map<String, Object>>) resultMap.get("metrics");
+        if (metricsData != null) {
+            comparisonResult.setMetrics(convertToComparisonMetrics(metricsData));
+        }
+        
+        @SuppressWarnings("unchecked")
+        Map<String, Object> benchmarksData = (Map<String, Object>) resultMap.get("benchmarks");
+        if (benchmarksData != null) {
+            comparisonResult.setBenchmarks(convertToBenchmarks(benchmarksData));
+        }
+        
+        @SuppressWarnings("unchecked")
+        List<String> insights = (List<String>) resultMap.get("insights");
+        comparisonResult.setInsights(insights);
+        
+        comparisonResult.setInvestmentRecommendations((String) resultMap.get("investment_recommendations"));
+        comparisonResult.setRadarChart((String) resultMap.get("radar_chart"));
+        comparisonResult.setBarGraph((String) resultMap.get("bar_graph"));
+        comparisonResult.setScatterPlot((String) resultMap.get("scatter_plot"));
+        
+        return comparisonResult;
     }
 }

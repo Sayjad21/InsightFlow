@@ -7,6 +7,7 @@ public class ComparisonRequest {
     private List<String> analysisIds;
     private String comparisonType; // "new", "existing", or "mixed"
     private Boolean saveNewAnalyses; // Whether to save new analyses to database
+    private Boolean saveResult; // Whether to save the comparison result to database
 
     // Constructors
     public ComparisonRequest() {
@@ -25,6 +26,17 @@ public class ComparisonRequest {
         this.analysisIds = analysisIds;
         this.comparisonType = comparisonType;
         this.saveNewAnalyses = saveNewAnalyses;
+        this.saveResult = false; // default to false
+    }
+
+    // New constructor with saveResult parameter
+    public ComparisonRequest(List<String> companyNames, List<String> analysisIds, String comparisonType,
+            Boolean saveNewAnalyses, Boolean saveResult) {
+        this.companyNames = companyNames;
+        this.analysisIds = analysisIds;
+        this.comparisonType = comparisonType;
+        this.saveNewAnalyses = saveNewAnalyses;
+        this.saveResult = saveResult;
     }
 
     // Getters and Setters
@@ -58,6 +70,14 @@ public class ComparisonRequest {
 
     public void setSaveNewAnalyses(Boolean saveNewAnalyses) {
         this.saveNewAnalyses = saveNewAnalyses;
+    }
+
+    public Boolean getSaveResult() {
+        return saveResult;
+    }
+
+    public void setSaveResult(Boolean saveResult) {
+        this.saveResult = saveResult;
     }
 
     // Validation methods

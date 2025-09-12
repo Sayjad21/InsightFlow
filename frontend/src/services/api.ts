@@ -614,7 +614,10 @@ export class ApiService {
         {
           method: "POST",
           headers: this.getAuthHeaders(),
-          body: JSON.stringify({ analysisIds }),
+          body: JSON.stringify({
+            analysisIds,
+            saveResult: true,
+          }),
         }
       );
 
@@ -645,15 +648,23 @@ export class ApiService {
     companyNames?: string[];
     comparisonType?: string;
     saveNewAnalyses?: boolean;
+    saveResult?: boolean;
   }): Promise<any> {
     try {
-      console.log("Enhanced comparison request:", request);
+      // Set saveResult to true by default if not specified
+      const requestWithDefaults = {
+        ...request,
+        saveResult:
+          request.saveResult !== undefined ? request.saveResult : true,
+      };
+
+      console.log("Enhanced comparison request:", requestWithDefaults);
       const response = await fetch(
         `${API_BASE_URL}/api/comparison/compare-enhanced`,
         {
           method: "POST",
           headers: this.getAuthHeaders(),
-          body: JSON.stringify(request),
+          body: JSON.stringify(requestWithDefaults),
         }
       );
 
@@ -672,6 +683,101 @@ export class ApiService {
       return result;
     } catch (error) {
       console.error("Enhanced Comparison Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get user's saved comparison results
+   */
+  static async getSavedComparisons(
+    comparisonType?: string,
+    limit?: number
+  ): Promise<any[]> {
+    try {
+      console.log("Fetching saved comparisons");
+      const params = new URLSearchParams();
+      if (comparisonType) params.append("type", comparisonType);
+      if (limit) params.append("limit", limit.toString());
+
+      const url = `${API_BASE_URL}/api/comparison/saved${
+        params.toString() ? "?" + params.toString() : ""
+      }`;
+      const response = await fetch(url, {
+        method: "GET",
+        headers: this.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        console.error("Failed to fetch saved comparisons:", response.status);
+        throw new Error(
+          `Failed to fetch saved comparisons: ${response.status}`
+        );
+      }
+
+      const data = await response.json();
+      console.log("Saved comparisons fetched successfully:", data);
+      return data;
+    } catch (error) {
+      console.error("Get Saved Comparisons Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get specific saved comparison result by ID
+   */
+  static async getSavedComparison(comparisonId: string): Promise<any> {
+    try {
+      console.log("Fetching saved comparison:", comparisonId);
+      const response = await fetch(
+        `${API_BASE_URL}/api/comparison/saved/${comparisonId}`,
+        {
+          method: "GET",
+          headers: this.getAuthHeaders(),
+        }
+      );
+
+      if (!response.ok) {
+        console.error("Failed to fetch saved comparison:", response.status);
+        throw new Error(`Failed to fetch saved comparison: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Saved comparison fetched successfully:", data);
+      return data;
+    } catch (error) {
+      console.error("Get Saved Comparison Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete saved comparison result
+   */
+  static async deleteSavedComparison(comparisonId: string): Promise<any> {
+    try {
+      console.log("Deleting saved comparison:", comparisonId);
+      const response = await fetch(
+        `${API_BASE_URL}/api/comparison/saved/${comparisonId}`,
+        {
+          method: "DELETE",
+          headers: this.getAuthHeaders(),
+        }
+      );
+
+      if (!response.ok) {
+        console.error("Failed to delete saved comparison:", response.status);
+        throw new Error(
+          `Failed to delete saved comparison: ${response.status}`
+        );
+      }
+
+      const data = await response.json();
+      console.log("Saved comparison deleted successfully:", data);
+      return data;
+    } catch (error) {
+      console.error("Delete Saved Comparison Error:", error);
       throw error;
     }
   }

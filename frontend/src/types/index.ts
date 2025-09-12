@@ -128,3 +128,59 @@ export interface UserAnalysis {
   // Legacy support - for backwards compatibility
   result?: AnalysisResult;
 }
+
+export interface ComparisonMetric {
+  sentimentScore: number;
+  growthRate: number;
+  riskRating: number;
+  marketShare: number;
+}
+
+export interface ComparisonBenchmarks {
+  avgMarketShare: number;
+  avgGrowthRate: number;
+  avgRiskRating: number;
+  avgSentimentScore: number;
+}
+
+export interface CompanyAnalysis {
+  companyName: string;
+  analysisId?: string;
+  summaries?: string[];
+  swotLists?: {
+    strengths: string[];
+    weaknesses: string[];
+    opportunities: string[];
+    threats: string[];
+  };
+  pestelLists?: {
+    political: string[];
+    economic: string[];
+    social: string[];
+    technological: string[];
+    environmental: string[];
+    legal: string[];
+  };
+  linkedinAnalysis?: string;
+  strategyRecommendations?: string;
+}
+
+export interface ComparisonResult {
+  id: string;
+  requestedBy: string;
+  comparisonDate: string;
+  comparisonType: "existing" | "enhanced" | "mixed";
+  savedAnalysisIds?: string[];
+  analyses: CompanyAnalysis[];
+  metrics: ComparisonMetric[];
+  benchmarks: ComparisonBenchmarks;
+  insights: string[];
+  investmentRecommendations?: string;
+  radarChart?: string;
+  barGraph?: string;
+  scatterPlot?: string;
+
+  // Additional fields for display
+  numberOfCompanies?: number;
+  companyNames?: string[];
+}

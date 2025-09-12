@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { ApiService } from "../services/api";
+import Layout from "../components/Layout";
 import type { UserAnalysis } from "../types";
 
 const Settings: React.FC = () => {
@@ -112,10 +113,10 @@ const Settings: React.FC = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <Layout containerClass="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* <header className="bg-white shadow-sm border-b border-gray-200 -mt-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 mb-8">
+        <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
               <Link
@@ -130,9 +131,9 @@ const Settings: React.FC = () => {
             </div>
           </div>
         </div>
-      </header>
+      </header> */}
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-4xl mx-auto">
         {/* Message */}
         {message && (
           <div
@@ -351,7 +352,7 @@ const Settings: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </Layout>
   );
 };
 

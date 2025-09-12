@@ -369,7 +369,7 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
                       Market Share: {(data.market_share * 100).toFixed(1)}%
                     </p>
                     <p className="text-sm text-orange-700">
-                      Growth Rate: {(data.growth_rate * 100).toFixed(1)}%
+                      Growth Rate: {data.growth_rate.toFixed(1)}%
                     </p>
                   </div>
                 </div>
