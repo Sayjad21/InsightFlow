@@ -5,6 +5,7 @@ import com.insightflow.models.UserAnalysis;
 import com.insightflow.services.AnalysisService;
 import com.insightflow.services.ComparisonService;
 import com.insightflow.services.ComparisonVisualizationService;
+import com.insightflow.services.VisualizationService;
 import com.insightflow.services.RagService;
 import com.insightflow.services.ScrapingService;
 import com.insightflow.services.UserService;
@@ -123,7 +124,7 @@ public class ComparisonController {
     // Compare existing analysis reports
     @PostMapping("/compare-existing")
     public ResponseEntity<Map<String, Object>> compareExistingAnalyses(
-            @RequestBody Map<String, List<String>> request,
+            @RequestBody Map<String, Object> request,
             Authentication authentication) {
         String username = authentication.getName();
         System.out.println("Existing analyses comparison requested by user: " + username);
@@ -134,7 +135,8 @@ public class ComparisonController {
             return ResponseEntity.badRequest().body(Map.of("error", "User not found"));
         }
 
-        List<String> analysisIds = request.get("analysisIds");
+        @SuppressWarnings("unchecked")
+        List<String> analysisIds = (List<String>) request.get("analysisIds");
         if (analysisIds == null || analysisIds.size() < 2 || analysisIds.size() > 5) {
             return ResponseEntity.badRequest().body(Map.of("error", "Provide 2 to 5 analysis IDs"));
         }
@@ -185,6 +187,7 @@ public class ComparisonController {
             result.put("investment_recommendations", comparisonData.get("investment_recommendations"));
             result.put("requested_by", username);
             result.put("comparison_type", "existing_analyses");
+            result.put("saved_analysis_ids", new ArrayList<>()); // No new analyses to save
 
             return ResponseEntity.ok(result);
         } catch (Exception e) {
@@ -199,6 +202,7 @@ public class ComparisonController {
     public ResponseEntity<Map<String, Object>> compareCompanies(
             @RequestParam(value = "company_names", required = false) List<String> companyNames,
             @RequestParam(value = "analysis_ids", required = false) List<String> analysisIds,
+            @RequestParam(value = "save_new_analyses", required = false, defaultValue = "false") Boolean saveNewAnalyses,
             @RequestPart(value = "files", required = false) List<MultipartFile> files,
             Authentication authentication) {
         String username = authentication.getName();
@@ -248,6 +252,8 @@ public class ComparisonController {
                 }
             }
 
+            List<Map<String, Object>> toAddAnalyses = new ArrayList<>();
+
             // Process new company analyses
             if (companyNames != null && !companyNames.isEmpty()) {
                 List<String> filePaths = new ArrayList<>();
@@ -284,7 +290,35 @@ public class ComparisonController {
                     Map<String, Map<String, Double>> bcg = analysisService.generateBcgMatrix(companyName);
                     Map<String, String> mckinsey = analysisService.generateMckinsey7s(companyName);
 
+                    VisualizationService visualizationServiceUtil = new VisualizationService();
+
+                    String swotImage = visualizationServiceUtil.generateSwotImage(swot);
+                    String pestelImage = visualizationServiceUtil.generatePestelImage(pestel);
+                    String porterImage = visualizationServiceUtil.generatePorterImage(porter);
+                    String bcgImage = visualizationServiceUtil.generateBcgImage(bcg);
+                    String mckinseyImage = visualizationServiceUtil.generateMckinseyImage(mckinsey);
+
                     String linkedinAnalysis = scrapingService.getLinkedInAnalysis(companyName);
+
+                    Map<String, Object> tooAddResult = new HashMap<>();
+                    tooAddResult.put("company_name", companyName);
+                    tooAddResult.put("summaries", ragResult.get("summaries"));
+                    tooAddResult.put("sources", ragResult.get("sources"));
+                    tooAddResult.put("strategy_recommendations", ragResult.get("strategy_recommendations"));
+                    tooAddResult.put("swot_lists", swot);
+                    tooAddResult.put("pestel_lists", pestel);
+                    tooAddResult.put("porter_forces", porter);
+                    tooAddResult.put("bcg_matrix", bcg);
+                    tooAddResult.put("mckinsey_7s", mckinsey);
+                    tooAddResult.put("linkedin_analysis", linkedinAnalysis);
+
+                    tooAddResult.put("swot_image", swotImage);
+                    tooAddResult.put("pestel_image", pestelImage);
+                    tooAddResult.put("porter_image", porterImage);
+                    tooAddResult.put("bcg_image", bcgImage);
+                    tooAddResult.put("mckinsey_image", mckinseyImage);
+
+                    toAddAnalyses.add(tooAddResult);
 
                     Map<String, Object> singleResult = new HashMap<>();
                     singleResult.put("company_name", companyName);
@@ -304,6 +338,12 @@ public class ComparisonController {
 
             Map<String, Object> comparisonData = comparisonService.computeComparison(analyses);
 
+            // Save new analyses to database if requested
+            List<String> savedAnalysisIds = new ArrayList<>();
+            if (saveNewAnalyses != null && saveNewAnalyses && toAddAnalyses.size() > 0) {
+                savedAnalysisIds = saveNewAnalysesToDatabase(toAddAnalyses, userId);
+            }
+
             String radarChart = visualizationService.generateRadarChart(comparisonData);
             String barGraph = visualizationService.generateBarGraph(comparisonData);
             String scatterPlot = visualizationService.generateScatterPlot(comparisonData);
@@ -319,6 +359,7 @@ public class ComparisonController {
             result.put("investment_recommendations", comparisonData.get("investment_recommendations"));
             result.put("requested_by", username);
             result.put("comparison_type", "mixed");
+            result.put("saved_analysis_ids", savedAnalysisIds);
 
             return ResponseEntity.ok(result);
         } catch (IOException e) {
@@ -379,6 +420,8 @@ public class ComparisonController {
                 }
             }
 
+            List<Map<String, Object>> toAddAnalyses = new ArrayList<>();
+
             // Process new company analyses
             if (request.hasCompanyNames()) {
                 for (String companyName : request.getCompanyNames()) {
@@ -391,6 +434,34 @@ public class ComparisonController {
                     Map<String, String> mckinsey = analysisService.generateMckinsey7s(companyName);
 
                     String linkedinAnalysis = scrapingService.getLinkedInAnalysis(companyName);
+
+                    VisualizationService visualizationServiceUtil = new VisualizationService();
+
+                    String swotImage = visualizationServiceUtil.generateSwotImage(swot);
+                    String pestelImage = visualizationServiceUtil.generatePestelImage(pestel);
+                    String porterImage = visualizationServiceUtil.generatePorterImage(porter);
+                    String bcgImage = visualizationServiceUtil.generateBcgImage(bcg);
+                    String mckinseyImage = visualizationServiceUtil.generateMckinseyImage(mckinsey);
+
+                    Map<String, Object> tooAddResult = new HashMap<>();
+                    tooAddResult.put("company_name", companyName);
+                    tooAddResult.put("summaries", ragResult.get("summaries"));
+                    tooAddResult.put("sources", ragResult.get("sources"));
+                    tooAddResult.put("strategy_recommendations", ragResult.get("strategy_recommendations"));
+                    tooAddResult.put("swot_lists", swot);
+                    tooAddResult.put("pestel_lists", pestel);
+                    tooAddResult.put("porter_forces", porter);
+                    tooAddResult.put("bcg_matrix", bcg);
+                    tooAddResult.put("mckinsey_7s", mckinsey);
+                    tooAddResult.put("linkedin_analysis", linkedinAnalysis);
+
+                    tooAddResult.put("swot_image", swotImage);
+                    tooAddResult.put("pestel_image", pestelImage);
+                    tooAddResult.put("porter_image", porterImage);
+                    tooAddResult.put("bcg_image", bcgImage);
+                    tooAddResult.put("mckinsey_image", mckinseyImage);
+
+                    toAddAnalyses.add(tooAddResult);
 
                     Map<String, Object> singleResult = new HashMap<>();
                     singleResult.put("company_name", companyName);
@@ -411,6 +482,12 @@ public class ComparisonController {
 
             Map<String, Object> comparisonData = comparisonService.computeComparison(analyses);
 
+            // Save new analyses to database if requested
+            List<String> savedAnalysisIds = new ArrayList<>();
+            if (request.getSaveNewAnalyses() != null && request.getSaveNewAnalyses()) {
+                savedAnalysisIds = saveNewAnalysesToDatabase(toAddAnalyses, userId);
+            }
+
             String radarChart = visualizationService.generateRadarChart(comparisonData);
             String barGraph = visualizationService.generateBarGraph(comparisonData);
             String scatterPlot = visualizationService.generateScatterPlot(comparisonData);
@@ -429,6 +506,7 @@ public class ComparisonController {
             result.put("total_items", request.getTotalItemsCount());
             result.put("existing_analyses", request.hasAnalysisIds() ? request.getAnalysisIds().size() : 0);
             result.put("new_analyses", request.hasCompanyNames() ? request.getCompanyNames().size() : 0);
+            result.put("saved_analysis_ids", savedAnalysisIds);
 
             return ResponseEntity.ok(result);
         } catch (Exception e) {
@@ -460,5 +538,235 @@ public class ComparisonController {
             System.err.println("Error resolving user ID from username: " + username + " - " + e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * Helper method to save new analysis data from comparison to user's account
+     */
+    private List<String> saveNewAnalysesToDatabase(List<Map<String, Object>> newAnalyses, String userId) {
+        List<String> savedAnalysisIds = new ArrayList<>();
+
+        for (Map<String, Object> analysisData : newAnalyses) {
+            try {
+                // Check if this is a new analysis (not from existing database)
+                String source = (String) analysisData.get("source");
+                if (!"existing_analysis".equals(source)) {
+                    UserAnalysis analysis = convertComparisonDataToUserAnalysis(analysisData, userId);
+                    analysis.setStatus(UserAnalysis.AnalysisStatus.COMPLETED);
+                    analysis.setAnalysisDate(java.time.LocalDateTime.now());
+
+                    UserAnalysis savedAnalysis = userService.saveAnalysis(analysis);
+                    savedAnalysisIds.add(savedAnalysis.getId());
+
+                    System.out.println("Saved new analysis for company: " + analysis.getCompanyName()
+                            + " with ID: " + savedAnalysis.getId());
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to save analysis for company: " +
+                        analysisData.get("company_name") + " - " + e.getMessage());
+            }
+        }
+
+        return savedAnalysisIds;
+    }
+
+    /**
+     * Convert comparison analysis data to UserAnalysis object
+     */
+    private UserAnalysis convertComparisonDataToUserAnalysis(Map<String, Object> analysisData, String userId) {
+        String companyName = (String) analysisData.get("company_name");
+        UserAnalysis analysis = new UserAnalysis(userId, companyName);
+
+        // Set basic data
+        if (analysisData.get("summaries") instanceof List<?>) {
+            @SuppressWarnings("unchecked")
+            List<String> summaries = (List<String>) analysisData.get("summaries");
+            analysis.setSummaries(summaries);
+        }
+
+        if (analysisData.get("sources") instanceof List<?>) {
+            @SuppressWarnings("unchecked")
+            List<String> sources = (List<String>) analysisData.get("sources");
+            analysis.setSources(sources);
+        }
+
+        if (analysisData.get("strategy_recommendations") instanceof String) {
+            analysis.setStrategyRecommendations((String) analysisData.get("strategy_recommendations"));
+        }
+
+        if (analysisData.get("linkedin_analysis") instanceof String) {
+            analysis.setLinkedinAnalysis((String) analysisData.get("linkedin_analysis"));
+        }
+
+        // Set image data
+        if (analysisData.get("swot_image") instanceof String) {
+            analysis.setSwotImage((String) analysisData.get("swot_image"));
+        }
+
+        if (analysisData.get("pestel_image") instanceof String) {
+            analysis.setPestelImage((String) analysisData.get("pestel_image"));
+        }
+
+        if (analysisData.get("porter_image") instanceof String) {
+            analysis.setPorterImage((String) analysisData.get("porter_image"));
+        }
+
+        if (analysisData.get("bcg_image") instanceof String) {
+            analysis.setBcgImage((String) analysisData.get("bcg_image"));
+        }
+
+        if (analysisData.get("mckinsey_image") instanceof String) {
+            analysis.setMckinseyImage((String) analysisData.get("mckinsey_image"));
+        }
+
+        // Convert SWOT data
+        if (analysisData.get("swot_lists") instanceof Map<?, ?>) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> swotData = (Map<String, Object>) analysisData.get("swot_lists");
+            UserAnalysis.SwotLists swot = new UserAnalysis.SwotLists();
+
+            if (swotData.get("strengths") instanceof List<?>) {
+                @SuppressWarnings("unchecked")
+                List<String> strengths = (List<String>) swotData.get("strengths");
+                swot.setStrengths(strengths);
+            }
+            if (swotData.get("weaknesses") instanceof List<?>) {
+                @SuppressWarnings("unchecked")
+                List<String> weaknesses = (List<String>) swotData.get("weaknesses");
+                swot.setWeaknesses(weaknesses);
+            }
+            if (swotData.get("opportunities") instanceof List<?>) {
+                @SuppressWarnings("unchecked")
+                List<String> opportunities = (List<String>) swotData.get("opportunities");
+                swot.setOpportunities(opportunities);
+            }
+            if (swotData.get("threats") instanceof List<?>) {
+                @SuppressWarnings("unchecked")
+                List<String> threats = (List<String>) swotData.get("threats");
+                swot.setThreats(threats);
+            }
+            analysis.setSwotLists(swot);
+        }
+
+        // Convert PESTEL data
+        if (analysisData.get("pestel_lists") instanceof Map<?, ?>) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> pestelData = (Map<String, Object>) analysisData.get("pestel_lists");
+            UserAnalysis.PestelLists pestel = new UserAnalysis.PestelLists();
+
+            if (pestelData.get("political") instanceof List<?>) {
+                @SuppressWarnings("unchecked")
+                List<String> political = (List<String>) pestelData.get("political");
+                pestel.setPolitical(political);
+            }
+            if (pestelData.get("economic") instanceof List<?>) {
+                @SuppressWarnings("unchecked")
+                List<String> economic = (List<String>) pestelData.get("economic");
+                pestel.setEconomic(economic);
+            }
+            if (pestelData.get("social") instanceof List<?>) {
+                @SuppressWarnings("unchecked")
+                List<String> social = (List<String>) pestelData.get("social");
+                pestel.setSocial(social);
+            }
+            if (pestelData.get("technological") instanceof List<?>) {
+                @SuppressWarnings("unchecked")
+                List<String> technological = (List<String>) pestelData.get("technological");
+                pestel.setTechnological(technological);
+            }
+            if (pestelData.get("environmental") instanceof List<?>) {
+                @SuppressWarnings("unchecked")
+                List<String> environmental = (List<String>) pestelData.get("environmental");
+                pestel.setEnvironmental(environmental);
+            }
+            if (pestelData.get("legal") instanceof List<?>) {
+                @SuppressWarnings("unchecked")
+                List<String> legal = (List<String>) pestelData.get("legal");
+                pestel.setLegal(legal);
+            }
+            analysis.setPestelLists(pestel);
+        }
+
+        // Convert Porter Forces
+        if (analysisData.get("porter_forces") instanceof Map<?, ?>) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> porterData = (Map<String, Object>) analysisData.get("porter_forces");
+            UserAnalysis.PorterForces porter = new UserAnalysis.PorterForces();
+
+            if (porterData.get("new_entrants") instanceof List<?>) {
+                @SuppressWarnings("unchecked")
+                List<String> newEntrants = (List<String>) porterData.get("new_entrants");
+                porter.setNewEntrants(newEntrants);
+            }
+            if (porterData.get("buyer_power") instanceof List<?>) {
+                @SuppressWarnings("unchecked")
+                List<String> buyerPower = (List<String>) porterData.get("buyer_power");
+                porter.setBuyerPower(buyerPower);
+            }
+            if (porterData.get("substitutes") instanceof List<?>) {
+                @SuppressWarnings("unchecked")
+                List<String> substitutes = (List<String>) porterData.get("substitutes");
+                porter.setSubstitutes(substitutes);
+            }
+            if (porterData.get("supplier_power") instanceof List<?>) {
+                @SuppressWarnings("unchecked")
+                List<String> supplierPower = (List<String>) porterData.get("supplier_power");
+                porter.setSupplierPower(supplierPower);
+            }
+            if (porterData.get("rivalry") instanceof List<?>) {
+                @SuppressWarnings("unchecked")
+                List<String> rivalry = (List<String>) porterData.get("rivalry");
+                porter.setRivalry(rivalry);
+            }
+            analysis.setPorterForces(porter);
+        }
+
+        // Convert BCG Matrix
+        if (analysisData.get("bcg_matrix") instanceof Map<?, ?>) {
+            @SuppressWarnings("unchecked")
+            Map<String, Map<String, Double>> bcgData = (Map<String, Map<String, Double>>) analysisData
+                    .get("bcg_matrix");
+            Map<String, UserAnalysis.BcgProduct> bcgMap = new HashMap<>();
+
+            for (Map.Entry<String, Map<String, Double>> entry : bcgData.entrySet()) {
+                UserAnalysis.BcgProduct product = new UserAnalysis.BcgProduct();
+
+                Map<String, Double> metrics = entry.getValue();
+                if (metrics != null) {
+                    Double marketShare = metrics.get("marketShare");
+                    if (marketShare == null)
+                        marketShare = metrics.get("market_share");
+                    if (marketShare != null)
+                        product.setMarketShare(marketShare);
+
+                    Double growthRate = metrics.get("growthRate");
+                    if (growthRate == null)
+                        growthRate = metrics.get("growth_rate");
+                    if (growthRate != null)
+                        product.setGrowthRate(growthRate);
+                }
+                bcgMap.put(entry.getKey(), product);
+            }
+            analysis.setBcgMatrix(bcgMap);
+        }
+
+        // Convert McKinsey 7S
+        if (analysisData.get("mckinsey_7s") instanceof Map<?, ?>) {
+            @SuppressWarnings("unchecked")
+            Map<String, String> mckinseyData = (Map<String, String>) analysisData.get("mckinsey_7s");
+            UserAnalysis.McKinsey7s mckinsey = new UserAnalysis.McKinsey7s();
+
+            mckinsey.setStrategy(mckinseyData.get("strategy"));
+            mckinsey.setStructure(mckinseyData.get("structure"));
+            mckinsey.setSystems(mckinseyData.get("systems"));
+            mckinsey.setStyle(mckinseyData.get("style"));
+            mckinsey.setStaff(mckinseyData.get("staff"));
+            mckinsey.setSkills(mckinseyData.get("skills"));
+            mckinsey.setSharedValues(mckinseyData.get("shared_values"));
+
+            analysis.setMckinsey7s(mckinsey);
+        }
+
+        return analysis;
     }
 }

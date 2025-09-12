@@ -586,7 +586,7 @@ const Dashboard: React.FC = () => {
 
                     return (
                       <div className="mt-6 p-6 bg-gradient-to-br from-white/90 via-gray-50/50 to-blue-50/30 rounded-2xl border border-gray-200/50 shadow-lg backdrop-blur-sm">
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
                           {/* SWOT Analysis Card */}
                           <div className="bg-gradient-to-br from-blue-50/80 to-indigo-100/80 backdrop-blur-sm rounded-2xl p-6 border border-blue-200/50 shadow-lg">
                             <div className="flex items-center mb-4">
@@ -637,6 +637,86 @@ const Dashboard: React.FC = () => {
                                   </h6>
                                   <p className="text-xs text-orange-600 mt-1">
                                     {analysisData.swotLists.threats.length}{" "}
+                                    items
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* PESTEL Analysis Card */}
+                          <div className="bg-gradient-to-br from-teal-50/80 to-cyan-100/80 backdrop-blur-sm rounded-2xl p-6 border border-teal-200/50 shadow-lg">
+                            <div className="flex items-center mb-4">
+                              <div className="p-2 bg-teal-500/90 rounded-lg shadow-sm">
+                                <Target className="h-5 w-5 text-white" />
+                              </div>
+                              <h5 className="text-lg font-semibold text-gray-900 ml-3">
+                                PESTEL Analysis
+                              </h5>
+                            </div>
+                            <div className="space-y-2">
+                              <div className="grid grid-cols-2 gap-2">
+                                <div className="bg-white/70 backdrop-blur-sm rounded-xl p-2 border border-teal-100/50 shadow-sm">
+                                  <h6 className="font-medium text-teal-800 text-sm">
+                                    Political
+                                  </h6>
+                                  <p className="text-xs text-teal-600 mt-1">
+                                    {analysisData.pestelLists.political.length}{" "}
+                                    items
+                                  </p>
+                                </div>
+                                <div className="bg-white/70 backdrop-blur-sm rounded-xl p-2 border border-teal-100/50 shadow-sm">
+                                  <h6 className="font-medium text-teal-800 text-sm">
+                                    Economic
+                                  </h6>
+                                  <p className="text-xs text-teal-600 mt-1">
+                                    {analysisData.pestelLists.economic.length}{" "}
+                                    items
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div className="bg-white/70 backdrop-blur-sm rounded-xl p-2 border border-teal-100/50 shadow-sm">
+                                  <h6 className="font-medium text-teal-800 text-sm">
+                                    Social
+                                  </h6>
+                                  <p className="text-xs text-teal-600 mt-1">
+                                    {analysisData.pestelLists.social.length}{" "}
+                                    items
+                                  </p>
+                                </div>
+                                <div className="bg-white/70 backdrop-blur-sm rounded-xl p-2 border border-teal-100/50 shadow-sm">
+                                  <h6 className="font-medium text-teal-800 text-sm">
+                                    Technological
+                                  </h6>
+                                  <p className="text-xs text-teal-600 mt-1">
+                                    {
+                                      analysisData.pestelLists.technological
+                                        .length
+                                    }{" "}
+                                    items
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div className="bg-white/70 backdrop-blur-sm rounded-xl p-2 border border-teal-100/50 shadow-sm">
+                                  <h6 className="font-medium text-teal-800 text-sm">
+                                    Environmental
+                                  </h6>
+                                  <p className="text-xs text-teal-600 mt-1">
+                                    {
+                                      analysisData.pestelLists.environmental
+                                        .length
+                                    }{" "}
+                                    items
+                                  </p>
+                                </div>
+                                <div className="bg-white/70 backdrop-blur-sm rounded-xl p-2 border border-teal-100/50 shadow-sm">
+                                  <h6 className="font-medium text-teal-800 text-sm">
+                                    Legal
+                                  </h6>
+                                  <p className="text-xs text-teal-600 mt-1">
+                                    {analysisData.pestelLists.legal.length}{" "}
                                     items
                                   </p>
                                 </div>
@@ -766,6 +846,7 @@ const Dashboard: React.FC = () => {
 
                         {/* Analysis Images */}
                         {(analysisData.swotImage ||
+                          analysisData.pestelImage ||
                           analysisData.porterImage ||
                           analysisData.bcgImage ||
                           analysisData.mckinseyImage) && (
@@ -773,7 +854,7 @@ const Dashboard: React.FC = () => {
                             <h5 className="text-lg font-semibold text-gray-900 mb-4">
                               Analysis Charts
                             </h5>
-                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                               {analysisData.swotImage && (
                                 <div className="bg-white/80 backdrop-blur-sm rounded-xl p-3 border border-gray-200/50 shadow-lg">
                                   <img
@@ -793,6 +874,30 @@ const Dashboard: React.FC = () => {
                                   />
                                   <p className="text-xs text-gray-600 mt-2 text-center">
                                     SWOT Analysis
+                                  </p>
+                                </div>
+                              )}
+                              {analysisData.pestelImage && (
+                                <div className="bg-white/80 backdrop-blur-sm rounded-xl p-3 border border-gray-200/50 shadow-lg">
+                                  <img
+                                    src={
+                                      analysisData.pestelImage.startsWith(
+                                        "data:"
+                                      )
+                                        ? analysisData.pestelImage
+                                        : `data:image/png;base64,${analysisData.pestelImage}`
+                                    }
+                                    alt="PESTEL Analysis"
+                                    className="w-full h-32 object-contain rounded-lg"
+                                    onError={(e) => {
+                                      console.error(
+                                        "Failed to load PESTEL image"
+                                      );
+                                      e.currentTarget.style.display = "none";
+                                    }}
+                                  />
+                                  <p className="text-xs text-gray-600 mt-2 text-center">
+                                    PESTEL Analysis
                                   </p>
                                 </div>
                               )}

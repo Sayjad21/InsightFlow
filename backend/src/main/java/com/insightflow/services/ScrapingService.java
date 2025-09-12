@@ -4,6 +4,8 @@ import com.insightflow.utils.AiUtil;
 import com.insightflow.utils.TavilyUtil;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
@@ -61,6 +63,26 @@ public class ScrapingService {
     private int requestCount = 0;
     private static final long MIN_REQUEST_INTERVAL = 300000; // 5 minutes between requests
     private static final int MAX_REQUESTS_PER_HOUR = 10;
+
+    /**
+     * Helper class to store LinkedIn company candidate information
+     */
+    private static class CompanyCandidate {
+        final String slug;
+        final String url;
+        final String title;
+        final String content;
+        int followerCount = -1;
+        double relevanceScore = 0.0;
+        String selectionMethod = "unknown";
+
+        CompanyCandidate(String slug, String url, String title, String content) {
+            this.slug = slug;
+            this.url = url;
+            this.title = title != null ? title : "";
+            this.content = content != null ? content : "";
+        }
+    }
 
     /**
      * Cleanup any orphaned Chrome processes that might interfere with new sessions
@@ -533,27 +555,56 @@ public class ScrapingService {
             case "netflix":
                 return "netflix";
             default:
-                // Dynamic search using TavilyUtil
+                // Dynamic search using TavilyUtil with follower count validation
                 try {
                     logger.info("Searching for LinkedIn company page for: {}", companyName);
                     List<Map<String, Object>> searchResults = tavilyUtil
                             .search("site:linkedin.com/company " + companyName, 3);
 
+                    if (searchResults.isEmpty()) {
+                        logger.warn("No LinkedIn search results found for {}; using normalized name", companyName);
+                        return normalizedName.replaceAll("[^a-z0-9-]", "");
+                    }
+
+                    // Extract all potential LinkedIn company slugs
+                    List<CompanyCandidate> candidates = new ArrayList<>();
                     for (Map<String, Object> result : searchResults) {
                         String url = (String) result.get("url");
+                        String title = (String) result.get("title");
+                        String content = (String) result.get("content");
+
                         if (url != null && url.contains("linkedin.com/company/")) {
                             // Extract slug after /company/
                             String slug = url.substring(url.indexOf("/company/") + 9);
                             // Remove trailing parts like query parameters or sub-paths
                             slug = slug.replaceAll("[/?#].*", "");
+
                             if (!slug.isEmpty()) {
-                                logger.info("Dynamically found LinkedIn slug for {}: {}", companyName, slug);
-                                return slug;
+                                candidates.add(new CompanyCandidate(slug, url, title, content));
+                                logger.info("Found LinkedIn candidate for {}: {} ({})", companyName, slug, title);
                             }
                         }
                     }
-                    logger.warn("No valid LinkedIn page found for {}; using normalized name", companyName);
-                    return normalizedName.replaceAll("[^a-z0-9-]", "");
+
+                    if (candidates.isEmpty()) {
+                        logger.warn("No valid LinkedIn company URLs found for {}; using normalized name", companyName);
+                        return normalizedName.replaceAll("[^a-z0-9-]", "");
+                    }
+
+                    // If only one candidate, return it
+                    if (candidates.size() == 1) {
+                        logger.info("Single LinkedIn candidate found for {}: {}", companyName, candidates.get(0).slug);
+                        return candidates.get(0).slug;
+                    }
+
+                    // Multiple candidates - try Chrome validation first, then smart fallback
+                    logger.info("Multiple LinkedIn candidates found for {}, validating...", companyName);
+                    CompanyCandidate bestCandidate = selectBestCandidateWithFallback(companyName, candidates);
+
+                    logger.info("Selected best LinkedIn candidate for {}: {} (method: {})",
+                            companyName, bestCandidate.slug, bestCandidate.selectionMethod);
+                    return bestCandidate.slug;
+
                 } catch (Exception e) {
                     logger.error("Failed to dynamically find LinkedIn ID for {}: {}", companyName, e.getMessage(), e);
                     // Fallback to normalized name
@@ -883,4 +934,450 @@ public class ScrapingService {
             }
         }
     }
+
+    /**
+     * Selects the best LinkedIn company candidate with smart fallback strategies
+     */
+    private CompanyCandidate selectBestCandidateWithFallback(String companyName, List<CompanyCandidate> candidates) {
+        // First, calculate relevance scores for all candidates
+        for (CompanyCandidate candidate : candidates) {
+            candidate.relevanceScore = calculateRelevanceScore(companyName, candidate);
+            logger.info("Candidate {} - Title: '{}', Relevance: {}",
+                    candidate.slug, candidate.title, candidate.relevanceScore);
+        }
+
+        // Strategy 1: Try Chrome validation (best accuracy)
+        CompanyCandidate chromeValidated = tryChromeValidation(companyName, candidates);
+        if (chromeValidated != null) {
+            chromeValidated.selectionMethod = "chrome-validation";
+            return chromeValidated;
+        }
+
+        // Strategy 2: Try Jsoup validation (lighter, no Chrome dependency)
+        logger.info("Chrome validation failed for {}, trying Jsoup validation...", companyName);
+        CompanyCandidate jsoupValidated = tryJsoupValidation(companyName, candidates);
+        if (jsoupValidated != null) {
+            jsoupValidated.selectionMethod = "jsoup-validation";
+            return jsoupValidated;
+        }
+
+        // Strategy 3: Smart heuristic selection (final fallback)
+        logger.warn("Both Chrome and Jsoup validation failed for {}, using heuristic analysis", companyName);
+        CompanyCandidate heuristicBest = selectByHeuristics(companyName, candidates);
+        heuristicBest.selectionMethod = "heuristic-analysis";
+        return heuristicBest;
+    }
+
+    /**
+     * Attempts Chrome-based validation (original method with better error handling)
+     */
+    private CompanyCandidate tryChromeValidation(String companyName, List<CompanyCandidate> candidates) {
+        WebDriver driver = null;
+        String tempUserDataDir = null;
+
+        try {
+            // Setup lightweight Chrome instance for validation
+            WebDriverManager.chromedriver().setup();
+            ChromeOptions options = new ChromeOptions();
+
+            tempUserDataDir = System.getProperty("java.io.tmpdir") + "chrome_validate_" +
+                    System.currentTimeMillis() + "_" + random.nextInt(10000);
+
+            options.addArguments("--headless=new");
+            options.addArguments("--disable-gpu");
+            options.addArguments("--no-sandbox");
+            options.addArguments("--disable-dev-shm-usage");
+            options.addArguments("--disable-blink-features=AutomationControlled");
+            options.addArguments("--user-data-dir=" + tempUserDataDir);
+            options.addArguments("--disable-notifications");
+            options.addArguments("--timeout=10000");
+            options.addArguments("user-agent=" + userAgents[random.nextInt(userAgents.length)]);
+
+            driver = new ChromeDriver(options);
+            driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(10));
+            driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(5));
+
+            // Check each candidate
+            for (CompanyCandidate candidate : candidates) {
+                try {
+                    logger.info("Validating candidate: {} for company: {}", candidate.slug, companyName);
+
+                    // Navigate to the LinkedIn company page (public view)
+                    String publicUrl = "https://www.linkedin.com/company/" + candidate.slug;
+                    driver.get(publicUrl);
+                    Thread.sleep(2000); // Wait for page load
+
+                    // Calculate relevance score based on title/content match
+                    candidate.relevanceScore = calculateRelevanceScore(companyName, candidate);
+
+                    // Try to extract follower count from public page
+                    candidate.followerCount = extractFollowerCount(driver);
+
+                    logger.info("Candidate {} - Followers: {}, Relevance: {}",
+                            candidate.slug, candidate.followerCount, candidate.relevanceScore);
+
+                } catch (Exception e) {
+                    logger.warn("Failed to validate candidate {}: {}", candidate.slug, e.getMessage());
+                    candidate.followerCount = -1; // Mark as failed
+                }
+            }
+
+            // Select best candidate based on follower count and relevance
+            return candidates.stream()
+                    .filter(c -> c.followerCount > 0) // Only valid candidates
+                    .max((c1, c2) -> {
+                        // Primary sort: follower count (higher is better)
+                        int followerComparison = Integer.compare(c1.followerCount, c2.followerCount);
+                        if (followerComparison != 0) {
+                            return followerComparison;
+                        }
+                        // Secondary sort: relevance score (higher is better)
+                        return Double.compare(c1.relevanceScore, c2.relevanceScore);
+                    })
+                    .orElse(candidates.get(0)); // Fallback to first if none have follower counts
+
+        } catch (Exception e) {
+            logger.error("Error during Chrome candidate validation: {}", e.getMessage());
+            return null; // Return null to indicate Chrome validation failed
+        } finally {
+            if (driver != null) {
+                try {
+                    driver.quit();
+                } catch (Exception e) {
+                    logger.warn("Error closing validation driver: {}", e.getMessage());
+                }
+            }
+
+            // Clean up temp directory
+            if (tempUserDataDir != null) {
+                try {
+                    Files.walk(Paths.get(tempUserDataDir))
+                            .sorted(java.util.Comparator.reverseOrder())
+                            .map(java.nio.file.Path::toFile)
+                            .forEach(java.io.File::delete);
+                } catch (Exception e) {
+                    logger.warn("Failed to clean up temp directory: {}", e.getMessage());
+                }
+            }
+        }
+    }
+
+    /**
+     * Attempts to validate company candidates using Jsoup (HTTP + HTML parsing)
+     * This is lighter weight than Chrome validation but still gets actual follower
+     * counts
+     */
+    private CompanyCandidate tryJsoupValidation(String companyName, List<CompanyCandidate> candidates) {
+        try {
+            logger.info("Starting Jsoup validation for {} with {} candidates", companyName, candidates.size());
+
+            // Try to extract follower counts using Jsoup
+            for (CompanyCandidate candidate : candidates) {
+                try {
+                    String linkedinUrl = "https://www.linkedin.com/company/" + candidate.slug;
+                    logger.debug("Attempting Jsoup follower extraction for: {}", linkedinUrl);
+
+                    // Use Jsoup to fetch and parse the LinkedIn page
+                    Document doc = Jsoup.connect(linkedinUrl)
+                            .userAgent(
+                                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+                            .timeout(10000)
+                            .followRedirects(true)
+                            .get();
+
+                    // Try multiple strategies to extract follower count
+                    int followerCount = extractFollowerCountFromHtml(doc);
+
+                    if (followerCount > 0) {
+                        candidate.followerCount = followerCount;
+                        logger.info("Jsoup extracted {} followers for candidate: {} ({})",
+                                followerCount, candidate.title, candidate.slug);
+                    } else {
+                        logger.warn("No followers found via Jsoup for candidate: {} ({})",
+                                candidate.title, candidate.slug);
+                        candidate.followerCount = -1;
+                    }
+
+                } catch (Exception e) {
+                    logger.warn("Failed to validate candidate {} via Jsoup: {}", candidate.slug, e.getMessage());
+                    candidate.followerCount = -1; // Mark as failed
+                }
+            }
+
+            // Select best candidate based on follower count and relevance
+            return candidates.stream()
+                    .filter(c -> c.followerCount > 0) // Only valid candidates
+                    .max((c1, c2) -> {
+                        // Primary sort: follower count (higher is better)
+                        int followerComparison = Integer.compare(c1.followerCount, c2.followerCount);
+                        if (followerComparison != 0) {
+                            return followerComparison;
+                        }
+                        // Secondary sort: relevance score (higher is better)
+                        return Double.compare(c1.relevanceScore, c2.relevanceScore);
+                    })
+                    .orElse(null); // Return null if no candidates have valid follower counts
+
+        } catch (Exception e) {
+            logger.warn("Jsoup validation failed for {}: {}", companyName, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Extracts follower count from LinkedIn company page HTML using multiple
+     * strategies
+     */
+    private int extractFollowerCountFromHtml(Document doc) {
+        try {
+            // Strategy 1: Look for follower count in meta tags
+            Elements metaTags = doc.select("meta[name*=follower], meta[property*=follower], meta[content*=follower]");
+            for (Element meta : metaTags) {
+                String content = meta.attr("content");
+                int count = parseFollowerCount(content);
+                if (count > 0) {
+                    logger.debug("Found follower count in meta tag: {}", count);
+                    return count;
+                }
+            }
+
+            // Strategy 2: Look for follower count in structured data (JSON-LD)
+            Elements jsonLdElements = doc.select("script[type=application/ld+json]");
+            for (Element jsonLd : jsonLdElements) {
+                String jsonContent = jsonLd.html();
+                if (jsonContent.contains("follower") || jsonContent.contains("Follower")) {
+                    int count = parseFollowerCount(jsonContent);
+                    if (count > 0) {
+                        logger.debug("Found follower count in JSON-LD: {}", count);
+                        return count;
+                    }
+                }
+            }
+
+            // Strategy 3: Look for follower count in page text/elements
+            // Common patterns: "X followers", "X Followers", etc.
+            String pageText = doc.text();
+            int count = parseFollowerCount(pageText);
+            if (count > 0) {
+                logger.debug("Found follower count in page text: {}", count);
+                return count;
+            }
+
+            // Strategy 4: Look in specific LinkedIn elements (if any are accessible)
+            Elements followerElements = doc.select("*:containsOwn(followers), *:containsOwn(Followers)");
+            for (Element element : followerElements) {
+                String text = element.text();
+                int elementCount = parseFollowerCount(text);
+                if (elementCount > 0) {
+                    logger.debug("Found follower count in element: {}", elementCount);
+                    return elementCount;
+                }
+            }
+
+            logger.debug("No follower count found in HTML content");
+            return -1;
+
+        } catch (Exception e) {
+            logger.warn("Error extracting follower count from HTML: {}", e.getMessage());
+            return -1;
+        }
+    }
+
+    /**
+     * Selects best candidate using heuristics when Chrome validation fails
+     */
+    private CompanyCandidate selectByHeuristics(String companyName, List<CompanyCandidate> candidates) {
+        String lowerCompanyName = companyName.toLowerCase();
+
+        // Strategy 1: Look for exact or near-exact matches
+        for (CompanyCandidate candidate : candidates) {
+            String lowerSlug = candidate.slug.toLowerCase();
+            String lowerTitle = candidate.title.toLowerCase();
+
+            // For "miro" case: "mirohq" should win over "miro" and "miro-distribution"
+            if (lowerSlug.equals(lowerCompanyName + "hq")) {
+                logger.info("Found HQ variant for {}: {}", companyName, candidate.slug);
+                return candidate;
+            }
+
+            // Exact slug match with higher relevance score
+            if (lowerSlug.equals(lowerCompanyName) && candidate.relevanceScore >= 50.0) {
+                logger.info("Found exact slug match with high relevance for {}: {}", companyName, candidate.slug);
+                return candidate;
+            }
+
+            // Check if title contains company name as exact word
+            if (lowerTitle.contains(lowerCompanyName) && candidate.relevanceScore >= 70.0) {
+                logger.info("Found title match with high relevance for {}: {} ({})", companyName, candidate.title,
+                        candidate.slug);
+                return candidate;
+            }
+        }
+
+        // Strategy 2: Prioritize by relevance score and avoid distribution/reseller
+        // companies
+        CompanyCandidate best = candidates.stream()
+                .filter(c -> !isLikelyDistributor(c)) // Filter out distributors
+                .max((c1, c2) -> Double.compare(c1.relevanceScore, c2.relevanceScore))
+                .orElse(candidates.stream()
+                        .max((c1, c2) -> Double.compare(c1.relevanceScore, c2.relevanceScore))
+                        .orElse(candidates.get(0)));
+
+        logger.info("Selected candidate {} by heuristics (relevance: {}, is_distributor: {})",
+                best.slug, best.relevanceScore, isLikelyDistributor(best));
+
+        return best;
+    }
+
+    /**
+     * Checks if a candidate is likely a distributor/reseller rather than the main
+     * company
+     */
+    private boolean isLikelyDistributor(CompanyCandidate candidate) {
+        String lowerSlug = candidate.slug.toLowerCase();
+        String lowerTitle = candidate.title.toLowerCase();
+        String lowerContent = candidate.content.toLowerCase();
+
+        // Distributors often have these keywords
+        return lowerSlug.contains("distribution") ||
+                lowerSlug.contains("distributor") ||
+                lowerSlug.contains("dealer") ||
+                lowerSlug.contains("reseller") ||
+                lowerTitle.contains("distribution") ||
+                lowerTitle.contains("distributor") ||
+                lowerTitle.contains("dealer") ||
+                lowerTitle.contains("reseller") ||
+                lowerContent.contains("authorized dealer") ||
+                lowerContent.contains("official distributor");
+    }
+
+    /**
+     * Calculates relevance score between company name and LinkedIn candidate
+     */
+    private double calculateRelevanceScore(String companyName, CompanyCandidate candidate) {
+        double score = 0.0;
+        String lowerCompanyName = companyName.toLowerCase();
+        String lowerTitle = candidate.title.toLowerCase();
+        String lowerContent = candidate.content.toLowerCase();
+
+        // Exact match in title gets highest score
+        if (lowerTitle.equals(lowerCompanyName)) {
+            score += 100.0;
+        } else if (lowerTitle.contains(lowerCompanyName)) {
+            score += 50.0;
+        }
+
+        // Partial matches in title
+        String[] companyWords = lowerCompanyName.split("\\s+");
+        for (String word : companyWords) {
+            if (word.length() > 2 && lowerTitle.contains(word)) {
+                score += 10.0;
+            }
+        }
+
+        // Content matches (lower weight)
+        if (lowerContent.contains(lowerCompanyName)) {
+            score += 20.0;
+        }
+
+        // Known corporate suffixes
+        if (lowerTitle.contains(" inc") || lowerTitle.contains(" corp") ||
+                lowerTitle.contains(" ltd") || lowerTitle.contains(" llc")) {
+            score += 5.0;
+        }
+
+        return score;
+    }
+
+    /**
+     * Extracts follower count from LinkedIn public company page
+     */
+    private int extractFollowerCount(WebDriver driver) {
+        try {
+            // Multiple selectors for follower count
+            String[] selectors = {
+                    "div.org-top-card-summary-info-list__info-item:contains('followers')",
+                    "div[class*='follower']",
+                    "span[class*='follower']",
+                    "div.org-top-card-summary-info-list div:contains('follower')",
+                    "div:contains('followers')"
+            };
+
+            for (String selector : selectors) {
+                try {
+                    List<WebElement> elements = driver.findElements(By.cssSelector(selector.split(":contains")[0]));
+                    for (WebElement element : elements) {
+                        String text = element.getText().toLowerCase();
+                        if (text.contains("follower")) {
+                            int count = parseFollowerCount(text);
+                            if (count > 0) {
+                                return count;
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    // Continue to next selector
+                }
+            }
+
+            // Fallback: search entire page for follower patterns
+            String pageText = driver.getPageSource().toLowerCase();
+            return parseFollowerCountFromPage(pageText);
+
+        } catch (Exception e) {
+            logger.debug("Failed to extract follower count: {}", e.getMessage());
+            return -1;
+        }
+    }
+
+    /**
+     * Parses follower count from text
+     */
+    private int parseFollowerCount(String text) {
+        try {
+            // Look for patterns like "1,234 followers", "1.2K followers", "1.2M followers"
+            Pattern pattern = Pattern.compile("([\\d,\\.]+)\\s*([kmb]?)\\s*followers?", Pattern.CASE_INSENSITIVE);
+            java.util.regex.Matcher matcher = pattern.matcher(text);
+
+            if (matcher.find()) {
+                String numberStr = matcher.group(1).replace(",", "");
+                String suffix = matcher.group(2).toLowerCase();
+
+                double number = Double.parseDouble(numberStr);
+
+                switch (suffix) {
+                    case "k":
+                        return (int) (number * 1000);
+                    case "m":
+                        return (int) (number * 1000000);
+                    case "b":
+                        return (int) (number * 1000000000);
+                    default:
+                        return (int) number;
+                }
+            }
+        } catch (Exception e) {
+            logger.debug("Failed to parse follower count from: {}", text);
+        }
+        return -1;
+    }
+
+    /**
+     * Parses follower count from entire page content
+     */
+    private int parseFollowerCountFromPage(String pageContent) {
+        Pattern pattern = Pattern.compile("([\\d,\\.]+)\\s*([kmb]?)\\s*followers?", Pattern.CASE_INSENSITIVE);
+        java.util.regex.Matcher matcher = pattern.matcher(pageContent);
+
+        int maxCount = -1;
+        while (matcher.find()) {
+            int count = parseFollowerCount(matcher.group());
+            if (count > maxCount) {
+                maxCount = count;
+            }
+        }
+
+        return maxCount;
+    }
+
 }
