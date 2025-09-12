@@ -13,6 +13,26 @@ interface ComparisonModalProps {
   onClose: () => void;
 }
 
+// Helper function to get company names consistently
+function getCompanyNames(comparison: ComparisonResult): string[] {
+  if (comparison.companyNames && comparison.companyNames.length > 0) {
+    return comparison.companyNames;
+  }
+  if (comparison.analyses && comparison.analyses.length > 0) {
+    return comparison.analyses
+      .map((analysis) => analysis.companyName)
+      .filter((name) => name && name.trim() !== "");
+  }
+  const count = Math.max(
+    comparison.metrics?.length || 0,
+    comparison.analyses?.length || 0
+  );
+  if (count > 0) {
+    return Array.from({ length: count }, (_, i) => `Company ${i + 1}`);
+  }
+  return ["Unknown Companies"];
+}
+
 const ComparisonModal: React.FC<ComparisonModalProps> = ({
   selectedComparison,
   onClose,
@@ -66,7 +86,12 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
       ></div>
 
       {/* Modal */}
-      <div className="bg-purple-800/30 backdrop-blur-sm rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-auto relative z-10 shadow-xl shadow-blue-900/20">
+      <div
+        className="bg-purple-800/30 backdrop-blur-sm rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-auto relative z-10 shadow-xl shadow-blue-900/20"
+        style={{
+          animation: "modalFadeIn 0.3s ease-out forwards",
+        }}
+      >
         {/* Close button */}
         <button
           onClick={onClose}
@@ -96,18 +121,9 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
                   </h4>
                   <div className="flex flex-wrap gap-2">
                     {(() => {
-                      const companyNames =
-                        selectedComparison.companyNames ||
-                        selectedComparison.analyses?.map(
-                          (a: any) => a.companyName
-                        ) ||
-                        (selectedComparison.analyses?.length > 0
-                          ? selectedComparison.analyses.map(
-                              (_: any, index: number) => `Company ${index + 1}`
-                            )
-                          : []);
-
-                      return companyNames.length > 0 ? (
+                      const companyNames = getCompanyNames(selectedComparison);
+                      return companyNames.length > 0 &&
+                        companyNames[0] !== "Unknown Companies" ? (
                         companyNames.map((company: string, index: number) => (
                           <span
                             key={index}
@@ -215,9 +231,9 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
                   </h3>
                   <div className="grid grid-cols-1 gap-4">
                     {selectedComparison.metrics.map((metric, index) => {
+                      const companyNames = getCompanyNames(selectedComparison);
                       const companyName =
-                        selectedComparison.companyNames?.[index] ||
-                        `Company ${index + 1}`;
+                        companyNames[index] || `Company ${index + 1}`;
                       return (
                         <div
                           key={index}

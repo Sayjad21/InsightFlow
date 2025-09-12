@@ -12,6 +12,7 @@ import {
   Home as HomeIcon,
 } from "lucide-react";
 import type { UserProfileResponse } from "../../services/api";
+import { useAuth } from "../../contexts/AuthContext";
 
 interface ProfileSidebarProps {
   userProfile: UserProfileResponse | null;
@@ -23,6 +24,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
   onLogout,
 }) => {
   const location = useLocation();
+  const { user } = useAuth();
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -41,7 +43,14 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
       {/* Profile Header */}
       <div className="text-center mb-6">
         <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-          <User className="h-10 w-10 text-white" />
+          {/* <User className="h-10 w-10 text-white" /> */}
+          {user && (
+            <img
+              src={user.avatar}
+              alt={`${user.firstName} ${user.lastName}`}
+              className="w-20 h-20 rounded-full border-3     border-white/20"
+            />
+          )}
         </div>
         <h2 className="text-xl font-semibold text-gray-900">
           {userProfile?.firstName} {userProfile?.lastName}

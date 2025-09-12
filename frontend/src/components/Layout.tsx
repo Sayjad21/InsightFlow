@@ -1,4 +1,5 @@
 import React from "react";
+import { Loader2, AlertTriangle } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useUserProfile } from "../hooks/useUserProfile";
 import ProfileSidebar from "./Dashboard/ProfileSidebar";
@@ -33,29 +34,6 @@ const Layout: React.FC<LayoutProps> = ({
     return <>{children}</>;
   }
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-            Error: {error}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className={containerClass}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -63,10 +41,28 @@ const Layout: React.FC<LayoutProps> = ({
           {/* Profile Sidebar */}
           {sidebarPosition === "left" && (
             <div className="lg:col-span-1">
-              <ProfileSidebar
-                userProfile={userProfile}
-                onLogout={handleLogout}
-              />
+              {isLoading ? (
+                <div className="bg-white rounded-2xl shadow-lg p-6 h-fit">
+                  <div className="text-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-purple-600 mx-auto mb-4" />
+                    <p className="text-gray-600">Loading profile...</p>
+                  </div>
+                </div>
+              ) : error ? (
+                <div className="bg-white rounded-2xl shadow-lg p-6 h-fit">
+                  <div className="text-center">
+                    <AlertTriangle className="h-8 w-8 text-red-600 mx-auto mb-4" />
+                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                      Profile Error: {error}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <ProfileSidebar
+                  userProfile={userProfile}
+                  onLogout={handleLogout}
+                />
+              )}
             </div>
           )}
 
@@ -82,10 +78,28 @@ const Layout: React.FC<LayoutProps> = ({
           {/* Profile Sidebar on Right */}
           {sidebarPosition === "right" && (
             <div className="lg:col-span-1">
-              <ProfileSidebar
-                userProfile={userProfile}
-                onLogout={handleLogout}
-              />
+              {isLoading ? (
+                <div className="bg-white rounded-2xl shadow-lg p-6 h-fit">
+                  <div className="text-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-purple-600 mx-auto mb-4" />
+                    <p className="text-gray-600">Loading profile...</p>
+                  </div>
+                </div>
+              ) : error ? (
+                <div className="bg-white rounded-2xl shadow-lg p-6 h-fit">
+                  <div className="text-center">
+                    <AlertTriangle className="h-8 w-8 text-red-600 mx-auto mb-4" />
+                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                      Profile Error: {error}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <ProfileSidebar
+                  userProfile={userProfile}
+                  onLogout={handleLogout}
+                />
+              )}
             </div>
           )}
         </div>

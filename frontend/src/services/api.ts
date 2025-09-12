@@ -649,6 +649,7 @@ export class ApiService {
     comparisonType?: string;
     saveNewAnalyses?: boolean;
     saveResult?: boolean;
+    files?: (File | null)[];
   }): Promise<any> {
     try {
       // Set saveResult to true by default if not specified
@@ -659,28 +660,92 @@ export class ApiService {
       };
 
       console.log("Enhanced comparison request:", requestWithDefaults);
-      const response = await fetch(
-        `${API_BASE_URL}/api/comparison/compare-enhanced`,
-        {
-          method: "POST",
-          headers: this.getAuthHeaders(),
-          body: JSON.stringify(requestWithDefaults),
+
+      // Check if we need to send files
+      const hasFiles =
+        request.files && request.files.some((file) => file !== null);
+
+      if (hasFiles) {
+        // Use FormData for file upload
+        const formData = new FormData();
+
+        // Add regular parameters
+        if (request.analysisIds && request.analysisIds.length > 0) {
+          request.analysisIds.forEach((id) =>
+            formData.append("analysis_ids", id)
+          );
         }
-      );
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(
-          "Failed to perform enhanced comparison:",
-          response.status,
-          errorText
+        if (request.companyNames && request.companyNames.length > 0) {
+          request.companyNames.forEach((name) =>
+            formData.append("company_names", name)
+          );
+        }
+
+        if (request.saveNewAnalyses) {
+          formData.append("save_new_analyses", "true");
+        }
+
+        if (requestWithDefaults.saveResult) {
+          formData.append("save_result", "true");
+        }
+
+        // Add files
+        if (request.files) {
+          request.files.forEach((file) => {
+            if (file) {
+              formData.append("files", file);
+            }
+          });
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/comparison/compare`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${this.getAuthToken()}`,
+            // Don't set Content-Type for FormData - let browser set it with boundary
+          },
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(
+            "Failed to perform enhanced comparison with files:",
+            response.status,
+            errorText
+          );
+          throw new Error(`Comparison failed: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log("Enhanced comparison result:", result);
+        return result;
+      } else {
+        // Use JSON for requests without files (existing logic)
+        const response = await fetch(
+          `${API_BASE_URL}/api/comparison/compare-enhanced`,
+          {
+            method: "POST",
+            headers: this.getAuthHeaders(),
+            body: JSON.stringify(requestWithDefaults),
+          }
         );
-        throw new Error(`Comparison failed: ${response.status}`);
-      }
 
-      const result = await response.json();
-      console.log("Enhanced comparison result:", result);
-      return result;
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(
+            "Failed to perform enhanced comparison:",
+            response.status,
+            errorText
+          );
+          throw new Error(`Comparison failed: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log("Enhanced comparison result:", result);
+        return result;
+      }
     } catch (error) {
       console.error("Enhanced Comparison Error:", error);
       throw error;

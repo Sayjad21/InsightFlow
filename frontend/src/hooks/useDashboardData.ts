@@ -43,6 +43,9 @@ export const useDashboardData = () => {
   const [comparisonMode, setComparisonMode] = useState(false);
   const [selectedAnalysisIds, setSelectedAnalysisIds] = useState<string[]>([]);
   const [newCompanyNames, setNewCompanyNames] = useState<string[]>([""]);
+  const [newCompanyFiles, setNewCompanyFiles] = useState<(File | null)[]>([
+    null,
+  ]);
   const [saveNewAnalyses, setSaveNewAnalyses] = useState(false);
   const [comparisonResult, setComparisonResult] = useState<any>(null);
   const [isComparing, setIsComparing] = useState(false);
@@ -84,34 +87,31 @@ export const useDashboardData = () => {
 
   // Fetch comparison results
   const fetchComparisonResults = async () => {
-    if (activeTab === "comparison") {
-      try {
-        setIsLoadingComparisons(true);
-        const results = await ApiService.getSavedComparisons();
-        setComparisonResults(results);
-        setComparisonError(null);
-      } catch (err) {
-        console.error("Failed to fetch comparison results:", err);
-        setComparisonError(
-          err instanceof Error
-            ? err.message
-            : "Failed to load comparison results"
-        );
-      } finally {
-        setIsLoadingComparisons(false);
-      }
+    try {
+      setIsLoadingComparisons(true);
+      const results = await ApiService.getSavedComparisons();
+      setComparisonResults(results);
+      setComparisonError(null);
+    } catch (err) {
+      console.error("Failed to fetch comparison results:", err);
+      setComparisonError(
+        err instanceof Error ? err.message : "Failed to load comparison results"
+      );
+    } finally {
+      setIsLoadingComparisons(false);
     }
   };
 
   // Initial data fetch
   useEffect(() => {
     fetchUserData();
+    fetchComparisonResults(); // Load comparisons on initial render
   }, []);
 
-  // Fetch comparison results when switching to comparison tab
-  useEffect(() => {
-    fetchComparisonResults();
-  }, [activeTab]);
+  // No longer need to fetch on tab change since we load on initial render
+  // useEffect(() => {
+  //   fetchComparisonResults();
+  // }, [activeTab]);
 
   // Utility functions
   const refreshAnalyses = () => {
@@ -159,6 +159,8 @@ export const useDashboardData = () => {
     setSelectedAnalysisIds,
     newCompanyNames,
     setNewCompanyNames,
+    newCompanyFiles,
+    setNewCompanyFiles,
     saveNewAnalyses,
     setSaveNewAnalyses,
     comparisonResult,

@@ -22,6 +22,33 @@ function cleanHtmlContent(html: string): string {
     .trim();
 }
 
+// Helper function to extract company names from comparison data
+function getCompanyNames(comparison: ComparisonResult): string[] {
+  // First try the companyNames field if it exists and has data
+  if (comparison.companyNames && comparison.companyNames.length > 0) {
+    return comparison.companyNames;
+  }
+
+  // Otherwise extract from analyses array
+  if (comparison.analyses && comparison.analyses.length > 0) {
+    return comparison.analyses
+      .map((analysis) => analysis.companyName)
+      .filter((name) => name && name.trim() !== "");
+  }
+
+  // Fallback: try to infer from number of metrics/analyses
+  const count = Math.max(
+    comparison.metrics?.length || 0,
+    comparison.analyses?.length || 0
+  );
+
+  if (count > 0) {
+    return Array.from({ length: count }, (_, i) => `Company ${i + 1}`);
+  }
+
+  return ["Unknown Companies"];
+}
+
 // Format date helper
 function formatDate(dateString: string | undefined): string {
   if (!dateString) return "Unknown date";
@@ -53,12 +80,10 @@ function downloadFile(blob: Blob, filename: string): void {
 // Generate TXT export for comparison
 export function exportComparisonToTxt(comparison: ComparisonResult): void {
   const content = generateComparisonTextContent(comparison);
-  const companyNames =
-    comparison.companyNames?.join("_vs_") || "Company_Comparison";
-  const filename = `${companyNames.replace(
-    /[^a-zA-Z0-9_]/g,
-    ""
-  )}_comparison_report.txt`;
+  const companyNames = getCompanyNames(comparison);
+  const filename = `${companyNames
+    .join("_vs_")
+    .replace(/[^a-zA-Z0-9_]/g, "")}_comparison_report.txt`;
   const blob = new Blob([content], { type: "text/plain" });
   downloadFile(blob, filename);
 }
@@ -66,12 +91,10 @@ export function exportComparisonToTxt(comparison: ComparisonResult): void {
 // Generate Markdown export for comparison
 export function exportComparisonToMarkdown(comparison: ComparisonResult): void {
   const content = generateComparisonMarkdownContent(comparison);
-  const companyNames =
-    comparison.companyNames?.join("_vs_") || "Company_Comparison";
-  const filename = `${companyNames.replace(
-    /[^a-zA-Z0-9_]/g,
-    ""
-  )}_comparison_report.md`;
+  const companyNames = getCompanyNames(comparison);
+  const filename = `${companyNames
+    .join("_vs_")
+    .replace(/[^a-zA-Z0-9_]/g, "")}_comparison_report.md`;
   const blob = new Blob([content], { type: "text/markdown" });
   downloadFile(blob, filename);
 }
@@ -99,14 +122,13 @@ export function exportComparisonToHtml(comparison: ComparisonResult): void {
     .replace(/$/, "</p>");
 
   // Wrap in proper HTML structure
+  const companyNames = getCompanyNames(comparison);
   const fullHtml = `
 <!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8">
-    <title>${
-      comparison.companyNames?.join(" vs ") || "Company Comparison"
-    } - Comparison Report</title>
+    <title>${companyNames.join(" vs ")} - Comparison Report</title>
     <style>
       body { font-family: Arial, sans-serif; line-height: 1.6; margin: 40px; }
       h1 { color: #333; border-bottom: 2px solid #333; }
@@ -127,12 +149,9 @@ export function exportComparisonToHtml(comparison: ComparisonResult): void {
 </html>
   `;
 
-  const companyNames =
-    comparison.companyNames?.join("_vs_") || "Company_Comparison";
-  const filename = `${companyNames.replace(
-    /[^a-zA-Z0-9_]/g,
-    ""
-  )}_comparison_report.html`;
+  const filename = `${companyNames
+    .join("_vs_")
+    .replace(/[^a-zA-Z0-9_]/g, "")}_comparison_report.html`;
   const blob = new Blob([fullHtml], { type: "text/html" });
   downloadFile(blob, filename);
 }
@@ -223,15 +242,14 @@ export async function exportComparisonToPdf(
     };
 
     // Title Page
-    const companyNames =
-      comparison.companyNames?.join(" vs ") || "Company Comparison";
+    const companyNames = getCompanyNames(comparison);
     pdf.setFontSize(20);
     pdf.setFont(undefined, "bold");
     pdf.text("Company Comparison Report", 20, yPosition);
     yPosition += 15;
 
     pdf.setFontSize(16);
-    pdf.text(companyNames, 20, yPosition);
+    pdf.text(companyNames.join(" vs "), 20, yPosition);
     yPosition += 10;
 
     pdf.setFontSize(10);
@@ -300,9 +318,9 @@ export async function exportComparisonToPdf(
     // 2. Company Performance Metrics
     if (comparison.metrics && comparison.metrics.length > 0) {
       addText("2. COMPANY PERFORMANCE METRICS", 14, "bold");
+      const companyNames = getCompanyNames(comparison);
       comparison.metrics.forEach((metric, index) => {
-        const companyName =
-          comparison.companyNames?.[index] || `Company ${index + 1}`;
+        const companyName = companyNames[index] || `Company ${index + 1}`;
         addText(`${companyName}:`, 12, "bold");
         addText(
           `  Market Share: ${
@@ -489,6 +507,7 @@ export async function exportComparisonToPdf(
 
     // Save the PDF
     const filename = `${companyNames
+      .join("_vs_")
       .replace(/[^a-zA-Z0-9\s]/g, "")
       .replace(/\s+/g, "_")}_comparison_report.pdf`;
     pdf.save(filename);
@@ -504,15 +523,14 @@ function generateComparisonTextContent(comparison: ComparisonResult): string {
   const sections: string[] = [];
 
   // Header
-  const companyNames =
-    comparison.companyNames?.join(" vs ") || "Company Comparison";
+  const companyNames = getCompanyNames(comparison);
   sections.push("=".repeat(80));
-  sections.push(`COMPANY COMPARISON REPORT: ${companyNames.toUpperCase()}`);
+  sections.push(
+    `COMPANY COMPARISON REPORT: ${companyNames.join(" vs ").toUpperCase()}`
+  );
   sections.push(`Analysis Date: ${formatDate(comparison.comparisonDate)}`);
   sections.push(`Comparison Type: ${comparison.comparisonType || "standard"}`);
-  sections.push(
-    `Companies Analyzed: ${comparison.companyNames?.join(", ") || "N/A"}`
-  );
+  sections.push(`Companies Analyzed: ${companyNames.join(", ")}`);
   sections.push("=".repeat(80));
   sections.push("");
 
@@ -555,9 +573,9 @@ function generateComparisonTextContent(comparison: ComparisonResult): string {
   if (comparison.metrics && comparison.metrics.length > 0) {
     sections.push("2. COMPANY PERFORMANCE METRICS");
     sections.push("-".repeat(50));
+    const companyNames = getCompanyNames(comparison);
     comparison.metrics.forEach((metric, index) => {
-      const companyName =
-        comparison.companyNames?.[index] || `Company ${index + 1}`;
+      const companyName = companyNames[index] || `Company ${index + 1}`;
       sections.push(`${companyName}:`);
       sections.push(
         `  Market Share: ${
@@ -717,16 +735,13 @@ function generateComparisonMarkdownContent(
   const sections: string[] = [];
 
   // Header
-  const companyNames =
-    comparison.companyNames?.join(" vs ") || "Company Comparison";
-  sections.push(`# ${companyNames} - Comparison Report`);
+  const companyNames = getCompanyNames(comparison);
+  sections.push(`# ${companyNames.join(" vs ")} - Comparison Report`);
   sections.push(`**Analysis Date:** ${formatDate(comparison.comparisonDate)}`);
   sections.push(
     `**Comparison Type:** ${comparison.comparisonType || "standard"}`
   );
-  sections.push(
-    `**Companies Analyzed:** ${comparison.companyNames?.join(", ") || "N/A"}`
-  );
+  sections.push(`**Companies Analyzed:** ${companyNames.join(", ")}`);
   sections.push("");
 
   // Industry Benchmarks
@@ -766,9 +781,9 @@ function generateComparisonMarkdownContent(
   // Company Performance Metrics
   if (comparison.metrics && comparison.metrics.length > 0) {
     sections.push(`## Company Performance Metrics`);
+    const companyNames = getCompanyNames(comparison);
     comparison.metrics.forEach((metric, index) => {
-      const companyName =
-        comparison.companyNames?.[index] || `Company ${index + 1}`;
+      const companyName = companyNames[index] || `Company ${index + 1}`;
       sections.push(`### ${companyName}`);
       sections.push(
         `- **Market Share:** ${

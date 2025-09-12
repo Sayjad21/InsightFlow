@@ -12,6 +12,8 @@ import {
   X,
   Loader2,
   TrendingUp,
+  Upload,
+  FileText,
 } from "lucide-react";
 import type { UserAnalysis } from "../../types";
 import type { UserProfileResponse } from "../../services/api";
@@ -32,6 +34,8 @@ interface AnalysisTabProps {
   setSelectedAnalysisIds: React.Dispatch<React.SetStateAction<string[]>>;
   newCompanyNames: string[];
   setNewCompanyNames: React.Dispatch<React.SetStateAction<string[]>>;
+  newCompanyFiles: (File | null)[];
+  setNewCompanyFiles: React.Dispatch<React.SetStateAction<(File | null)[]>>;
   saveNewAnalyses: boolean;
   setSaveNewAnalyses: (save: boolean) => void;
   isComparing: boolean;
@@ -53,6 +57,8 @@ const AnalysisTab: React.FC<AnalysisTabProps> = ({
   setSelectedAnalysisIds,
   newCompanyNames,
   setNewCompanyNames,
+  newCompanyFiles,
+  setNewCompanyFiles,
   saveNewAnalyses,
   setSaveNewAnalyses,
   isComparing,
@@ -102,6 +108,7 @@ const AnalysisTab: React.FC<AnalysisTabProps> = ({
       // Reset comparison state when entering comparison mode
       setSelectedAnalysisIds([]);
       setNewCompanyNames([""]);
+      setNewCompanyFiles([null]);
       setSaveNewAnalyses(false);
       setComparisonError(null);
     }
@@ -135,9 +142,18 @@ const AnalysisTab: React.FC<AnalysisTabProps> = ({
     });
   };
 
+  const handleCompanyFileChange = (index: number, file: File | null) => {
+    setNewCompanyFiles((prev: (File | null)[]) => {
+      const updated = [...prev];
+      updated[index] = file;
+      return updated;
+    });
+  };
+
   const addCompanyField = () => {
     if (newCompanyNames.length < 5) {
       setNewCompanyNames((prev: string[]) => [...prev, ""]);
+      setNewCompanyFiles((prev: (File | null)[]) => [...prev, null]);
     }
   };
 
@@ -145,6 +161,9 @@ const AnalysisTab: React.FC<AnalysisTabProps> = ({
     if (newCompanyNames.length > 1) {
       setNewCompanyNames((prev: string[]) =>
         prev.filter((_: string, i: number) => i !== index)
+      );
+      setNewCompanyFiles((prev: (File | null)[]) =>
+        prev.filter((_: File | null, i: number) => i !== index)
       );
     }
   };
@@ -178,7 +197,20 @@ const AnalysisTab: React.FC<AnalysisTabProps> = ({
         // Compare existing analyses only
         await ApiService.compareExistingAnalyses(selectedAnalysisIds);
       } else {
-        // Mixed or new company comparison
+        // Mixed or new company comparison - collect files for companies with names
+        const filesToSend: (File | null)[] = [];
+        for (let i = 0; i < validCompanyNames.length; i++) {
+          // Find the corresponding file for this company name
+          const companyName = validCompanyNames[i];
+          const nameIndex = newCompanyNames.findIndex(
+            (name, idx) =>
+              name.trim() === companyName && idx < newCompanyFiles.length
+          );
+          filesToSend.push(
+            nameIndex >= 0 ? newCompanyFiles[nameIndex] || null : null
+          );
+        }
+
         await ApiService.compareEnhanced({
           analysisIds:
             selectedAnalysisIds.length > 0 ? selectedAnalysisIds : undefined,
@@ -191,6 +223,7 @@ const AnalysisTab: React.FC<AnalysisTabProps> = ({
               ? "existing_analyses"
               : "new_analysis",
           saveNewAnalyses: saveNewAnalyses && validCompanyNames.length > 0,
+          files: filesToSend.length > 0 ? filesToSend : undefined,
         });
       }
 
@@ -198,6 +231,7 @@ const AnalysisTab: React.FC<AnalysisTabProps> = ({
       setComparisonMode(false);
       setSelectedAnalysisIds([]);
       setNewCompanyNames([""]);
+      setNewCompanyFiles([null]);
       setSaveNewAnalyses(false);
 
       // Refresh both analyses and comparisons
@@ -322,6 +356,7 @@ const AnalysisTab: React.FC<AnalysisTabProps> = ({
         learning: [],
       },
       balanced_scorecard_image: "",
+      linkedin_analysis: analysis.linkedinAnalysis || "",
     };
   };
 
@@ -378,18 +413,61 @@ const AnalysisTab: React.FC<AnalysisTabProps> = ({
                 <Plus className="h-4 w-4 mr-2 text-green-600" />
                 Add New Companies for Analysis
               </h4>
+              <p className="text-sm text-gray-600 mb-4">
+                Upload files (TXT) to provide additional context for analysis
+              </p>
               <div className="space-y-3">
                 {newCompanyNames.map((name, index) => (
                   <div key={index} className="flex items-center space-x-3">
-                    <input
-                      type="text"
-                      placeholder={`Company ${index + 1} name`}
-                      value={name}
-                      onChange={(e) =>
-                        handleCompanyNameChange(index, e.target.value)
-                      }
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        placeholder={`Company ${index + 1} name`}
+                        value={name}
+                        onChange={(e) =>
+                          handleCompanyNameChange(index, e.target.value)
+                        }
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 placeholder-gray-400"
+                      />
+                      {/* File upload section - only show when company name is entered */}
+                      {name.trim() && (
+                        <div className="mt-2 flex items-center space-x-2">
+                          <input
+                            type="file"
+                            id={`file-${index}`}
+                            accept=".pdf,.doc,.docx,.txt,.csv,.xlsx,.xls"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0] || null;
+                              handleCompanyFileChange(index, file);
+                            }}
+                            className="hidden"
+                          />
+                          <label
+                            htmlFor={`file-${index}`}
+                            className="flex items-center px-3 py-1 text-sm text-purple-600 bg-purple-50 border border-purple-200 rounded-lg cursor-pointer hover:bg-purple-100 transition-colors"
+                          >
+                            <Upload className="h-4 w-4 mr-1" />
+                            Upload File
+                          </label>
+                          {newCompanyFiles[index] && (
+                            <div className="flex items-center space-x-1 text-sm text-gray-600">
+                              <FileText className="h-4 w-4" />
+                              <span className="truncate max-w-32">
+                                {newCompanyFiles[index]?.name}
+                              </span>
+                              <button
+                                onClick={() =>
+                                  handleCompanyFileChange(index, null)
+                                }
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                     {index === newCompanyNames.length - 1 &&
                       newCompanyNames.length < 5 && (
                         <button
@@ -449,6 +527,7 @@ const AnalysisTab: React.FC<AnalysisTabProps> = ({
                   onClick={() => {
                     setSelectedAnalysisIds([]);
                     setNewCompanyNames([""]);
+                    setNewCompanyFiles([null]);
                     setSaveNewAnalyses(false);
                     setComparisonError(null);
                   }}
@@ -568,13 +647,25 @@ const AnalysisTab: React.FC<AnalysisTabProps> = ({
                 <div className="flex items-center space-x-4">
                   {/* Comparison Mode Checkbox */}
                   {comparisonMode && analysis.status === "COMPLETED" && (
-                    <input
-                      type="checkbox"
-                      checked={selectedAnalysisIds.includes(analysis.id)}
-                      onChange={() => handleAnalysisSelection(analysis.id)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 h-4 w-4"
-                    />
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        id={`checkbox-${analysis.id}`}
+                        checked={selectedAnalysisIds.includes(analysis.id)}
+                        onChange={() => handleAnalysisSelection(analysis.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="peer sr-only"
+                      />
+                      <label
+                        htmlFor={`checkbox-${analysis.id}`}
+                        className="relative flex items-center justify-center w-5 h-5 bg-white border-2 border-gray-300 rounded cursor-pointer transition-all duration-200 peer-checked:bg-gradient-to-r peer-checked:from-purple-600 peer-checked:to-blue-600 peer-checked:border-purple-600 hover:border-purple-400 peer-focus:ring-2 peer-focus:ring-purple-500 peer-focus:ring-opacity-50"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {selectedAnalysisIds.includes(analysis.id) && (
+                          <CheckCircle className="w-3 h-3 text-white" />
+                        )}
+                      </label>
+                    </div>
                   )}
                   {getStatusIcon(analysis.status)}
                   <div>
@@ -600,27 +691,29 @@ const AnalysisTab: React.FC<AnalysisTabProps> = ({
                   >
                     {analysis.status}
                   </span>
-                  {!comparisonMode && (
-                    <div className="flex items-center space-x-2">
-                      {analysis.status === "COMPLETED" && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedAnalysis(analysis);
-                          }}
-                          className="p-2 text-gray-400 hover:text-blue-600 transition-colors duration-200"
-                          title="View Details"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                      )}
-                      {expandedAnalysis === analysis.id ? (
-                        <ChevronUp className="h-5 w-5 text-gray-400" />
-                      ) : (
-                        <ChevronDown className="h-5 w-5 text-gray-400" />
-                      )}
-                    </div>
-                  )}
+                  <div className="flex items-center space-x-2">
+                    {analysis.status === "COMPLETED" && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedAnalysis(analysis);
+                        }}
+                        className="p-2 text-gray-400 hover:text-blue-600 transition-colors duration-200"
+                        title="View Details"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                    )}
+                    {!comparisonMode && (
+                      <>
+                        {expandedAnalysis === analysis.id ? (
+                          <ChevronUp className="h-5 w-5 text-gray-400" />
+                        ) : (
+                          <ChevronDown className="h-5 w-5 text-gray-400" />
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
 

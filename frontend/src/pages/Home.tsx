@@ -32,9 +32,12 @@ const Home: React.FC = () => {
   };
 
   return (
-    <Layout containerClass="min-h-screen" mainContentClass="flex flex-col">
+    <Layout
+      containerClass="min-h-screen bg-gray-50"
+      mainContentClass="flex flex-col"
+    >
       {/* Show test page if toggled */}
-      {showTestPage ? (
+      {/* {showTestPage ? (
         <div className="relative">
           <div className="absolute top-4 right-4 z-50 flex space-x-2">
             <Link
@@ -53,17 +56,11 @@ const Home: React.FC = () => {
           </div>
           <TestPage />
         </div>
-      ) : (
-        <div
-          className="text-black flex flex-col rounded-2xl overflow-hidden"
-          style={{
-            background:
-              "linear-gradient(135deg, #eef2ff 0%, #faf5ff 50%, #fdf2f8 100%)",
-            minHeight: "calc(100vh - 4rem)",
-          }}
-        >
-          {/* Navigation Buttons */}
-          <div className="absolute top-4 right-4 z-50 flex space-x-2">
+      ) :  */}
+
+      <div className="bg-white rounded-2xl shadow-lg overflow-hidden min-h-full">
+        {/* Navigation Buttons */}
+        {/* <div className="absolute top-4 right-4 z-50 flex space-x-2">
             <Link
               to="/dashboard"
               className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-md hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg"
@@ -77,37 +74,36 @@ const Home: React.FC = () => {
             >
               Test API
             </button>
+          </div> */}
+
+        <div className="container mx-auto px-4 py-16 flex-grow">
+          <Header onAnalysisComplete={handleAnalysisComplete} />
+
+          {/* Service Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {services.map((service) => (
+              <ServiceCard
+                key={service.id}
+                service={service}
+                onClick={() => handleCardClick(service)}
+              />
+            ))}
           </div>
 
-          <div className="container mx-auto px-4 py-16 flex-grow">
-            <Header onAnalysisComplete={handleAnalysisComplete} />
-
-            {/* Service Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-              {services.map((service) => (
-                <ServiceCard
-                  key={service.id}
-                  service={service}
-                  onClick={() => handleCardClick(service)}
-                />
-              ))}
-            </div>
-
-            {/* Modal */}
-            <ServiceModal
-              service={selectedService}
-              isOpen={isModalOpen}
-              onClose={handleCloseModal}
-              analysisResult={analysisResult}
-            />
-          </div>
-
-          {/* Footer */}
-          <footer className="w-full py-4 text-center text-white/70 border-t border-white/10">
-            Powered by Ollama, tavily
-          </footer>
+          {/* Modal */}
+          <ServiceModal
+            service={selectedService}
+            isOpen={isModalOpen}
+            onClose={handleCloseModal}
+            analysisResult={analysisResult}
+          />
         </div>
-      )}
+
+        {/* Footer */}
+        <footer className="w-full py-4 text-center text-gray-600 border-t border-gray-200 bg-gray-50">
+          Powered by Ollama, tavily
+        </footer>
+      </div>
     </Layout>
   );
 };

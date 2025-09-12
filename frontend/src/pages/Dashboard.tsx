@@ -1,4 +1,5 @@
 import React from "react";
+import { Loader2 } from "lucide-react";
 import { useDashboardData } from "../hooks/useDashboardData";
 import TabNavigation from "../components/Dashboard/TabNavigation";
 import ComparisonModal from "../components/Dashboard/ComparisonModal";
@@ -19,29 +20,6 @@ const Dashboard: React.FC = () => {
     selectedComparison,
     setSelectedComparison,
   } = dashboardData;
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading your dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-            Error: {error}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <Layout>
@@ -66,8 +44,20 @@ const Dashboard: React.FC = () => {
             comparisonCount={comparisonResults.length}
           />
 
-          {/* Tab Content */}
-          {activeTab === "analysis" ? (
+          {/* Show loading or error state only in content area */}
+          {isLoading ? (
+            <div className="text-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+              <p className="text-gray-600">Loading your dashboard...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg inline-block">
+                Error: {error}
+              </div>
+            </div>
+          ) : /* Tab Content */
+          activeTab === "analysis" ? (
             <AnalysisTab {...dashboardData} />
           ) : (
             <ComparisonTab
