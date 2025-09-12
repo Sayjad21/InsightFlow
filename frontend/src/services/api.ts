@@ -576,6 +576,105 @@ export class ApiService {
       throw error;
     }
   }
+
+  // Comparison methods
+  /**
+   * Get user's available analyses for comparison selection
+   */
+  static async getComparisonAnalyses(): Promise<any[]> {
+    try {
+      console.log("Fetching user analyses for comparison");
+      const response = await fetch(`${API_BASE_URL}/api/comparison/analyses`, {
+        method: "GET",
+        headers: this.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        console.error("Failed to fetch comparison analyses:", response.status);
+        throw new Error(`Failed to fetch analyses: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Comparison analyses fetched successfully:", data);
+      return data;
+    } catch (error) {
+      console.error("Get Comparison Analyses Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Compare existing analyses only
+   */
+  static async compareExistingAnalyses(analysisIds: string[]): Promise<any> {
+    try {
+      console.log("Comparing existing analyses:", analysisIds);
+      const response = await fetch(
+        `${API_BASE_URL}/api/comparison/compare-existing`,
+        {
+          method: "POST",
+          headers: this.getAuthHeaders(),
+          body: JSON.stringify({ analysisIds }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(
+          "Failed to compare existing analyses:",
+          response.status,
+          errorText
+        );
+        throw new Error(`Comparison failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log("Existing analyses comparison result:", result);
+      return result;
+    } catch (error) {
+      console.error("Compare Existing Analyses Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Enhanced comparison (supports mixed existing + new companies)
+   */
+  static async compareEnhanced(request: {
+    analysisIds?: string[];
+    companyNames?: string[];
+    comparisonType?: string;
+    saveNewAnalyses?: boolean;
+  }): Promise<any> {
+    try {
+      console.log("Enhanced comparison request:", request);
+      const response = await fetch(
+        `${API_BASE_URL}/api/comparison/compare-enhanced`,
+        {
+          method: "POST",
+          headers: this.getAuthHeaders(),
+          body: JSON.stringify(request),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(
+          "Failed to perform enhanced comparison:",
+          response.status,
+          errorText
+        );
+        throw new Error(`Comparison failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log("Enhanced comparison result:", result);
+      return result;
+    } catch (error) {
+      console.error("Enhanced Comparison Error:", error);
+      throw error;
+    }
+  }
 }
 
 // Make ApiService available globally for debugging

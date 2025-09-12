@@ -20,9 +20,13 @@ import {
   AlertCircle,
   Loader2,
   FileText,
+  Plus,
+  X,
+  TrendingUp,
+  GitCompare,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
-import { ApiService, type UserProfileResponse } from "../services/api.js";
+import { ApiService, type UserProfileResponse } from "../services/api";
 import type { UserAnalysis } from "../types";
 import AnalysisDisplay from "../components/AnalysisDisplay";
 import ExportButtons from "../components/ExportButtons";
@@ -42,6 +46,15 @@ const Dashboard: React.FC = () => {
   const [userStats, setUserStats] = useState<UserProfileResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Comparison state
+  const [comparisonMode, setComparisonMode] = useState(false);
+  const [selectedAnalysisIds, setSelectedAnalysisIds] = useState<string[]>([]);
+  const [newCompanyNames, setNewCompanyNames] = useState<string[]>([""]);
+  const [saveNewAnalyses, setSaveNewAnalyses] = useState(false);
+  const [comparisonResult, setComparisonResult] = useState<any>(null);
+  const [isComparing, setIsComparing] = useState(false);
+  const [comparisonError, setComparisonError] = useState<string | null>(null);
 
   // Fetch user data and analyses on mount
   useEffect(() => {
@@ -307,6 +320,130 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  // Comparison handlers
+  const handleAnalysisSelection = (analysisId: string) => {
+    setSelectedAnalysisIds((prev) => {
+      if (prev.includes(analysisId)) {
+        return prev.filter((id) => id !== analysisId);
+      } else {
+        return [...prev, analysisId];
+      }
+    });
+  };
+
+  const handleCompanyNameChange = (index: number, value: string) => {
+    setNewCompanyNames((prev) => {
+      const updated = [...prev];
+      updated[index] = value;
+      return updated;
+    });
+  };
+
+  const addCompanyField = () => {
+    if (newCompanyNames.length < 5) {
+      setNewCompanyNames((prev) => [...prev, ""]);
+    }
+  };
+
+  const removeCompanyField = (index: number) => {
+    if (newCompanyNames.length > 1) {
+      setNewCompanyNames((prev) => prev.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleCompare = async () => {
+    const validCompanyNames = newCompanyNames.filter(
+      (name) => name.trim() !== ""
+    );
+    const totalSelections =
+      selectedAnalysisIds.length + validCompanyNames.length;
+
+    if (totalSelections < 2) {
+      setComparisonError(
+        "Please select at least 2 companies/analyses to compare"
+      );
+      return;
+    }
+
+    if (totalSelections > 5) {
+      setComparisonError(
+        "Maximum 5 companies/analyses can be compared at once"
+      );
+      return;
+    }
+
+    setIsComparing(true);
+    setComparisonError(null);
+
+    try {
+      let result;
+
+      if (selectedAnalysisIds.length > 0 && validCompanyNames.length === 0) {
+        // Compare existing analyses only
+        result = await ApiService.compareExistingAnalyses(selectedAnalysisIds);
+      } else {
+        // Mixed or new company comparison
+        result = await ApiService.compareEnhanced({
+          analysisIds:
+            selectedAnalysisIds.length > 0 ? selectedAnalysisIds : undefined,
+          companyNames:
+            validCompanyNames.length > 0 ? validCompanyNames : undefined,
+          comparisonType:
+            selectedAnalysisIds.length > 0 && validCompanyNames.length > 0
+              ? "mixed"
+              : selectedAnalysisIds.length > 0
+              ? "existing_analyses"
+              : "new_analysis",
+          saveNewAnalyses: saveNewAnalyses && validCompanyNames.length > 0,
+        });
+      }
+
+      setComparisonResult(result);
+      // Don't set comparisonMode to true since results modal will show
+    } catch (error) {
+      console.error("Comparison failed:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Comparison failed";
+      setComparisonError(
+        errorMessage.includes("fetch")
+          ? "Unable to connect to server. Please check your connection."
+          : errorMessage
+      );
+    } finally {
+      setIsComparing(false);
+    }
+  };
+
+  const resetComparison = async () => {
+    setComparisonMode(false);
+    setSelectedAnalysisIds([]);
+    setNewCompanyNames([""]);
+    setSaveNewAnalyses(false);
+    setComparisonResult(null);
+    setComparisonError(null);
+
+    // If new analyses were saved, refresh the analyses list
+    if (
+      comparisonResult?.saved_analysis_ids &&
+      comparisonResult.saved_analysis_ids.length > 0
+    ) {
+      try {
+        const analysesData = await ApiService.getUserAnalyses();
+        setUserAnalyses(analysesData.analyses);
+      } catch (error) {
+        console.error("Failed to refresh analyses:", error);
+      }
+    }
+  };
+
+  const toggleComparisonMode = () => {
+    if (comparisonMode) {
+      resetComparison();
+    } else {
+      setComparisonMode(true);
+    }
+  };
+
   // Helper function to transform analysis data for AnalysisDisplay component
   const transformAnalysisForDisplay = (analysis: UserAnalysis) => {
     const analysisData = getAnalysisData(analysis);
@@ -454,6 +591,164 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
+        {/* Comparison Controls Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <GitCompare className="h-6 w-6 text-purple-600 mr-3" />
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Compare Companies
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Compare existing analyses and/or analyze new companies
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={toggleComparisonMode}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                  comparisonMode
+                    ? "bg-red-100 text-red-700 hover:bg-red-200"
+                    : "bg-purple-100 text-purple-700 hover:bg-purple-200"
+                }`}
+              >
+                {comparisonMode ? "Cancel Comparison" : "Start Comparison"}
+              </button>
+            </div>
+          </div>
+
+          {comparisonMode && (
+            <div className="p-6 space-y-6">
+              {/* Instructions */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-blue-900 mb-2">
+                  How to Compare:
+                </h4>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>
+                    • Select 2-5 completed analyses from your history below
+                  </li>
+                  <li>• Or add new company names for fresh analysis</li>
+                  <li>• Or mix both existing and new companies</li>
+                  <li>
+                    • Check "Save new analyses" to add them to your dashboard
+                  </li>
+                </ul>
+              </div>
+              {/* New Company Analysis Section */}
+              <div className="space-y-4">
+                <h4 className="text-md font-semibold text-gray-900 flex items-center">
+                  <Plus className="h-4 w-4 mr-2 text-green-600" />
+                  Add New Companies for Analysis
+                </h4>
+                <div className="space-y-3">
+                  {newCompanyNames.map((name, index) => (
+                    <div key={index} className="flex items-center space-x-3">
+                      <input
+                        type="text"
+                        placeholder={`Company ${index + 1} name`}
+                        value={name}
+                        onChange={(e) =>
+                          handleCompanyNameChange(index, e.target.value)
+                        }
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                      {index === newCompanyNames.length - 1 &&
+                        newCompanyNames.length < 5 && (
+                          <button
+                            onClick={addCompanyField}
+                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </button>
+                        )}
+                      {newCompanyNames.length > 1 && (
+                        <button
+                          onClick={() => removeCompanyField(index)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Save to Database Checkbox */}
+                {newCompanyNames.some((name) => name.trim() !== "") && (
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="saveNewAnalyses"
+                      checked={saveNewAnalyses}
+                      onChange={(e) => setSaveNewAnalyses(e.target.checked)}
+                      className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                    />
+                    <label
+                      htmlFor="saveNewAnalyses"
+                      className="text-sm text-gray-600"
+                    >
+                      Save new analyses to my dashboard
+                    </label>
+                  </div>
+                )}
+              </div>
+
+              {/* Compare Button and Status */}
+              <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                <div className="flex items-center space-x-4">
+                  <span className="text-sm text-gray-600">
+                    Selected: {selectedAnalysisIds.length} existing +{" "}
+                    {newCompanyNames.filter((n) => n.trim()).length} new
+                  </span>
+                  {comparisonError && (
+                    <span className="text-sm text-red-600">
+                      {comparisonError}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={() => {
+                      setSelectedAnalysisIds([]);
+                      setNewCompanyNames([""]);
+                      setSaveNewAnalyses(false);
+                      setComparisonError(null);
+                    }}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors text-sm"
+                  >
+                    Clear All
+                  </button>
+                  <button
+                    onClick={handleCompare}
+                    disabled={
+                      isComparing ||
+                      selectedAnalysisIds.length +
+                        newCompanyNames.filter((n) => n.trim()).length <
+                        2
+                    }
+                    className="flex items-center px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-200"
+                  >
+                    {isComparing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Comparing...
+                      </>
+                    ) : (
+                      <>
+                        <TrendingUp className="h-4 w-4 mr-2" />
+                        Compare
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
@@ -528,12 +823,28 @@ const Dashboard: React.FC = () => {
             {userAnalyses.map((analysis) => (
               <div key={analysis.id} className="p-6">
                 <div
-                  className={`flex items-center justify-between cursor-pointer transition-all duration-200 ${
-                    analysis.status === "COMPLETED" ? "hover:bg-gray-50" : ""
+                  className={`flex items-center justify-between transition-all duration-200 ${
+                    !comparisonMode && analysis.status === "COMPLETED"
+                      ? "cursor-pointer hover:bg-gray-50"
+                      : ""
                   }`}
-                  onClick={() => handleAnalysisClick(analysis)}
+                  onClick={
+                    !comparisonMode
+                      ? () => handleAnalysisClick(analysis)
+                      : undefined
+                  }
                 >
                   <div className="flex items-center space-x-4">
+                    {/* Comparison Mode Checkbox */}
+                    {comparisonMode && analysis.status === "COMPLETED" && (
+                      <input
+                        type="checkbox"
+                        checked={selectedAnalysisIds.includes(analysis.id)}
+                        onChange={() => handleAnalysisSelection(analysis.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 h-4 w-4"
+                      />
+                    )}
                     {getStatusIcon(analysis.status)}
                     <div>
                       <h4 className="text-lg font-medium text-gray-900">
@@ -542,6 +853,11 @@ const Dashboard: React.FC = () => {
                       <p className="text-sm text-gray-500">
                         {formatDate(analysis.analysisDate)}
                       </p>
+                      {comparisonMode && analysis.status !== "COMPLETED" && (
+                        <p className="text-xs text-gray-400">
+                          (Only completed analyses can be compared)
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -555,7 +871,7 @@ const Dashboard: React.FC = () => {
                         analysis.status.slice(1)}
                     </span>
 
-                    {analysis.status === "COMPLETED" && (
+                    {!comparisonMode && analysis.status === "COMPLETED" && (
                       <div className="flex items-center space-x-2">
                         <button
                           onClick={(e) => {
@@ -578,7 +894,8 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Elaborate Inline Expansion */}
-                {expandedAnalysis === analysis.id &&
+                {!comparisonMode &&
+                  expandedAnalysis === analysis.id &&
                   analysis.status === "COMPLETED" &&
                   (() => {
                     const analysisData = getAnalysisData(analysis);
@@ -1049,6 +1366,345 @@ const Dashboard: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Comparison Results */}
+      {comparisonResult && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-7xl max-h-[90vh] overflow-y-auto w-full">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Company Comparison Report
+              </h2>
+              <button
+                onClick={resetComparison}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-8">
+              {/* Summary Overview */}
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6 border border-purple-200">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Summary Overview
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                  <div className="bg-white rounded-lg p-4">
+                    <div className="text-2xl font-bold text-purple-600">
+                      {comparisonResult.analyses?.length || 0}
+                    </div>
+                    <div className="text-sm text-gray-600">Companies</div>
+                  </div>
+                  <div className="bg-white rounded-lg p-4">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {comparisonResult.comparison_type
+                        ?.replace("_", " ")
+                        .toUpperCase() || "N/A"}
+                    </div>
+                    <div className="text-sm text-gray-600">Type</div>
+                  </div>
+                  <div className="bg-white rounded-lg p-4">
+                    <div className="text-2xl font-bold text-green-600">
+                      {comparisonResult.existing_analyses || 0}
+                    </div>
+                    <div className="text-sm text-gray-600">Existing</div>
+                  </div>
+                  <div className="bg-white rounded-lg p-4">
+                    <div className="text-2xl font-bold text-orange-600">
+                      {comparisonResult.new_analyses || 0}
+                    </div>
+                    <div className="text-sm text-gray-600">New</div>
+                  </div>
+                </div>
+              </div>
+              {/* Benchmarks & Metrics */}
+              {comparisonResult.metrics && comparisonResult.analyses && (
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Benchmarks & Metrics
+                    </h3>
+                  </div>
+                  <div className="p-6 overflow-x-auto">
+                    <table className="min-w-full">
+                      <thead>
+                        <tr className="border-b border-gray-200">
+                          <th className="text-left py-3 px-4 font-medium text-gray-900">
+                            Metric
+                          </th>
+                          {comparisonResult.analyses?.map(
+                            (analysis: any, index: number) => (
+                              <th
+                                key={index}
+                                className="text-center py-3 px-4 font-medium text-gray-900"
+                              >
+                                {analysis.company_name}
+                              </th>
+                            )
+                          )}
+                          <th className="text-center py-3 px-4 font-medium text-blue-600">
+                            Benchmark Avg
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {/* Market Share Row */}
+                        <tr className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="py-3 px-4 font-medium text-gray-700">
+                            Market Share
+                          </td>
+                          {comparisonResult.metrics.map(
+                            (metric: any, index: number) => {
+                              const values = comparisonResult.metrics.map(
+                                (m: any) => m.market_share
+                              );
+                              const isHighest =
+                                metric.market_share === Math.max(...values);
+                              return (
+                                <td
+                                  key={index}
+                                  className={`py-3 px-4 text-center ${
+                                    isHighest
+                                      ? "bg-green-100 text-green-800 font-semibold"
+                                      : "bg-red-100 text-red-600"
+                                  }`}
+                                >
+                                  {metric.market_share?.toFixed(2)}%
+                                </td>
+                              );
+                            }
+                          )}
+                          <td className="py-3 px-4 text-center text-blue-600 font-medium">
+                            {comparisonResult.benchmarks?.avg_market_share?.toFixed(
+                              2
+                            )}
+                            %
+                          </td>
+                        </tr>
+                        {/* Growth Rate Row */}
+                        <tr className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="py-3 px-4 font-medium text-gray-700">
+                            Growth Rate
+                          </td>
+                          {comparisonResult.metrics.map(
+                            (metric: any, index: number) => {
+                              const values = comparisonResult.metrics.map(
+                                (m: any) => m.growth_rate
+                              );
+                              const isHighest =
+                                metric.growth_rate === Math.max(...values);
+                              return (
+                                <td
+                                  key={index}
+                                  className={`py-3 px-4 text-center ${
+                                    isHighest
+                                      ? "bg-green-100 text-green-800 font-semibold"
+                                      : "text-gray-600"
+                                  }`}
+                                >
+                                  {metric.growth_rate?.toFixed(2)}%
+                                </td>
+                              );
+                            }
+                          )}
+                          <td className="py-3 px-4 text-center text-blue-600 font-medium">
+                            {comparisonResult.benchmarks?.avg_growth_rate?.toFixed(
+                              2
+                            )}
+                            %
+                          </td>
+                        </tr>
+                        {/* Risk Rating Row */}
+                        <tr className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="py-3 px-4 font-medium text-gray-700">
+                            Risk Rating
+                          </td>
+                          {comparisonResult.metrics.map(
+                            (metric: any, index: number) => {
+                              const values = comparisonResult.metrics.map(
+                                (m: any) => m.risk_rating
+                              );
+                              const isLowest =
+                                metric.risk_rating === Math.min(...values);
+                              return (
+                                <td
+                                  key={index}
+                                  className={`py-3 px-4 text-center ${
+                                    isLowest
+                                      ? "bg-green-100 text-green-800 font-semibold"
+                                      : "text-gray-600"
+                                  }`}
+                                >
+                                  {metric.risk_rating?.toFixed(1)}/10
+                                </td>
+                              );
+                            }
+                          )}
+                          <td className="py-3 px-4 text-center text-blue-600 font-medium">
+                            {comparisonResult.benchmarks?.avg_risk_rating?.toFixed(
+                              1
+                            )}
+                            /10
+                          </td>
+                        </tr>
+                        {/* Sentiment Score Row */}
+                        <tr className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="py-3 px-4 font-medium text-gray-700">
+                            Sentiment Score
+                          </td>
+                          {comparisonResult.metrics.map(
+                            (metric: any, index: number) => {
+                              const values = comparisonResult.metrics.map(
+                                (m: any) => m.sentiment_score
+                              );
+                              const isHighest =
+                                metric.sentiment_score === Math.max(...values);
+                              return (
+                                <td
+                                  key={index}
+                                  className={`py-3 px-4 text-center ${
+                                    isHighest
+                                      ? "bg-green-100 text-green-800 font-semibold"
+                                      : "text-gray-600"
+                                  }`}
+                                >
+                                  {metric.sentiment_score?.toFixed(1)}/100
+                                </td>
+                              );
+                            }
+                          )}
+                          <td className="py-3 px-4 text-center text-blue-600 font-medium">
+                            {comparisonResult.benchmarks?.avg_sentiment_score?.toFixed(
+                              1
+                            )}
+                            /100
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}{" "}
+              {/* Visualizations */}
+              {(comparisonResult.radar_chart ||
+                comparisonResult.bar_graph ||
+                comparisonResult.scatter_plot) && (
+                <div className="bg-white rounded-xl border border-gray-200">
+                  <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Visual Analysis
+                    </h3>
+                  </div>
+                  <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {comparisonResult.radar_chart && (
+                      <div className="text-center">
+                        <h4 className="font-medium text-gray-900 mb-3">
+                          Radar Chart
+                        </h4>
+                        <img
+                          src={`data:image/png;base64,${comparisonResult.radar_chart}`}
+                          alt="Radar Chart"
+                          className="w-full h-48 object-contain rounded-lg border border-gray-200"
+                        />
+                      </div>
+                    )}
+                    {comparisonResult.bar_graph && (
+                      <div className="text-center">
+                        <h4 className="font-medium text-gray-900 mb-3">
+                          Bar Graph
+                        </h4>
+                        <img
+                          src={`data:image/png;base64,${comparisonResult.bar_graph}`}
+                          alt="Bar Graph"
+                          className="w-full h-48 object-contain rounded-lg border border-gray-200"
+                        />
+                      </div>
+                    )}
+                    {comparisonResult.scatter_plot && (
+                      <div className="text-center">
+                        <h4 className="font-medium text-gray-900 mb-3">
+                          Scatter Plot
+                        </h4>
+                        <img
+                          src={`data:image/png;base64,${comparisonResult.scatter_plot}`}
+                          alt="Scatter Plot"
+                          className="w-full h-48 object-contain rounded-lg border border-gray-200"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              {/* Insights */}
+              {comparisonResult.insights && (
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+                  <div className="px-6 py-4 border-b border-blue-200">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Key Insights
+                    </h3>
+                  </div>
+                  <div className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {(Array.isArray(comparisonResult.insights)
+                        ? comparisonResult.insights
+                        : [comparisonResult.insights]
+                      ).map((insight: string, index: number) => (
+                        <div
+                          key={index}
+                          className="bg-white rounded-lg p-4 border border-blue-100"
+                        >
+                          <p className="text-sm text-gray-700">{insight}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+              {/* Investment Recommendations */}
+              {comparisonResult.investment_recommendations && (
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
+                  <div className="px-6 py-4 border-b border-green-200">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Investment Recommendations
+                    </h3>
+                  </div>
+                  <div className="p-6">
+                    <div className="bg-white rounded-lg p-6 border border-green-100">
+                      <div
+                        className="prose prose-sm max-w-none text-gray-700"
+                        dangerouslySetInnerHTML={{
+                          __html:
+                            comparisonResult.investment_recommendations.replace(
+                              /\n/g,
+                              "<br>"
+                            ),
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+              {/* Close Button */}
+              <div className="flex justify-between items-center pt-6 border-t border-gray-200">
+                {comparisonResult.saved_analysis_ids &&
+                  comparisonResult.saved_analysis_ids.length > 0 && (
+                    <div className="text-sm text-green-600">
+                      ✓ {comparisonResult.saved_analysis_ids.length} new
+                      analysis(es) saved to your dashboard
+                    </div>
+                  )}
+                <button
+                  onClick={resetComparison}
+                  className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors ml-auto"
+                >
+                  Close Report
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Full Report Modal */}
       {selectedAnalysis && (
