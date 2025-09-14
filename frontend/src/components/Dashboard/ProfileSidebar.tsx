@@ -1,7 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
-  User,
   LogOut,
   Calendar,
   Building2,
@@ -80,6 +79,16 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
           </div>
           <span className="font-semibold text-green-600">
             {userProfile?.successfulAnalyses || 0}
+          </span>
+        </div>
+
+        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <div className="flex items-center">
+            <ChartNoAxesCombined className="h-5 w-5 text-indigo-600 mr-3" />
+            <span className="text-gray-700">Total Comparisons</span>
+          </div>
+          <span className="font-semibold text-indigo-600">
+            {userProfile?.totalComparisons || 0}
           </span>
         </div>
 

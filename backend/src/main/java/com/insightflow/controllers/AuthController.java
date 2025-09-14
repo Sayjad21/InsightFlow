@@ -105,8 +105,10 @@ public class AuthController {
                 // Add analysis statistics
                 long totalAnalyses = userService.getUserAnalysisCount(user.getId());
                 long successfulAnalyses = userService.getUserSuccessfulAnalysisCount(user.getId());
+                long totalComparisons = userService.getUserComparisonCount(username);
                 response.put("totalAnalyses", totalAnalyses);
                 response.put("successfulAnalyses", successfulAnalyses);
+                response.put("totalComparisons", totalComparisons);
 
                 return ResponseEntity.ok(response);
             } else {

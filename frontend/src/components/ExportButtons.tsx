@@ -4,7 +4,7 @@ import {
   exportToTxt,
   exportToMarkdown,
   exportToPdf,
-} from "../utils/exportUtils";
+} from "../utils/analysisExport/analysisExportUtils";
 import type { AnalysisResult } from "../types";
 
 interface ExportButtonsProps {

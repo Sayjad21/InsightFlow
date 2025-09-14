@@ -6,7 +6,7 @@ import {
   exportComparisonToMarkdown,
   exportComparisonToHtml,
   exportComparisonToPdf,
-} from "../../utils/comparisonExportUtils";
+} from "../../utils/comparisonExport/comparisonExportUtils";
 
 interface ComparisonModalProps {
   selectedComparison: ComparisonResult;
@@ -351,7 +351,8 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
                   <div className="flex justify-center">
                     <img
                       src={
-                        selectedComparison.radarChart?.startsWith("data:")
+                        selectedComparison.radarChart?.startsWith("data:") ||
+                        selectedComparison.radarChart?.startsWith("http")
                           ? selectedComparison.radarChart
                           : `data:image/png;base64,${selectedComparison.radarChart}`
                       }
@@ -370,7 +371,8 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
                     </h3>
                     <img
                       src={
-                        selectedComparison.barGraph?.startsWith("data:")
+                        selectedComparison.barGraph?.startsWith("data:") ||
+                        selectedComparison.barGraph?.startsWith("http")
                           ? selectedComparison.barGraph
                           : `data:image/png;base64,${selectedComparison.barGraph}`
                       }
@@ -386,7 +388,8 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
                     </h3>
                     <img
                       src={
-                        selectedComparison.scatterPlot?.startsWith("data:")
+                        selectedComparison.scatterPlot?.startsWith("data:") ||
+                        selectedComparison.scatterPlot?.startsWith("http")
                           ? selectedComparison.scatterPlot
                           : `data:image/png;base64,${selectedComparison.scatterPlot}`
                       }
@@ -749,6 +752,364 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
                                   </p>
                                 )}
                               </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Visualization Images */}
+                        <div className="mb-6">
+                          <h5 className="font-medium text-purple-400 mb-3">
+                            Strategic Analysis Visualizations
+                          </h5>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {analysis.swotImage && (
+                              <div className="bg-white/5 rounded-lg p-4">
+                                <h6 className="font-medium text-purple-300 mb-2">
+                                  SWOT Analysis
+                                </h6>
+                                <img
+                                  src={analysis.swotImage}
+                                  alt={`SWOT Analysis for ${analysis.companyName}`}
+                                  className="w-full rounded-lg border border-gray-600/30"
+                                  loading="lazy"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = "none";
+                                  }}
+                                />
+                              </div>
+                            )}
+
+                            {analysis.pestelImage && (
+                              <div className="bg-white/5 rounded-lg p-4">
+                                <h6 className="font-medium text-purple-300 mb-2">
+                                  PESTEL Analysis
+                                </h6>
+                                <img
+                                  src={analysis.pestelImage}
+                                  alt={`PESTEL Analysis for ${analysis.companyName}`}
+                                  className="w-full rounded-lg border border-gray-600/30"
+                                  loading="lazy"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = "none";
+                                  }}
+                                />
+                              </div>
+                            )}
+
+                            {analysis.porterImage && (
+                              <div className="bg-white/5 rounded-lg p-4">
+                                <h6 className="font-medium text-purple-300 mb-2">
+                                  Porter's Five Forces
+                                </h6>
+                                <img
+                                  src={analysis.porterImage}
+                                  alt={`Porter's Five Forces for ${analysis.companyName}`}
+                                  className="w-full rounded-lg border border-gray-600/30"
+                                  loading="lazy"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = "none";
+                                  }}
+                                />
+                              </div>
+                            )}
+
+                            {analysis.bcgImage && (
+                              <div className="bg-white/5 rounded-lg p-4">
+                                <h6 className="font-medium text-purple-300 mb-2">
+                                  BCG Matrix
+                                </h6>
+                                <img
+                                  src={analysis.bcgImage}
+                                  alt={`BCG Matrix for ${analysis.companyName}`}
+                                  className="w-full rounded-lg border border-gray-600/30"
+                                  loading="lazy"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = "none";
+                                  }}
+                                />
+                              </div>
+                            )}
+
+                            {analysis.mckinseyImage && (
+                              <div className="bg-white/5 rounded-lg p-4">
+                                <h6 className="font-medium text-purple-300 mb-2">
+                                  McKinsey 7S Framework
+                                </h6>
+                                <img
+                                  src={analysis.mckinseyImage}
+                                  alt={`McKinsey 7S for ${analysis.companyName}`}
+                                  className="w-full rounded-lg border border-gray-600/30"
+                                  loading="lazy"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = "none";
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Porter's Five Forces - Full Details */}
+                        {analysis.porterForces && (
+                          <div className="mb-6">
+                            <h5 className="font-medium text-indigo-400 mb-3">
+                              Porter's Five Forces Analysis
+                            </h5>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {/* Competitive Rivalry */}
+                              <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-lg p-4">
+                                <h6 className="font-medium text-indigo-300 mb-2">
+                                  Competitive Rivalry
+                                </h6>
+                                {analysis.porterForces.rivalry?.length > 0 ? (
+                                  <ul className="space-y-1 text-sm text-indigo-200">
+                                    {analysis.porterForces.rivalry.map(
+                                      (item, idx) => (
+                                        <li
+                                          key={idx}
+                                          className="flex items-start"
+                                        >
+                                          <span className="text-indigo-400 mr-2">
+                                            •
+                                          </span>
+                                          <span>{item}</span>
+                                        </li>
+                                      )
+                                    )}
+                                  </ul>
+                                ) : (
+                                  <p className="text-sm text-gray-400 italic">
+                                    No rivalry factors identified
+                                  </p>
+                                )}
+                              </div>
+
+                              {/* Threat of New Entrants */}
+                              <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-lg p-4">
+                                <h6 className="font-medium text-indigo-300 mb-2">
+                                  New Entrants
+                                </h6>
+                                {analysis.porterForces.newEntrants?.length >
+                                0 ? (
+                                  <ul className="space-y-1 text-sm text-indigo-200">
+                                    {analysis.porterForces.newEntrants.map(
+                                      (item, idx) => (
+                                        <li
+                                          key={idx}
+                                          className="flex items-start"
+                                        >
+                                          <span className="text-indigo-400 mr-2">
+                                            •
+                                          </span>
+                                          <span>{item}</span>
+                                        </li>
+                                      )
+                                    )}
+                                  </ul>
+                                ) : (
+                                  <p className="text-sm text-gray-400 italic">
+                                    No new entrant factors identified
+                                  </p>
+                                )}
+                              </div>
+
+                              {/* Threat of Substitutes */}
+                              <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-lg p-4">
+                                <h6 className="font-medium text-indigo-300 mb-2">
+                                  Substitutes
+                                </h6>
+                                {analysis.porterForces.substitutes?.length >
+                                0 ? (
+                                  <ul className="space-y-1 text-sm text-indigo-200">
+                                    {analysis.porterForces.substitutes.map(
+                                      (item, idx) => (
+                                        <li
+                                          key={idx}
+                                          className="flex items-start"
+                                        >
+                                          <span className="text-indigo-400 mr-2">
+                                            •
+                                          </span>
+                                          <span>{item}</span>
+                                        </li>
+                                      )
+                                    )}
+                                  </ul>
+                                ) : (
+                                  <p className="text-sm text-gray-400 italic">
+                                    No substitute factors identified
+                                  </p>
+                                )}
+                              </div>
+
+                              {/* Buyer Power */}
+                              <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-lg p-4">
+                                <h6 className="font-medium text-indigo-300 mb-2">
+                                  Buyer Power
+                                </h6>
+                                {analysis.porterForces.buyerPower?.length >
+                                0 ? (
+                                  <ul className="space-y-1 text-sm text-indigo-200">
+                                    {analysis.porterForces.buyerPower.map(
+                                      (item, idx) => (
+                                        <li
+                                          key={idx}
+                                          className="flex items-start"
+                                        >
+                                          <span className="text-indigo-400 mr-2">
+                                            •
+                                          </span>
+                                          <span>{item}</span>
+                                        </li>
+                                      )
+                                    )}
+                                  </ul>
+                                ) : (
+                                  <p className="text-sm text-gray-400 italic">
+                                    No buyer power factors identified
+                                  </p>
+                                )}
+                              </div>
+
+                              {/* Supplier Power */}
+                              <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-lg p-4">
+                                <h6 className="font-medium text-indigo-300 mb-2">
+                                  Supplier Power
+                                </h6>
+                                {analysis.porterForces.supplierPower?.length >
+                                0 ? (
+                                  <ul className="space-y-1 text-sm text-indigo-200">
+                                    {analysis.porterForces.supplierPower.map(
+                                      (item, idx) => (
+                                        <li
+                                          key={idx}
+                                          className="flex items-start"
+                                        >
+                                          <span className="text-indigo-400 mr-2">
+                                            •
+                                          </span>
+                                          <span>{item}</span>
+                                        </li>
+                                      )
+                                    )}
+                                  </ul>
+                                ) : (
+                                  <p className="text-sm text-gray-400 italic">
+                                    No supplier power factors identified
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* BCG Matrix - Full Details */}
+                        {analysis.bcgMatrix && (
+                          <div className="mb-6">
+                            <h5 className="font-medium text-cyan-400 mb-3">
+                              BCG Matrix Analysis
+                            </h5>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {Object.entries(analysis.bcgMatrix).map(
+                                ([product, data]) => (
+                                  <div
+                                    key={product}
+                                    className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4"
+                                  >
+                                    <h6 className="font-medium text-cyan-300 mb-2">
+                                      {product}
+                                    </h6>
+                                    <div className="space-y-2 text-sm text-cyan-200">
+                                      <div className="flex justify-between">
+                                        <span>Market Share:</span>
+                                        <span>{data.marketShare}%</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span>Growth Rate:</span>
+                                        <span>{data.growthRate}%</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* McKinsey 7S Framework - Full Details */}
+                        {analysis.mckinsey7s && (
+                          <div className="mb-6">
+                            <h5 className="font-medium text-teal-400 mb-3">
+                              McKinsey 7S Framework
+                            </h5>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {Object.entries(analysis.mckinsey7s).map(
+                                ([dimension, value]) => (
+                                  <div
+                                    key={dimension}
+                                    className="bg-teal-500/10 border border-teal-500/30 rounded-lg p-4"
+                                  >
+                                    <h6 className="font-medium text-teal-300 mb-2 capitalize">
+                                      {dimension === "sharedValues"
+                                        ? "Shared Values"
+                                        : dimension}
+                                    </h6>
+                                    <p className="text-sm text-teal-200">
+                                      {value}
+                                    </p>
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Sources */}
+                        {analysis.sources && analysis.sources.length > 0 && (
+                          <div className="mb-6">
+                            <h5 className="font-medium text-amber-400 mb-3">
+                              Analysis Sources ({analysis.sources.length})
+                            </h5>
+                            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
+                              <ul className="space-y-2 text-sm text-amber-200">
+                                {analysis.sources.map((source, idx) => (
+                                  <li key={idx} className="flex items-start">
+                                    <span className="text-amber-400 mr-2 flex-shrink-0 mt-1">
+                                      {idx + 1}.
+                                    </span>
+                                    <a
+                                      href={source}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-amber-200 hover:text-amber-100 underline break-all"
+                                    >
+                                      {source}
+                                    </a>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* LinkedIn Analysis */}
+                        {analysis.linkedinAnalysis && (
+                          <div className="mb-6">
+                            <h5 className="font-medium text-blue-400 mb-3">
+                              LinkedIn-Based Analysis
+                            </h5>
+                            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                              <div
+                                className="text-sm text-blue-200 leading-relaxed"
+                                dangerouslySetInnerHTML={{
+                                  __html: analysis.linkedinAnalysis,
+                                }}
+                              />
                             </div>
                           </div>
                         )}

@@ -109,9 +109,15 @@ public class ScrapingService {
     }
 
     public String getLinkedInAnalysis(String companyName) {
+        logger.info("====== STARTING LINKEDIN ANALYSIS FOR: '{}' ======", companyName);
+        long analysisStartTime = System.currentTimeMillis();
+
         // Rate limiting to avoid CAPTCHA
         synchronized (this) {
             long currentTime = System.currentTimeMillis();
+            logger.info("Rate limiting check - Current requests: {}/{}, Last request: {} ms ago",
+                    requestCount, MAX_REQUESTS_PER_HOUR, currentTime - lastRequestTime);
+
             if (currentTime - lastRequestTime < MIN_REQUEST_INTERVAL) {
                 long waitTime = MIN_REQUEST_INTERVAL - (currentTime - lastRequestTime);
                 logger.warn("Rate limiting: waiting {} ms before next request", waitTime);
@@ -119,43 +125,61 @@ public class ScrapingService {
                     Thread.sleep(waitTime);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
+                    logger.error("Request interrupted due to rate limiting", e);
                     throw new RuntimeException("Request interrupted due to rate limiting", e);
                 }
             }
 
             // Reset hourly counter
             if (currentTime - lastRequestTime > 3600000) { // 1 hour
+                logger.info("Resetting hourly rate limit counter (was: {})", requestCount);
                 requestCount = 0;
             }
 
             if (requestCount >= MAX_REQUESTS_PER_HOUR) {
+                logger.error("Hourly request limit ({}) exceeded for LinkedIn analysis", MAX_REQUESTS_PER_HOUR);
                 throw new RuntimeException("Hourly request limit exceeded. Please wait before making more requests.");
             }
 
             lastRequestTime = currentTime;
             requestCount++;
+            logger.info("Rate limiting passed - Updated count: {}/{}", requestCount, MAX_REQUESTS_PER_HOUR);
         }
 
         WebDriver driver = null;
         String tempUserDataDir = null;
         try {
+            logger.info("Phase 1: Setting up Chrome WebDriver for LinkedIn analysis");
+
             // Clean up any orphaned processes first
+            logger.info("Cleaning up orphaned Chrome processes...");
             cleanupChromeProcesses();
 
+            logger.info("Initializing WebDriverManager for Chrome...");
             WebDriverManager.chromedriver().setup();
             ChromeOptions options = new ChromeOptions();
 
             // Create unique temporary user data directory for each session
             tempUserDataDir = System.getProperty("java.io.tmpdir") + "chrome_user_data_" +
                     System.currentTimeMillis() + "_" + random.nextInt(10000);
+            logger.info("Created temporary Chrome user data directory: {}", tempUserDataDir);
 
             // Enhanced anti-detection measures
+            String selectedUserAgent = userAgents[random.nextInt(userAgents.length)];
+            String windowSize = (1920 + random.nextInt(100)) + "," + (1080 + random.nextInt(100));
+
+            logger.info("Configuring Chrome options:");
+            logger.info("  - User Agent: {}", selectedUserAgent);
+            logger.info("  - Window Size: {}", windowSize);
+            logger.info("  - Headless Mode: Enabled");
+            logger.info("  - User Data Dir: {}", tempUserDataDir);
+
             options.addArguments("--headless=new"); // Use "--headless=new" for Chrome 109+
             options.addArguments("--disable-gpu");
             options.addArguments("--no-sandbox");
             options.addArguments("--disable-dev-shm-usage");
             options.addArguments("--disable-blink-features=AutomationControlled");
-            options.addArguments("--window-size=" + (1920 + random.nextInt(100)) + "," + (1080 + random.nextInt(100)));
+            options.addArguments("--window-size=" + windowSize);
             options.addArguments("--disable-notifications");
             options.addArguments("--user-data-dir=" + tempUserDataDir);
             options.addArguments("--disable-background-timer-throttling");
@@ -163,56 +187,97 @@ public class ScrapingService {
             options.addArguments("--disable-renderer-backgrounding");
             options.addArguments("--disable-features=TranslateUI");
             options.addArguments("--disable-ipc-flooding-protection");
-            options.addArguments("user-agent=" + userAgents[random.nextInt(userAgents.length)]);
+            options.addArguments("user-agent=" + selectedUserAgent);
 
+            logger.info("Creating Chrome WebDriver instance...");
             driver = new ChromeDriver(options);
 
             // Remove Firefox-specific JS for navigator.webdriver (Chrome handles this
             // differently)
+            logger.info("Executing JavaScript to hide automation markers...");
             ((JavascriptExecutor) driver)
                     .executeScript("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})");
 
+            logger.info("Setting WebDriver timeouts...");
             driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(60));
             driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(15));
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
 
             // Random delay before starting
-            Thread.sleep(2000 + random.nextInt(3000));
+            int initialDelay = 2000 + random.nextInt(3000);
+            logger.info("Initial human-like delay: {} ms", initialDelay);
+            Thread.sleep(initialDelay);
 
             // Login with human-like behavior
-            logger.info("Navigating to LinkedIn login page");
+            logger.info("Phase 2: Navigating to LinkedIn login page");
             driver.get("https://www.linkedin.com/login");
+            logger.info("Successfully navigated to login page");
 
             // Random delay to simulate reading
-            Thread.sleep(1000 + random.nextInt(2000));
+            int readingDelay = 1000 + random.nextInt(2000);
+            logger.info("Simulating page reading delay: {} ms", readingDelay);
+            Thread.sleep(readingDelay);
 
+            logger.info("Waiting for username field to be present...");
             wait.until(ExpectedConditions.presenceOfElementLocated(By.id("username")));
-            logger.info("Entering login credentials");
+            logger.info("✓ Username field located, proceeding with login");
 
             // Type credentials with human-like delays
+            logger.info("Entering login credentials with human-like typing...");
+            logger.info("Typing username: {}", linkedinEmail.replaceAll(".(?=.{2})", "*")); // Mask email for security
             typeHumanLike(driver.findElement(By.id("username")), linkedinEmail);
-            Thread.sleep(500 + random.nextInt(1000));
-            typeHumanLike(driver.findElement(By.id("password")), linkedinPassword);
-            Thread.sleep(1000 + random.nextInt(1500));
 
+            int betweenFieldsDelay = 500 + random.nextInt(1000);
+            logger.info("Delay between username and password fields: {} ms", betweenFieldsDelay);
+            Thread.sleep(betweenFieldsDelay);
+
+            logger.info("Typing password: [MASKED]");
+            typeHumanLike(driver.findElement(By.id("password")), linkedinPassword);
+
+            int beforeSubmitDelay = 1000 + random.nextInt(1500);
+            logger.info("Delay before submit: {} ms", beforeSubmitDelay);
+            Thread.sleep(beforeSubmitDelay);
+
+            logger.info("Clicking login submit button...");
             driver.findElement(By.xpath("//button[@type='submit']")).click();
+
+            logger.info("Waiting for login completion (feed or checkpoint)...");
             wait.until(ExpectedConditions.or(
                     ExpectedConditions.urlContains("linkedin.com/feed"),
                     ExpectedConditions.urlContains("linkedin.com/checkpoint")));
-            Thread.sleep(3000 + random.nextInt(2000));
+
+            int postLoginDelay = 3000 + random.nextInt(2000);
+            logger.info("Post-login delay: {} ms", postLoginDelay);
+            Thread.sleep(postLoginDelay);
 
             // Check for CAPTCHA
             String currentUrl = driver.getCurrentUrl();
+            logger.info("Current URL after login attempt: {}", currentUrl);
+
             if (currentUrl.contains("checkpoint") || currentUrl.contains("captcha")) {
-                logger.error("CAPTCHA detected at URL: {}", currentUrl);
-                throw new RuntimeException("CAPTCHA encountered during LinkedIn login");
+                logger.error("❌ CAPTCHA or security checkpoint detected at URL: {}", currentUrl);
+                throw new RuntimeException("CAPTCHA encountered during LinkedIn login. URL: " + currentUrl);
             }
 
+            logger.info("✅ Login successful, no CAPTCHA detected");
+
             // Navigate to company page
+            logger.info("Phase 3: Resolving LinkedIn company ID for '{}'", companyName);
+            long companyIdStartTime = System.currentTimeMillis();
             String companyId = getLinkedInCompanyId(companyName);
+            long companyIdEndTime = System.currentTimeMillis();
+
+            logger.info("✅ Company ID resolution completed in {} ms: '{}' -> '{}'",
+                    companyIdEndTime - companyIdStartTime, companyName, companyId);
+
             String companyUrl = "https://www.linkedin.com/company/" + companyId;
-            logger.info("Navigating to company page: {}", companyUrl);
+            logger.info("Phase 4: Navigating to company page: {}", companyUrl);
+
+            long pageLoadStartTime = System.currentTimeMillis();
             driver.get(companyUrl);
+            long pageLoadEndTime = System.currentTimeMillis();
+
+            logger.info("✅ Company page loaded in {} ms", pageLoadEndTime - pageLoadStartTime);
             Thread.sleep(5000);
 
             // Log for debugging
@@ -442,36 +507,63 @@ public class ScrapingService {
                     .replaceAll("\\s{2,}", " ") // Normalize spaces
                     .replaceAll("([a-zA-Z])<br>([a-zA-Z])", "$1 $2") // Fix split words
                     .replaceAll("<br>\\s*-", "<br>-"); // Ensure clean bullet starts
-            logger.info("Successfully generated LinkedIn analysis for {}", companyName);
+            logger.info("✅ Successfully generated LinkedIn analysis for {}", companyName);
+
+            long analysisEndTime = System.currentTimeMillis();
+            long totalDuration = analysisEndTime - analysisStartTime;
+            logger.info("====== LINKEDIN ANALYSIS COMPLETED ======");
+            logger.info("Company: {}", companyName);
+            logger.info("Total Duration: {} ms ({} seconds)", totalDuration, totalDuration / 1000.0);
+            logger.info("Content Length: {} characters", content.length());
+            logger.info("Posts Analyzed: {}", posts.size());
+
             return "<strong>LinkedIn Analysis of " + companyName + "</strong><br><br>" + content;
 
         } catch (Exception e) {
-            logger.error("Failed to perform LinkedIn analysis for {}: {}", companyName, e.getMessage(), e);
-            throw new RuntimeException("Failed to perform LinkedIn analysis for " + companyName + ": " + e.getMessage(),
-                    e);
+            long analysisEndTime = System.currentTimeMillis();
+            long totalDuration = analysisEndTime - analysisStartTime;
+
+            logger.error("====== LINKEDIN ANALYSIS FAILED ======");
+            logger.error("Company: {}", companyName);
+            logger.error("Total Duration Before Failure: {} ms ({} seconds)", totalDuration, totalDuration / 1000.0);
+            logger.error("Error Type: {}", e.getClass().getSimpleName());
+            logger.error("Error Message: {}", e.getMessage());
+            logger.error("Stack Trace:", e);
+
+            throw new RuntimeException("Failed to perform LinkedIn analysis for " + companyName +
+                    " after " + totalDuration + "ms. Error: " + e.getMessage(), e);
         } finally {
+            logger.info("Phase 5: Cleanup - Closing WebDriver and cleaning temporary files");
             if (driver != null) {
                 try {
+                    logger.info("Quitting WebDriver session...");
                     driver.quit();
-                    logger.info("WebDriver closed");
+                    logger.info("✅ WebDriver session closed successfully");
                 } catch (Exception e) {
-                    logger.error("Error closing WebDriver: {}", e.getMessage());
+                    logger.error("❌ Error closing WebDriver: {}", e.getMessage());
                 }
+            } else {
+                logger.info("No WebDriver session to close");
             }
 
             // Clean up temporary user data directory
             if (tempUserDataDir != null) {
                 try {
+                    logger.info("Cleaning up temporary user data directory: {}", tempUserDataDir);
                     Files.walk(Paths.get(tempUserDataDir))
                             .sorted(java.util.Comparator.reverseOrder())
                             .map(java.nio.file.Path::toFile)
                             .forEach(java.io.File::delete);
-                    logger.info("Cleaned up temporary user data directory: {}", tempUserDataDir);
+                    logger.info("✅ Successfully cleaned up temporary user data directory");
                 } catch (Exception e) {
-                    logger.warn("Failed to clean up temporary user data directory {}: {}", tempUserDataDir,
+                    logger.warn("⚠ Failed to clean up temporary user data directory {}: {}", tempUserDataDir,
                             e.getMessage());
                 }
+            } else {
+                logger.info("No temporary user data directory to clean up");
             }
+
+            logger.info("====== CLEANUP COMPLETED ======");
         }
     }
 
@@ -555,60 +647,84 @@ public class ScrapingService {
             case "netflix":
                 return "netflix";
             default:
-                // Dynamic search using TavilyUtil with follower count validation
+                // Enhanced dynamic search using TavilyUtil with multiple fallback strategies
                 try {
-                    logger.info("Searching for LinkedIn company page for: {}", companyName);
-                    List<Map<String, Object>> searchResults = tavilyUtil
-                            .search("site:linkedin.com/company " + companyName, 3);
+                    logger.info("=== STARTING LINKEDIN COMPANY SEARCH FOR: {} ===", companyName);
 
+                    // Strategy 1: Use enhanced LinkedIn search from TavilyUtil
+                    List<Map<String, Object>> searchResults = tavilyUtil.searchLinkedInCompany(companyName);
+                    logger.info("Enhanced LinkedIn search returned {} results for '{}'", searchResults.size(),
+                            companyName);
+
+                    // Strategy 2: If no results, try deep search with variations
                     if (searchResults.isEmpty()) {
-                        logger.warn("No LinkedIn search results found for {}; using normalized name", companyName);
-                        return normalizedName.replaceAll("[^a-z0-9-]", "");
+                        logger.warn("Standard LinkedIn search failed for {}, trying deep search with variations...",
+                                companyName);
+                        searchResults = tavilyUtil.deepSearchLinkedInCompany(companyName, true);
+                        logger.info("Deep search with variations returned {} results", searchResults.size());
                     }
 
-                    // Extract all potential LinkedIn company slugs
+                    if (searchResults.isEmpty()) {
+                        logger.warn("All enhanced search strategies failed for {}; using normalized name fallback",
+                                companyName);
+                        String fallbackSlug = generateEnhancedFallbackSlug(companyName);
+                        logger.info("Generated fallback slug: {} -> {}", companyName, fallbackSlug);
+                        return fallbackSlug;
+                    }
+
+                    // Extract all potential LinkedIn company slugs with enhanced validation
                     List<CompanyCandidate> candidates = new ArrayList<>();
-                    for (Map<String, Object> result : searchResults) {
+                    logger.info("Processing {} search results for candidate extraction:", searchResults.size());
+
+                    for (int i = 0; i < searchResults.size(); i++) {
+                        Map<String, Object> result = searchResults.get(i);
                         String url = (String) result.get("url");
                         String title = (String) result.get("title");
                         String content = (String) result.get("content");
 
+                        logger.info("Search result #{}: URL={}, Title={}", i + 1, url, title);
+
                         if (url != null && url.contains("linkedin.com/company/")) {
                             // Extract slug after /company/
-                            String slug = url.substring(url.indexOf("/company/") + 9);
-                            // Remove trailing parts like query parameters or sub-paths
-                            slug = slug.replaceAll("[/?#].*", "");
+                            String slug = extractLinkedInSlugFromUrl(url);
+                            logger.info("Extracted slug from URL: '{}' -> '{}'", url, slug);
 
-                            if (!slug.isEmpty()) {
+                            if (!slug.isEmpty() && isValidLinkedInSlug(slug, companyName)) {
                                 candidates.add(new CompanyCandidate(slug, url, title, content));
-                                logger.info("Found LinkedIn candidate for {}: {} ({})", companyName, slug, title);
+                                logger.info("✓ Valid LinkedIn candidate found: {} -> {} ({})", companyName, slug,
+                                        title);
+                            } else {
+                                logger.warn("✗ Invalid or irrelevant LinkedIn slug rejected: '{}' (from URL: {})", slug,
+                                        url);
                             }
+                        } else {
+                            logger.warn("✗ Search result does not contain LinkedIn company URL: {}", url);
                         }
                     }
 
                     if (candidates.isEmpty()) {
-                        logger.warn("No valid LinkedIn company URLs found for {}; using normalized name", companyName);
-                        return normalizedName.replaceAll("[^a-z0-9-]", "");
+                        logger.warn(
+                                "No valid LinkedIn company URLs found after filtering; trying HEAD request fallback...");
+
+                        // Try direct URL validation as fallback
+                        String directSlug = findValidLinkedInSlug(companyName);
+                        if (directSlug != null) {
+                            logger.info("✓ Found valid LinkedIn slug via direct URL validation: {} -> {}",
+                                    companyName, directSlug);
+                            return directSlug;
+                        }
+
+                        logger.warn("Direct URL validation also failed, using fallback slug generation...");
+                        return generateFallbackSlug(companyName, searchResults);
                     }
 
-                    // If only one candidate, return it
-                    if (candidates.size() == 1) {
-                        logger.info("Single LinkedIn candidate found for {}: {}", companyName, candidates.get(0).slug);
-                        return candidates.get(0).slug;
-                    }
-
-                    // Multiple candidates - try Chrome validation first, then smart fallback
-                    logger.info("Multiple LinkedIn candidates found for {}, validating...", companyName);
-                    CompanyCandidate bestCandidate = selectBestCandidateWithFallback(companyName, candidates);
-
-                    logger.info("Selected best LinkedIn candidate for {}: {} (method: {})",
-                            companyName, bestCandidate.slug, bestCandidate.selectionMethod);
-                    return bestCandidate.slug;
+                    // Enhanced candidate selection with multiple strategies
+                    return selectBestLinkedInCandidate(companyName, candidates);
 
                 } catch (Exception e) {
                     logger.error("Failed to dynamically find LinkedIn ID for {}: {}", companyName, e.getMessage(), e);
-                    // Fallback to normalized name
-                    return normalizedName.replaceAll("[^a-z0-9-]", "");
+                    // Enhanced fallback to normalized name with variations
+                    return generateEnhancedFallbackSlug(companyName);
                 }
         }
     }
@@ -936,39 +1052,6 @@ public class ScrapingService {
     }
 
     /**
-     * Selects the best LinkedIn company candidate with smart fallback strategies
-     */
-    private CompanyCandidate selectBestCandidateWithFallback(String companyName, List<CompanyCandidate> candidates) {
-        // First, calculate relevance scores for all candidates
-        for (CompanyCandidate candidate : candidates) {
-            candidate.relevanceScore = calculateRelevanceScore(companyName, candidate);
-            logger.info("Candidate {} - Title: '{}', Relevance: {}",
-                    candidate.slug, candidate.title, candidate.relevanceScore);
-        }
-
-        // Strategy 1: Try Chrome validation (best accuracy)
-        CompanyCandidate chromeValidated = tryChromeValidation(companyName, candidates);
-        if (chromeValidated != null) {
-            chromeValidated.selectionMethod = "chrome-validation";
-            return chromeValidated;
-        }
-
-        // Strategy 2: Try Jsoup validation (lighter, no Chrome dependency)
-        logger.info("Chrome validation failed for {}, trying Jsoup validation...", companyName);
-        CompanyCandidate jsoupValidated = tryJsoupValidation(companyName, candidates);
-        if (jsoupValidated != null) {
-            jsoupValidated.selectionMethod = "jsoup-validation";
-            return jsoupValidated;
-        }
-
-        // Strategy 3: Smart heuristic selection (final fallback)
-        logger.warn("Both Chrome and Jsoup validation failed for {}, using heuristic analysis", companyName);
-        CompanyCandidate heuristicBest = selectByHeuristics(companyName, candidates);
-        heuristicBest.selectionMethod = "heuristic-analysis";
-        return heuristicBest;
-    }
-
-    /**
      * Attempts Chrome-based validation (original method with better error handling)
      */
     private CompanyCandidate tryChromeValidation(String companyName, List<CompanyCandidate> candidates) {
@@ -1186,49 +1269,6 @@ public class ScrapingService {
     /**
      * Selects best candidate using heuristics when Chrome validation fails
      */
-    private CompanyCandidate selectByHeuristics(String companyName, List<CompanyCandidate> candidates) {
-        String lowerCompanyName = companyName.toLowerCase();
-
-        // Strategy 1: Look for exact or near-exact matches
-        for (CompanyCandidate candidate : candidates) {
-            String lowerSlug = candidate.slug.toLowerCase();
-            String lowerTitle = candidate.title.toLowerCase();
-
-            // For "miro" case: "mirohq" should win over "miro" and "miro-distribution"
-            if (lowerSlug.equals(lowerCompanyName + "hq")) {
-                logger.info("Found HQ variant for {}: {}", companyName, candidate.slug);
-                return candidate;
-            }
-
-            // Exact slug match with higher relevance score
-            if (lowerSlug.equals(lowerCompanyName) && candidate.relevanceScore >= 50.0) {
-                logger.info("Found exact slug match with high relevance for {}: {}", companyName, candidate.slug);
-                return candidate;
-            }
-
-            // Check if title contains company name as exact word
-            if (lowerTitle.contains(lowerCompanyName) && candidate.relevanceScore >= 70.0) {
-                logger.info("Found title match with high relevance for {}: {} ({})", companyName, candidate.title,
-                        candidate.slug);
-                return candidate;
-            }
-        }
-
-        // Strategy 2: Prioritize by relevance score and avoid distribution/reseller
-        // companies
-        CompanyCandidate best = candidates.stream()
-                .filter(c -> !isLikelyDistributor(c)) // Filter out distributors
-                .max((c1, c2) -> Double.compare(c1.relevanceScore, c2.relevanceScore))
-                .orElse(candidates.stream()
-                        .max((c1, c2) -> Double.compare(c1.relevanceScore, c2.relevanceScore))
-                        .orElse(candidates.get(0)));
-
-        logger.info("Selected candidate {} by heuristics (relevance: {}, is_distributor: {})",
-                best.slug, best.relevanceScore, isLikelyDistributor(best));
-
-        return best;
-    }
-
     /**
      * Checks if a candidate is likely a distributor/reseller rather than the main
      * company
@@ -1378,6 +1418,371 @@ public class ScrapingService {
         }
 
         return maxCount;
+    }
+
+    /**
+     * Enhanced method for extracting LinkedIn slug from URL with better parsing
+     */
+    private String extractLinkedInSlugFromUrl(String url) {
+        logger.info("Extracting LinkedIn slug from URL: {}", url);
+        try {
+            if (url == null || !url.contains("linkedin.com/company/")) {
+                logger.warn("URL extraction failed: URL is null or doesn't contain linkedin.com/company/");
+                return "";
+            }
+
+            // Extract slug after /company/
+            String slug = url.substring(url.indexOf("/company/") + 9);
+            // Remove trailing parts like query parameters, sub-paths, or fragments
+            slug = slug.replaceAll("[/?#].*", "");
+            // Remove any trailing slashes
+            slug = slug.replaceAll("/$", "");
+
+            logger.info("✓ Successfully extracted slug '{}' from URL '{}'", slug, url);
+            return slug;
+        } catch (Exception e) {
+            logger.error("Failed to extract slug from URL '{}': {}", url, e.getMessage());
+            return "";
+        }
+    }
+
+    /**
+     * Validates if a LinkedIn slug is relevant to the company name
+     */
+    private boolean isValidLinkedInSlug(String slug, String companyName) {
+        logger.info("Validating LinkedIn slug: '{}' for company: '{}'", slug, companyName);
+
+        if (slug == null || slug.trim().isEmpty()) {
+            logger.warn("Rejection reason: Slug is null or empty");
+            return false;
+        }
+
+        String lowerSlug = slug.toLowerCase();
+        String lowerCompany = companyName.toLowerCase();
+
+        // Special case: For "deepseek", accept known valid variations
+        // if (lowerCompany.equals("deepseek")) {
+        // if (lowerSlug.contains("deepseek") || lowerSlug.contains("deep-seek")) {
+        // logger.info("✓ Special case: Accepting deepseek variant: '{}'", slug);
+        // return true;
+        // }
+        // }
+
+        // Skip obviously invalid slugs
+        if (lowerSlug.length() < 2 || lowerSlug.matches("^\\d+$")) {
+            logger.warn("Rejection reason: Slug too short or numeric only: '{}'", slug);
+            return false;
+        }
+
+        // Skip generic or common LinkedIn paths
+        String[] invalidSlugs = { "home", "login", "company", "about", "help", "search", "feed", "messaging" };
+        for (String invalid : invalidSlugs) {
+            if (lowerSlug.equals(invalid)) {
+                logger.warn("Rejection reason: Generic LinkedIn path: '{}'", slug);
+                return false;
+            }
+        }
+
+        // Skip very long slugs (likely contain query parameters or paths)
+        if (slug.length() > 50) {
+            logger.warn("Rejection reason: Slug too long ({}): '{}'", slug.length(), slug);
+            return false;
+        }
+
+        // General acceptance: if slug contains part of company name or vice versa
+        if (lowerSlug.contains(lowerCompany) || lowerCompany.contains(lowerSlug)) {
+            logger.info("✓ Slug contains company name or vice versa: '{}' <-> '{}'", slug, companyName);
+            return true;
+        }
+
+        logger.info("✓ Slug '{}' passed basic validation for company '{}'", slug, companyName);
+        return true;
+    }
+
+    /**
+     * Generates fallback slug when no valid candidates found but search results
+     * exist
+     */
+    private String generateFallbackSlug(String companyName, List<Map<String, Object>> searchResults) {
+        logger.info("Attempting to generate fallback slug for '{}' from {} search results", companyName,
+                searchResults.size());
+
+        // Look for any LinkedIn URLs in search results and try to extract reasonable
+        // slugs
+        for (Map<String, Object> result : searchResults) {
+            String url = (String) result.get("url");
+            if (url != null && url.contains("linkedin.com")) {
+                // Try to extract any company-related slug from LinkedIn URLs
+                if (url.contains("/company/")) {
+                    String slug = extractLinkedInSlugFromUrl(url);
+                    if (!slug.isEmpty() && slug.length() > 2) {
+                        logger.info("Generated fallback slug from search results: {}", slug);
+                        return slug;
+                    }
+                }
+            }
+        }
+
+        // Final fallback: generate from company name
+        String fallbackSlug = companyName.toLowerCase()
+                .replaceAll("[^a-z0-9\\s-]", "") // Remove special chars except spaces and hyphens
+                .replaceAll("\\s+", "-") // Replace spaces with hyphens
+                .replaceAll("-+", "-") // Collapse multiple hyphens
+                .replaceAll("^-|-$", ""); // Remove leading/trailing hyphens
+
+        logger.info("Generated normalized fallback slug: {} -> {}", companyName, fallbackSlug);
+        return fallbackSlug;
+    }
+
+    /**
+     * Enhanced fallback slug generation with multiple variations
+     */
+    private String generateEnhancedFallbackSlug(String companyName) {
+        logger.info("Generating enhanced fallback slug for: {}", companyName);
+
+        // Try multiple common LinkedIn slug patterns
+        String normalized = companyName.toLowerCase().replaceAll("[^a-z0-9-]", "");
+
+        // Pattern 1: Simple normalization (current approach)
+        String pattern1 = normalized;
+
+        // Pattern 2: Replace spaces with hyphens
+        String pattern2 = companyName.toLowerCase()
+                .replaceAll("[^a-z0-9\\s]", "") // Remove special chars but keep spaces
+                .replaceAll("\\s+", "-") // Replace spaces with hyphens
+                .replaceAll("-+", "-") // Collapse multiple hyphens
+                .replaceAll("^-|-$", ""); // Remove leading/trailing hyphens
+
+        // Pattern 3: Common corporate suffixes handled
+        String pattern3 = companyName.toLowerCase()
+                .replaceAll("\\b(inc|corp|corporation|ltd|llc|company)\\b", "") // Remove corporate suffixes
+                .replaceAll("[^a-z0-9\\s]", "") // Remove special chars
+                .replaceAll("\\s+", "-") // Replace spaces with hyphens
+                .replaceAll("-+", "-") // Collapse multiple hyphens
+                .replaceAll("^-|-$", ""); // Remove leading/trailing hyphens
+
+        // Choose the best pattern (prefer shorter, cleaner ones)
+        String[] patterns = { pattern1, pattern2, pattern3 };
+        String bestPattern = pattern1; // Default
+
+        for (String pattern : patterns) {
+            if (!pattern.isEmpty() && pattern.length() > 1 && pattern.length() < bestPattern.length()) {
+                bestPattern = pattern;
+            }
+        }
+
+        logger.info("Enhanced fallback slug selection: {} -> {}", companyName, bestPattern);
+        return bestPattern;
+    }
+
+    /**
+     * Enhanced candidate selection with comprehensive fallback strategies
+     */
+    private String selectBestLinkedInCandidate(String companyName, List<CompanyCandidate> candidates) {
+        logger.info("=== SELECTING BEST LINKEDIN CANDIDATE FOR: {} ===", companyName);
+        logger.info("Total candidates to evaluate: {}", candidates.size());
+
+        // If only one candidate, return it but with validation
+        if (candidates.size() == 1) {
+            CompanyCandidate single = candidates.get(0);
+            logger.info("Single candidate found: {} ({})", single.slug, single.title);
+
+            // Quick relevance check for single candidate
+            double relevance = calculateRelevanceScore(companyName, single);
+            if (relevance > 30.0) { // Lower threshold for single candidate
+                logger.info("✓ Single candidate accepted with relevance: {}", relevance);
+                return single.slug;
+            } else {
+                logger.warn("⚠ Single candidate has low relevance ({}), but proceeding anyway", relevance);
+                return single.slug;
+            }
+        }
+
+        // Multiple candidates - comprehensive selection
+        logger.info("Multiple candidates found, starting comprehensive evaluation...");
+
+        // Calculate relevance scores for all candidates
+        for (int i = 0; i < candidates.size(); i++) {
+            CompanyCandidate candidate = candidates.get(i);
+            candidate.relevanceScore = calculateRelevanceScore(companyName, candidate);
+            logger.info("Candidate {}: {} -> Relevance: {:.2f} ({})",
+                    i + 1, candidate.slug, candidate.relevanceScore, candidate.title);
+        }
+
+        // Strategy 1: Try Chrome validation (if available)
+        logger.info("Attempting Chrome validation...");
+        CompanyCandidate chromeValidated = tryChromeValidation(companyName, candidates);
+        if (chromeValidated != null) {
+            chromeValidated.selectionMethod = "chrome-validation";
+            logger.info("✓ Chrome validation successful: {} (followers: {})",
+                    chromeValidated.slug, chromeValidated.followerCount);
+            return chromeValidated.slug;
+        }
+
+        // Strategy 2: Try Jsoup validation (lightweight alternative)
+        logger.info("Chrome validation failed, attempting Jsoup validation...");
+        CompanyCandidate jsoupValidated = tryJsoupValidation(companyName, candidates);
+        if (jsoupValidated != null) {
+            jsoupValidated.selectionMethod = "jsoup-validation";
+            logger.info("✓ Jsoup validation successful: {} (followers: {})",
+                    jsoupValidated.slug, jsoupValidated.followerCount);
+            return jsoupValidated.slug;
+        }
+
+        // Strategy 3: Enhanced heuristic selection
+        logger.info("Validation methods failed, using enhanced heuristic analysis...");
+        CompanyCandidate heuristicBest = selectByEnhancedHeuristics(companyName, candidates);
+        heuristicBest.selectionMethod = "enhanced-heuristics";
+        logger.info("✓ Heuristic selection completed: {} (relevance: {:.2f})",
+                heuristicBest.slug, heuristicBest.relevanceScore);
+
+        return heuristicBest.slug;
+    }
+
+    /**
+     * Enhanced heuristics with multiple selection strategies
+     */
+    private CompanyCandidate selectByEnhancedHeuristics(String companyName, List<CompanyCandidate> candidates) {
+        String lowerCompanyName = companyName.toLowerCase();
+        logger.info("Running enhanced heuristic analysis for: {}", companyName);
+
+        // Strategy 1: Look for exact matches or very close variants
+        for (CompanyCandidate candidate : candidates) {
+            String lowerSlug = candidate.slug.toLowerCase();
+
+            // Perfect slug match
+            if (lowerSlug.equals(lowerCompanyName)) {
+                logger.info("✓ Perfect slug match found: {}", candidate.slug);
+                return candidate;
+            }
+
+            // HQ variant (common pattern)
+            if (lowerSlug.equals(lowerCompanyName + "hq") || lowerSlug.equals(lowerCompanyName + "-hq")) {
+                logger.info("✓ HQ variant match found: {}", candidate.slug);
+                return candidate;
+            }
+
+            // Official/Inc variants
+            if (lowerSlug.equals(lowerCompanyName + "inc") || lowerSlug.equals(lowerCompanyName + "-inc") ||
+                    lowerSlug.equals(lowerCompanyName + "official")
+                    || lowerSlug.equals(lowerCompanyName + "-official")) {
+                logger.info("✓ Corporate variant match found: {}", candidate.slug);
+                return candidate;
+            }
+        }
+
+        // Strategy 2: Prioritize by relevance score and filter out distributors
+        CompanyCandidate bestNonDistributor = candidates.stream()
+                .filter(c -> !isLikelyDistributor(c))
+                .max((c1, c2) -> Double.compare(c1.relevanceScore, c2.relevanceScore))
+                .orElse(null);
+
+        // Strategy 3: If no non-distributor found, use highest relevance score
+        CompanyCandidate bestOverall = candidates.stream()
+                .max((c1, c2) -> Double.compare(c1.relevanceScore, c2.relevanceScore))
+                .orElse(candidates.get(0));
+
+        CompanyCandidate finalChoice = bestNonDistributor != null ? bestNonDistributor : bestOverall;
+
+        logger.info("Enhanced heuristic selected: {} (relevance: {:.2f}, is_distributor: {})",
+                finalChoice.slug, finalChoice.relevanceScore, isLikelyDistributor(finalChoice));
+
+        return finalChoice;
+    }
+
+    /**
+     * Validates if a LinkedIn company URL exists using HEAD request
+     * 
+     * @param slug The LinkedIn company slug to test
+     * @return true if the URL returns 200, false otherwise
+     */
+    private boolean validateLinkedInCompanyExists(String slug) {
+        if (slug == null || slug.trim().isEmpty()) {
+            return false;
+        }
+
+        String url = "https://www.linkedin.com/company/" + slug;
+        logger.debug("Validating LinkedIn company URL: {}", url);
+
+        try {
+            java.net.URI uri = java.net.URI.create(url);
+            java.net.HttpURLConnection connection = (java.net.HttpURLConnection) uri.toURL().openConnection();
+            connection.setRequestMethod("HEAD");
+            connection.setConnectTimeout(5000); // 5 second timeout
+            connection.setReadTimeout(5000);
+
+            // Set user agent to avoid blocking
+            connection.setRequestProperty("User-Agent",
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
+
+            int responseCode = connection.getResponseCode();
+            logger.debug("HEAD request to {} returned status code: {}", url, responseCode);
+
+            return responseCode == 200;
+
+        } catch (Exception e) {
+            logger.debug("Failed to validate LinkedIn URL {}: {}", url, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Generates and tests LinkedIn slug variations for a company
+     * 
+     * @param companyName The company name
+     * @return The first valid LinkedIn slug found, or null if none exist
+     */
+    private String findValidLinkedInSlug(String companyName) {
+        logger.info("Finding valid LinkedIn slug for company: {}", companyName);
+
+        List<String> slugCandidates = new ArrayList<>();
+        String lower = companyName.toLowerCase().trim();
+
+        // Generate basic slug variations
+        String basicSlug = lower.replaceAll("[^a-z0-9\\s-]", "")
+                .replaceAll("\\s+", "-")
+                .replaceAll("-+", "-")
+                .replaceAll("^-|-$", "");
+        slugCandidates.add(basicSlug);
+
+        // AI company variations (very important for deepseek case)
+        // if (lower.contains("ai") || lower.contains("artificial")) {
+        //     slugCandidates.add(basicSlug + "-ai");
+        //     slugCandidates.add(basicSlug.replace("ai", "").replaceAll("-+", "-") + "-ai");
+        //     if (lower.contains("deep") && lower.contains("seek")) {
+        //         slugCandidates.add("deepseek-ai");
+        //         slugCandidates.add("deep-seek-ai");
+        //     }
+        // }
+
+        // Corporate suffixes
+        String[] suffixes = { "-inc", "-corp", "-corporation", "-ltd", "-llc", "-technologies", "-labs" };
+        for (String suffix : suffixes) {
+            slugCandidates.add(basicSlug + suffix);
+        }
+
+        // Remove existing suffixes variations
+        String[] removable = { "-inc", "-corp", "-corporation", "-ltd", "-llc", "-company", "-co" };
+        for (String remove : removable) {
+            if (basicSlug.endsWith(remove)) {
+                String clean = basicSlug.substring(0, basicSlug.length() - remove.length());
+                slugCandidates.add(clean);
+            }
+        }
+
+        // Test each candidate
+        for (String candidate : slugCandidates) {
+            if (candidate != null && !candidate.trim().isEmpty()) {
+                logger.debug("Testing LinkedIn slug candidate: {}", candidate);
+                if (validateLinkedInCompanyExists(candidate)) {
+                    logger.info("✓ Found valid LinkedIn slug for {}: {}", companyName, candidate);
+                    return candidate;
+                }
+            }
+        }
+
+        logger.warn("No valid LinkedIn slug found for company: {}", companyName);
+        return null;
     }
 
 }

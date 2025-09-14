@@ -7,10 +7,16 @@ export const useDashboardData = () => {
   const location = useLocation();
 
   // Tab state - get from URL parameter
-  const [activeTab, setActiveTab] = useState<"analysis" | "comparison">(() => {
+  const [activeTab, setActiveTab] = useState<
+    "analysis" | "comparison" | "reports" | "insights" | "trends"
+  >(() => {
     const params = new URLSearchParams(location.search);
     const tab = params.get("tab");
-    return tab === "comparison" ? "comparison" : "analysis";
+    if (tab === "comparison") return "comparison";
+    if (tab === "reports") return "reports";
+    if (tab === "insights") return "insights";
+    if (tab === "trends") return "trends";
+    return "analysis";
   });
 
   // User and profile state
@@ -55,6 +61,12 @@ export const useDashboardData = () => {
     const params = new URLSearchParams(location.search);
     if (activeTab === "comparison") {
       params.set("tab", "comparison");
+    } else if (activeTab === "reports") {
+      params.set("tab", "reports");
+    } else if (activeTab === "insights") {
+      params.set("tab", "insights");
+    } else if (activeTab === "trends") {
+      params.set("tab", "trends");
     } else {
       params.delete("tab");
     }

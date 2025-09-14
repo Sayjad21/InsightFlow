@@ -34,6 +34,7 @@ export interface UserProfileResponse {
   lastLogin: string;
   totalAnalyses: number;
   successfulAnalyses: number;
+  totalComparisons: number;
 }
 
 export interface UserAnalysesResponse {

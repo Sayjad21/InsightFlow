@@ -144,6 +144,13 @@
 			<version>4.0.1</version>
 			<scope>provided</scope>
 		</dependency>
+		
+		<!-- Firebase Admin SDK for Firebase Storage -->
+		<!-- <dependency>
+			<groupId>com.google.firebase</groupId>
+			<artifactId>firebase-admin</artifactId>
+			<version>9.6.0</version>
+		</dependency> -->
 	</dependencies>
 
 	<build>

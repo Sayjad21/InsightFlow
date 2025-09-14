@@ -1,6 +1,7 @@
 package com.insightflow.services;
 
 import com.insightflow.utils.TextUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.awt.*;
@@ -14,6 +15,12 @@ import java.util.Map;
 
 @Service
 public class VisualizationService {
+
+    // @Autowired
+    // private FirebaseStorageService firebaseStorageService;
+
+    @Autowired
+    private SupabaseStorageService supabaseStorageService;
 
     /**
      * Generates SWOT matrix image as base64, mirroring the Python implementation
@@ -110,10 +117,31 @@ public class VisualizationService {
 
             g2d.dispose();
 
-            // Convert to base64
+            // Upload to Supabase Storage first, then Firebase as fallback
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             javax.imageio.ImageIO.write(image, "PNG", baos);
-            return Base64.getEncoder().encodeToString(baos.toByteArray());
+
+            // Try to upload to Supabase first
+            if (supabaseStorageService.isAvailable()) {
+                String supabaseUrl = supabaseStorageService.uploadImageFromStream(baos, "swot_analysis.png",
+                        "image/png");
+                System.out.println("Uploaded to Supabase: SWOT Analysis");
+                if (supabaseUrl != null) {
+                    return supabaseUrl;
+                }
+            }
+
+            // Try to upload to Firebase as fallback
+            // if (firebaseStorageService.isAvailable()) {
+            //     String firebaseUrl = firebaseStorageService.uploadImageFromStream(baos, "swot_analysis.png",
+            //             "image/png");
+            //     if (firebaseUrl != null) {
+            //         return firebaseUrl;
+            //     }
+            // }
+
+            // Fallback to base64 if both uploads fail
+            return "data:image/png;base64," + Base64.getEncoder().encodeToString(baos.toByteArray());
 
         } catch (IOException e) {
             throw new RuntimeException("Failed to generate SWOT image", e);
@@ -184,7 +212,28 @@ public class VisualizationService {
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             javax.imageio.ImageIO.write(image, "PNG", baos);
-            return Base64.getEncoder().encodeToString(baos.toByteArray());
+
+            // Try Superbase first
+            if (supabaseStorageService.isAvailable()) {
+                String supabaseUrl = supabaseStorageService.uploadImageFromStream(baos, "pestel_analysis.png",
+                        "image/png");
+                System.out.println("Uploaded to superbase: PESTEL Analysis");
+                if (supabaseUrl != null) {
+                    return supabaseUrl;
+                }
+            }
+            
+            // Try to upload to Firebase, fallback to base64 if Firebase is not available
+            // if (firebaseStorageService.isAvailable()) {
+            //     String firebaseUrl = firebaseStorageService.uploadImageFromStream(baos, "pestel_analysis.png",
+            //             "image/png");
+            //     if (firebaseUrl != null) {
+            //         return firebaseUrl;
+            //     }
+            // }
+
+            // Fallback to base64 if Firebase upload fails
+            return "data:image/png;base64," + Base64.getEncoder().encodeToString(baos.toByteArray());
 
         } catch (IOException e) {
             throw new RuntimeException("Failed to generate PESTEL image", e);
@@ -298,7 +347,28 @@ public class VisualizationService {
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             javax.imageio.ImageIO.write(image, "PNG", baos);
-            return Base64.getEncoder().encodeToString(baos.toByteArray());
+
+            // Try Superbase first
+            if (supabaseStorageService.isAvailable()) {
+                String supabaseUrl = supabaseStorageService.uploadImageFromStream(baos, "porters_five_forces.png",
+                        "image/png");
+                System.out.println("Uploaded to Supabase: Porter's Five Forces");
+                if (supabaseUrl != null) {
+                    return supabaseUrl;
+                }
+            }
+            
+            // Try to upload to Firebase, fallback to base64 if Firebase is not available
+            // if (firebaseStorageService.isAvailable()) {
+            //     String firebaseUrl = firebaseStorageService.uploadImageFromStream(baos, "porter_forces.png",
+            //             "image/png");
+            //     if (firebaseUrl != null) {
+            //         return firebaseUrl;
+            //     }
+            // }
+
+            // Fallback to base64 if Firebase upload fails
+            return "data:image/png;base64," + Base64.getEncoder().encodeToString(baos.toByteArray());
 
         } catch (IOException e) {
             throw new RuntimeException("Failed to generate Porter image", e);
@@ -431,7 +501,27 @@ public class VisualizationService {
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             javax.imageio.ImageIO.write(image, "PNG", baos);
-            return Base64.getEncoder().encodeToString(baos.toByteArray());
+
+            // Try Superbase first
+            if (supabaseStorageService.isAvailable()) {
+                String supabaseUrl = supabaseStorageService.uploadImageFromStream(baos, "bcg_matrix.png",
+                        "image/png");
+                System.out.println("Uploaded to Supabase: BCG Matrix");
+                if (supabaseUrl != null) {
+                    return supabaseUrl;
+                }
+            }
+            
+            // Try to upload to Firebase, fallback to base64 if Firebase is not available
+            // if (firebaseStorageService.isAvailable()) {
+            //     String firebaseUrl = firebaseStorageService.uploadImageFromStream(baos, "bcg_matrix.png", "image/png");
+            //     if (firebaseUrl != null) {
+            //         return firebaseUrl;
+            //     }
+            // }
+
+            // Fallback to base64 if Firebase upload fails
+            return "data:image/png;base64," + Base64.getEncoder().encodeToString(baos.toByteArray());
 
         } catch (IOException e) {
             throw new RuntimeException("Failed to generate BCG image", e);
@@ -532,7 +622,27 @@ public class VisualizationService {
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             javax.imageio.ImageIO.write(image, "PNG", baos);
-            return Base64.getEncoder().encodeToString(baos.toByteArray());
+
+            // Try Superbase first
+            if (supabaseStorageService.isAvailable()) {
+                String supabaseUrl = supabaseStorageService.uploadImageFromStream(baos, "mckinsey_7s.png",
+                        "image/png");
+                System.out.println("Uploaded to Supabase: McKinsey 7S");
+                if (supabaseUrl != null) {
+                    return supabaseUrl;
+                }
+            }
+
+            // Try to upload to Firebase, fallback to base64 if Firebase is not available
+            // if (firebaseStorageService.isAvailable()) {
+            //     String firebaseUrl = firebaseStorageService.uploadImageFromStream(baos, "mckinsey_7s.png", "image/png");
+            //     if (firebaseUrl != null) {
+            //         return firebaseUrl;
+            //     }
+            // }
+
+            // Fallback to base64 if Firebase upload fails
+            return "data:image/png;base64," + Base64.getEncoder().encodeToString(baos.toByteArray());
 
         } catch (IOException e) {
             throw new RuntimeException("Failed to generate McKinsey image", e);

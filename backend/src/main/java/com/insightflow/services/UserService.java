@@ -4,6 +4,7 @@ import com.insightflow.models.User;
 import com.insightflow.models.UserAnalysis;
 import com.insightflow.repositories.UserRepository;
 import com.insightflow.repositories.UserAnalysisRepository;
+import com.insightflow.repositories.ComparisonResultRepository;
 import com.insightflow.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -24,6 +25,9 @@ public class UserService {
 
     @Autowired
     private UserAnalysisRepository userAnalysisRepository;
+
+    @Autowired
+    private ComparisonResultRepository comparisonResultRepository;
 
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
@@ -142,5 +146,9 @@ public class UserService {
 
     public long getUserSuccessfulAnalysisCount(String userId) {
         return userAnalysisRepository.countByUserIdAndStatus(userId, UserAnalysis.AnalysisStatus.COMPLETED);
+    }
+
+    public long getUserComparisonCount(String username) {
+        return comparisonResultRepository.countByRequestedBy(username);
     }
 }

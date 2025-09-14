@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { LayoutDashboard } from "lucide-react";
 import Header from "../components/Header.js";
@@ -8,8 +8,10 @@ import TestPage from "../components/TestPage.js";
 import Layout from "../components/Layout";
 import { services } from "../data/services";
 import type { Service, AnalysisResult } from "../types";
+import type { LayoutRef } from "../components/Layout";
 
 const Home: React.FC = () => {
+  const layoutRef = useRef<LayoutRef>(null);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(
@@ -29,10 +31,16 @@ const Home: React.FC = () => {
 
   const handleAnalysisComplete = (result: AnalysisResult | null) => {
     setAnalysisResult(result);
+
+    // Refresh profile statistics when analysis is completed
+    if (result && layoutRef.current) {
+      layoutRef.current.refreshProfile();
+    }
   };
 
   return (
     <Layout
+      ref={layoutRef}
       containerClass="min-h-screen bg-gray-50"
       mainContentClass="flex flex-col"
     >

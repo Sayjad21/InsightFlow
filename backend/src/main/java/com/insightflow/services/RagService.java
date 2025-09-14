@@ -17,6 +17,8 @@ import dev.langchain4j.rag.content.retriever.ContentRetriever;
 import dev.langchain4j.rag.content.retriever.EmbeddingStoreContentRetriever;
 import dev.langchain4j.store.embedding.EmbeddingStore;
 import dev.langchain4j.store.embedding.inmemory.InMemoryEmbeddingStore;
+
+import org.apache.commons.lang3.ObjectUtils.Null;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -161,20 +163,41 @@ public class RagService {
         ConversationalRetrievalChain ragChain = filePath != null ? buildRagPipeline(filePath) : null;
 
         // Step 1: Search (mirroring search_step) - Use specific search terms focused on
-        // the target company
-        List<Map<String, Object>> searchResults = tavilyUtil
-                .search("\"" + companyName + "\" company overview business model strategy analysis", 5);
-        List<String> links = searchResults.stream().map(r -> (String) r.get("url")).filter(url -> url != null)
-                .collect(Collectors.toList());
+        // the target company with proper exception handling
+        List<String> links = new ArrayList<>();
+        try {
+            List<Map<String, Object>> searchResults = tavilyUtil
+                    .search("\"" + companyName + "\" company overview business model strategy analysis", 5, null);
+            links = searchResults.stream().map(r -> (String) r.get("url")).filter(url -> url != null)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            // Log the error and continue with fallback sources
+            System.err.println("Tavily search failed for company " + companyName + ": " + e.getMessage());
+            // Initialize empty links - fallback sources will be generated later
+            links = new ArrayList<>();
+        }
 
         // Step 2: Extract (mirroring extract_step) - Filter out failed extractions and
-        // focus on target company
-        List<String> extractedTexts = links.stream()
-                .map(scrapingUtil::extractTextFromUrl)
-                .filter(text -> text != null && !text.trim().isEmpty()) // Filter out null/empty extractions
-                .map(text -> filterRelevantContent(text, companyName)) // Filter for relevant content
-                .filter(text -> !text.trim().isEmpty()) // Remove empty filtered results
-                .collect(Collectors.toList());
+        // focus on target company with robust error handling
+        List<String> extractedTexts = new ArrayList<>();
+        try {
+            extractedTexts = links.stream()
+                    .map(url -> {
+                        try {
+                            return scrapingUtil.extractTextFromUrl(url);
+                        } catch (Exception e) {
+                            System.err.println("Failed to extract text from URL: " + url + " - " + e.getMessage());
+                            return null;
+                        }
+                    })
+                    .filter(text -> text != null && !text.trim().isEmpty()) // Filter out null/empty extractions
+                    .map(text -> filterRelevantContent(text, companyName)) // Filter for relevant content
+                    .filter(text -> !text.trim().isEmpty()) // Remove empty filtered results
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            System.err.println("Text extraction process failed for company " + companyName + ": " + e.getMessage());
+            extractedTexts = new ArrayList<>(); // Initialize empty list for fallback handling
+        }
 
         // Enhanced fallback sources and content handling
         if (extractedTexts.isEmpty() || extractedTexts.size() < 2) {
@@ -337,7 +360,7 @@ public class RagService {
 
         // Step 1: Search
         List<Map<String, Object>> searchResults = tavilyUtil
-                .search("information about " + companyName + " and similar companies business analysis", 3);
+                .search("information about " + companyName + " and similar companies business analysis", 3,null);
         List<String> links = searchResults.stream()
                 .map(r -> (String) r.get("url"))
                 .filter(Objects::nonNull)

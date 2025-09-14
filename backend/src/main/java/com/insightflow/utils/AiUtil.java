@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.time.Duration;
 import java.util.Map;
 
 @Component
@@ -28,6 +30,7 @@ public class AiUtil {
                 .baseUrl(ollamaBaseUrl)
                 .modelName(ollamaModel)
                 .temperature(0.3)
+                .timeout(Duration.ofSeconds(60))
                 .build();
     }
 
@@ -191,7 +194,6 @@ public class AiUtil {
                 "Provide clear, actionable insights about which company might be preferred for different " +
                 "scenarios (growth-focused, stability-focused, market leadership, etc.). " +
                 "Be specific about the metrics and provide concrete reasoning." +
-                "Always respond in English and in a professional business tone."
-                ;
+                "Always respond in English and in a professional business tone.";
     }
 }

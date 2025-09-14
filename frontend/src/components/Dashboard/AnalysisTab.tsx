@@ -42,6 +42,7 @@ interface AnalysisTabProps {
   setIsComparing: (comparing: boolean) => void;
   refreshAnalyses: () => void;
   refreshComparisons: () => void;
+  onProfileRefresh?: () => void;
 }
 
 const AnalysisTab: React.FC<AnalysisTabProps> = ({
@@ -65,6 +66,7 @@ const AnalysisTab: React.FC<AnalysisTabProps> = ({
   setIsComparing,
   refreshAnalyses,
   refreshComparisons,
+  onProfileRefresh,
 }) => {
   const [comparisonError, setComparisonError] = useState<string | null>(null);
 
@@ -237,6 +239,11 @@ const AnalysisTab: React.FC<AnalysisTabProps> = ({
       // Refresh both analyses and comparisons
       refreshAnalyses();
       refreshComparisons();
+
+      // Refresh profile statistics to update total comparisons
+      if (onProfileRefresh) {
+        onProfileRefresh();
+      }
     } catch (error) {
       console.error("Comparison failed:", error);
       const errorMessage =

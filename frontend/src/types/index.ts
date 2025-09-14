@@ -153,6 +153,7 @@ export interface CompanyAnalysis {
     opportunities: string[];
     threats: string[];
   };
+  swotImage?: string;
   pestelLists?: {
     political: string[];
     economic: string[];
@@ -161,6 +162,33 @@ export interface CompanyAnalysis {
     environmental: string[];
     legal: string[];
   };
+  pestelImage?: string;
+  porterForces?: {
+    rivalry: string[];
+    newEntrants: string[];
+    substitutes: string[];
+    buyerPower: string[];
+    supplierPower: string[];
+  };
+  porterImage?: string;
+  bcgMatrix?: {
+    [productName: string]: {
+      marketShare: number;
+      growthRate: number;
+    };
+  };
+  bcgImage?: string;
+  mckinsey7s?: {
+    strategy: string;
+    structure: string;
+    systems: string;
+    style: string;
+    staff: string;
+    skills: string;
+    sharedValues: string;
+  };
+  mckinseyImage?: string;
+  sources?: string[];
   linkedinAnalysis?: string;
   strategyRecommendations?: string;
 }

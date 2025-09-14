@@ -1,13 +1,17 @@
-import React from "react";
+import React, { useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { useDashboardData } from "../hooks/useDashboardData";
 import TabNavigation from "../components/Dashboard/TabNavigation";
 import ComparisonModal from "../components/Dashboard/ComparisonModal";
 import AnalysisTab from "../components/Dashboard/AnalysisTab";
 import ComparisonTab from "../components/Dashboard/ComparisonTab";
-import Layout from "../components/Layout";
+import ReportsTab from "../components/Dashboard/ReportsTab";
+import InsightsTab from "../components/Dashboard/InsightsTab";
+import TrendsTab from "../components/Dashboard/TrendsTab";
+import Layout, { type LayoutRef } from "../components/Layout";
 
 const Dashboard: React.FC = () => {
+  const layoutRef = useRef<LayoutRef>(null);
   const dashboardData = useDashboardData();
 
   const {
@@ -21,8 +25,13 @@ const Dashboard: React.FC = () => {
     setSelectedComparison,
   } = dashboardData;
 
+  // Function to refresh profile data after successful operations
+  const handleProfileRefresh = () => {
+    layoutRef.current?.refreshProfile();
+  };
+
   return (
-    <Layout>
+    <Layout ref={layoutRef}>
       <div className="bg-white rounded-2xl shadow-lg">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
@@ -58,14 +67,25 @@ const Dashboard: React.FC = () => {
             </div>
           ) : /* Tab Content */
           activeTab === "analysis" ? (
-            <AnalysisTab {...dashboardData} />
-          ) : (
+            <AnalysisTab
+              {...dashboardData}
+              onProfileRefresh={handleProfileRefresh}
+            />
+          ) : activeTab === "comparison" ? (
             <ComparisonTab
               comparisonResults={comparisonResults}
               expandedComparison={dashboardData.expandedComparison}
               setExpandedComparison={dashboardData.setExpandedComparison}
               setSelectedComparison={dashboardData.setSelectedComparison}
             />
+          ) : activeTab === "reports" ? (
+            <ReportsTab />
+          ) : activeTab === "insights" ? (
+            <InsightsTab />
+          ) : activeTab === "trends" ? (
+            <TrendsTab />
+          ) : (
+            <AnalysisTab {...dashboardData} />
           )}
         </div>
       </div>

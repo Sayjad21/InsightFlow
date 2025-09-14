@@ -67,6 +67,7 @@ public class CompetitiveAnalysisController {
             Map<String, Map<String, Double>> bcg = analysisService.generateBcgMatrix(companyName);
             Map<String, String> mckinsey = analysisService.generateMckinsey7s(companyName);
 
+            // Generate visualization images (now stored in Firebase)
             String swotImage = visualizationService.generateSwotImage(swot);
             String pestelImage = visualizationService.generatePestelImage(pestel);
             String porterImage = visualizationService.generatePorterImage(porter);
@@ -343,6 +344,57 @@ public class CompetitiveAnalysisController {
         }
 
         return analysis.toString();
+    }
+
+    /**
+     * Test endpoint for LinkedIn analysis only
+     * For debugging and testing the LinkedIn analysis functionality directly
+     * 
+     * Usage: curl -X POST "http://localhost:8080/api/test-linkedin-analysis" \
+     * -H "Content-Type: application/json" \
+     * -d '{"companyName": "deepseek"}'
+     */
+    @PostMapping("/test-linkedin-analysis")
+    public ResponseEntity<Map<String, Object>> testLinkedInAnalysis(@RequestBody Map<String, String> request) {
+        try {
+            String companyName = request.get("companyName");
+            if (companyName == null || companyName.trim().isEmpty()) {
+                Map<String, Object> error = new HashMap<>();
+                error.put("error", "Company name is required");
+                error.put("usage", "POST /api/test-linkedin-analysis with JSON: {\"companyName\": \"company-name\"}");
+                return ResponseEntity.badRequest().body(error);
+            }
+
+            System.out.println("Testing LinkedIn analysis for company: " + companyName);
+            long startTime = System.currentTimeMillis();
+
+            String linkedinAnalysis = scrapingService.getLinkedInAnalysis(companyName.trim());
+
+            long endTime = System.currentTimeMillis();
+            long duration = endTime - startTime;
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("company_name", companyName);
+            result.put("linkedin_analysis", linkedinAnalysis);
+            result.put("analysis_duration_ms", duration);
+            result.put("status", "success");
+            result.put("timestamp", java.time.LocalDateTime.now().toString());
+
+            System.out.println("LinkedIn analysis completed in " + duration + "ms");
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            System.err.println("LinkedIn analysis failed: " + e.getMessage());
+            e.printStackTrace();
+
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "LinkedIn analysis failed: " + e.getMessage());
+            error.put("exception_type", e.getClass().getSimpleName());
+            error.put("status", "failed");
+            error.put("timestamp", java.time.LocalDateTime.now().toString());
+
+            return ResponseEntity.internalServerError().body(error);
+        }
     }
 
     /**

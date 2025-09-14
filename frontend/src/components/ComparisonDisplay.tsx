@@ -181,6 +181,74 @@ const ComparisonDisplay: React.FC<ComparisonDisplayProps> = ({
         )}
       </div>
 
+      {/* Comparison Visualizations */}
+      <div className="space-y-4">
+        <h3 className="text-xl font-bold text-gray-900 mb-4">
+          Visual Comparisons
+        </h3>
+
+        {/* Radar Chart */}
+        {comparisonResult.radarChart && (
+          <div className="bg-white rounded-lg p-6 shadow-sm border">
+            <h4 className="text-lg font-semibold text-gray-900 mb-4">
+              Radar Chart - Competitive Positioning
+            </h4>
+            <div className="flex justify-center">
+              <img
+                src={
+                  comparisonResult.radarChart?.startsWith("data:") ||
+                  comparisonResult.radarChart?.startsWith("http")
+                    ? comparisonResult.radarChart
+                    : `data:image/png;base64,${comparisonResult.radarChart}`
+                }
+                alt="Competitive Positioning Radar Chart"
+                className="max-w-full h-auto rounded-lg shadow-sm"
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Bar Chart */}
+          {comparisonResult.barGraph && (
+            <div className="bg-white rounded-lg p-6 shadow-sm border">
+              <h4 className="text-lg font-semibold text-gray-900 mb-4">
+                Bar Chart - Performance Metrics
+              </h4>
+              <img
+                src={
+                  comparisonResult.barGraph?.startsWith("data:") ||
+                  comparisonResult.barGraph?.startsWith("http")
+                    ? comparisonResult.barGraph
+                    : `data:image/png;base64,${comparisonResult.barGraph}`
+                }
+                alt="Performance Comparison Bar Chart"
+                className="w-full h-auto rounded-lg shadow-sm"
+              />
+            </div>
+          )}
+
+          {/* Scatter Plot */}
+          {comparisonResult.scatterPlot && (
+            <div className="bg-white rounded-lg p-6 shadow-sm border">
+              <h4 className="text-lg font-semibold text-gray-900 mb-4">
+                Scatter Plot - Market Position
+              </h4>
+              <img
+                src={
+                  comparisonResult.scatterPlot?.startsWith("data:") ||
+                  comparisonResult.scatterPlot?.startsWith("http")
+                    ? comparisonResult.scatterPlot
+                    : `data:image/png;base64,${comparisonResult.scatterPlot}`
+                }
+                alt="Market Position Scatter Plot"
+                className="w-full h-auto rounded-lg shadow-sm"
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Additional Data */}
       {comparisonResult.additionalData && (
         <div className="bg-gray-50 rounded-lg p-6">

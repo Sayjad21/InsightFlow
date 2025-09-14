@@ -96,7 +96,7 @@ public class RagServiceTest {
         // Mock TavilyUtil
         Map<String, Object> searchResult = new HashMap<>();
         searchResult.put("url", "https://example.com");
-        Mockito.when(tavilyUtil.search(anyString(), anyInt())).thenReturn(Arrays.asList(searchResult));
+        Mockito.when(tavilyUtil.search(anyString(), anyInt(), null)).thenReturn(Arrays.asList(searchResult));
 
         // Mock ScrapingUtil
         Mockito.when(scrapingUtil.extractTextFromUrl(anyString())).thenReturn("Extracted text from URL");

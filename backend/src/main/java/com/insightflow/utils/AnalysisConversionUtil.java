@@ -48,6 +48,13 @@ public class AnalysisConversionUtil {
         // LinkedIn analysis
         result.put("linkedin_analysis", analysis.getLinkedinAnalysis() != null ? analysis.getLinkedinAnalysis() : "");
 
+        // Images (Base64 encoded)
+        result.put("swot_image", analysis.getSwotImage() != null ? analysis.getSwotImage() : "");
+        result.put("pestel_image", analysis.getPestelImage() != null ? analysis.getPestelImage() : "");
+        result.put("porter_image", analysis.getPorterImage() != null ? analysis.getPorterImage() : "");
+        result.put("bcg_image", analysis.getBcgImage() != null ? analysis.getBcgImage() : "");
+        result.put("mckinsey_image", analysis.getMckinseyImage() != null ? analysis.getMckinseyImage() : "");
+
         return result;
     }
 
@@ -180,8 +187,9 @@ public class AnalysisConversionUtil {
 
                 if (bcgProduct != null) {
                     Map<String, Double> productData = new HashMap<>();
-                    productData.put("marketShare", bcgProduct.getMarketShare());
-                    productData.put("growthRate", bcgProduct.getGrowthRate());
+                    // Use snake_case keys to match the expected format in comparison service
+                    productData.put("market_share", bcgProduct.getMarketShare());
+                    productData.put("growth_rate", bcgProduct.getGrowthRate());
                     result.put(productName, productData);
                 }
             }
