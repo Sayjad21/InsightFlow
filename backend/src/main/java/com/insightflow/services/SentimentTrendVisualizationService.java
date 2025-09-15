@@ -1,0 +1,252 @@
+package com.insightflow.services;
+
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartUtils;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.DateAxis;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.data.time.Day;
+import org.jfree.data.time.TimeSeries;
+import org.jfree.data.time.TimeSeriesCollection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+import java.awt.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.Base64;
+import java.util.List;
+import java.util.Map;
+
+@Service
+public class SentimentTrendVisualizationService {
+    private static final Logger logger = LoggerFactory.getLogger(SentimentTrendVisualizationService.class);
+    private static final DateTimeFormatter[] DATE_FORMATTERS = {
+        DateTimeFormatter.ISO_LOCAL_DATE_TIME,
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
+        DateTimeFormatter.ofPattern("yyyy-MM-dd")
+    };
+
+    /**
+     * Generate real time-series line chart as base64 PNG.
+     * @param response Contains "time_series" list
+     * @return Base64 PNG string or null if generation fails
+     */
+    public String generateTrendGraph(Map<String, Object> response) {
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> timeSeries = (List<Map<String, Object>>) response.get("time_series");
+        
+        if (timeSeries == null || timeSeries.isEmpty()) {
+            logger.warn("No time series data available for chart generation");
+            return null;
+        }
+
+        TimeSeriesCollection dataset = new TimeSeriesCollection();
+        TimeSeries series = new TimeSeries("Sentiment Score");
+
+        int processedPoints = 0;
+        for (Map<String, Object> point : timeSeries) {
+            try {
+                String dateStr = (String) point.get("date");
+                LocalDateTime dateTime = parseDateTime(dateStr);
+                
+                if (dateTime == null) {
+                    logger.warn("Failed to parse date: {}", dateStr);
+                    continue;
+                }
+                
+                Object scoreObj = point.get("sentiment_score");
+                double score;
+                if (scoreObj instanceof Number) {
+                    score = ((Number) scoreObj).doubleValue();
+                } else if (scoreObj instanceof String) {
+                    score = Double.parseDouble((String) scoreObj);
+                } else {
+                    logger.warn("Invalid score type: {}", scoreObj.getClass());
+                    continue;
+                }
+                
+                series.add(new Day(dateTime.getDayOfMonth(), dateTime.getMonthValue(), dateTime.getYear()), score);
+                processedPoints++;
+            } catch (Exception e) {
+                logger.warn("Failed to process data point: {}", point, e);
+            }
+        }
+
+        if (processedPoints == 0) {
+            logger.error("No valid data points processed for chart");
+            return null;
+        }
+
+        dataset.addSeries(series);
+
+        JFreeChart chart = createStyledChart(dataset, (String) response.get("company_name"));
+        
+        try {
+            return convertChartToBase64(chart);
+        } catch (IOException e) {
+            logger.error("Failed to generate chart image", e);
+            return null;
+        }
+    }
+
+    /**
+     * Parse datetime from string using multiple formats
+     */
+    private LocalDateTime parseDateTime(String dateStr) {
+        if (dateStr == null || dateStr.trim().isEmpty()) {
+            return null;
+        }
+        
+        for (DateTimeFormatter formatter : DATE_FORMATTERS) {
+            try {
+                // Try parsing as LocalDateTime first
+                return LocalDateTime.parse(dateStr, formatter);
+            } catch (DateTimeParseException e) {
+                // Try parsing as LocalDate and convert to LocalDateTime
+                try {
+                    return java.time.LocalDate.parse(dateStr, formatter).atStartOfDay();
+                } catch (DateTimeParseException e2) {
+                    // Continue to next formatter
+                }
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Create a styled chart with better visuals
+     */
+    private JFreeChart createStyledChart(TimeSeriesCollection dataset, String companyName) {
+        JFreeChart chart = ChartFactory.createTimeSeriesChart(
+            "Sentiment Trend - " + companyName,
+            "Date",
+            "Score (0-100)",
+            dataset,
+            true,
+            true,
+            false
+        );
+
+        // Customize the chart appearance
+        XYPlot plot = chart.getXYPlot();
+        
+        // Set background colors
+        plot.setBackgroundPaint(Color.WHITE);
+        plot.setDomainGridlinePaint(Color.LIGHT_GRAY);
+        plot.setRangeGridlinePaint(Color.LIGHT_GRAY);
+        
+        // Customize the renderer
+        XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
+        renderer.setSeriesPaint(0, new Color(70, 130, 180)); // Steel blue line
+        renderer.setSeriesStroke(0, new BasicStroke(2.5f));
+        renderer.setSeriesShapesVisible(0, true);
+        plot.setRenderer(renderer);
+        
+        // Format date axis
+        DateAxis axis = (DateAxis) plot.getDomainAxis();
+        axis.setDateFormatOverride(new java.text.SimpleDateFormat("MMM dd"));
+        
+        return chart;
+    }
+
+    /**
+     * Convert chart to base64 PNG
+     */
+    private String convertChartToBase64(JFreeChart chart) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ChartUtils.writeChartAsPNG(baos, chart, 1000, 600); // Higher resolution
+        return Base64.getEncoder().encodeToString(baos.toByteArray());
+    }
+
+    /**
+     * Generate comparison chart for multiple companies
+     */
+    public String generateComparisonChart(Map<String, Map<String, Object>> companiesData) {
+        TimeSeriesCollection dataset = new TimeSeriesCollection();
+        
+        Color[] colors = {Color.BLUE, Color.RED, Color.GREEN, Color.ORANGE, Color.MAGENTA};
+        int colorIndex = 0;
+        
+        for (Map.Entry<String, Map<String, Object>> entry : companiesData.entrySet()) {
+            String company = entry.getKey();
+            Map<String, Object> data = entry.getValue();
+            
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> timeSeries = (List<Map<String, Object>>) data.get("time_series");
+            
+            if (timeSeries == null || timeSeries.isEmpty()) {
+                continue;
+            }
+            
+            TimeSeries series = new TimeSeries(company);
+            for (Map<String, Object> point : timeSeries) {
+                try {
+                    String dateStr = (String) point.get("date");
+                    LocalDateTime dateTime = parseDateTime(dateStr);
+                    
+                    if (dateTime == null) continue;
+                    
+                    Object scoreObj = point.get("sentiment_score");
+                    double score;
+                    if (scoreObj instanceof Number) {
+                        score = ((Number) scoreObj).doubleValue();
+                    } else if (scoreObj instanceof String) {
+                        score = Double.parseDouble((String) scoreObj);
+                    } else {
+                        continue;
+                    }
+                    
+                    series.add(new Day(dateTime.getDayOfMonth(), dateTime.getMonthValue(), dateTime.getYear()), score);
+                } catch (Exception e) {
+                    logger.warn("Failed to process data point for {}: {}", company, point, e);
+                }
+            }
+            
+            if (series.getItemCount() > 0) {
+                dataset.addSeries(series);
+            }
+        }
+        
+        if (dataset.getSeriesCount() == 0) {
+            return null;
+        }
+        
+        JFreeChart chart = ChartFactory.createTimeSeriesChart(
+            "Sentiment Comparison",
+            "Date",
+            "Score (0-100)",
+            dataset,
+            true,
+            true,
+            false
+        );
+        
+        // Style the comparison chart
+        XYPlot plot = chart.getXYPlot();
+        plot.setBackgroundPaint(Color.WHITE);
+        plot.setDomainGridlinePaint(Color.LIGHT_GRAY);
+        plot.setRangeGridlinePaint(Color.LIGHT_GRAY);
+        
+        XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
+        for (int i = 0; i < dataset.getSeriesCount(); i++) {
+            renderer.setSeriesPaint(i, colors[i % colors.length]);
+            renderer.setSeriesStroke(i, new BasicStroke(2.0f));
+            renderer.setSeriesShapesVisible(i, true);
+        }
+        plot.setRenderer(renderer);
+        
+        try {
+            return convertChartToBase64(chart);
+        } catch (IOException e) {
+            logger.error("Failed to generate comparison chart", e);
+            return null;
+        }
+    }
+}
