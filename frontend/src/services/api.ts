@@ -11,6 +11,14 @@ export interface SignupRequest {
   lastName: string;
   email: string;
   password: string;
+  profileImage?: File;
+}
+
+export interface SignupFormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
 }
 
 export interface LoginRequest {
@@ -29,16 +37,21 @@ export interface UserProfileResponse {
   lastName: string;
   email: string;
   avatar: string;
+  bio?: string;
   role: string;
   createdAt: string;
   lastLogin: string;
   totalAnalyses: number;
   successfulAnalyses: number;
+  totalComparisons: number;
 }
 
 export interface UserAnalysesResponse {
   analyses: UserAnalysis[];
   total: number;
+  totalPages: number;
+  currentPage: number;
+  size: number;
 }
 
 export class ApiService {
@@ -97,24 +110,60 @@ export class ApiService {
    */
   static async signup(userData: SignupRequest): Promise<AuthResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/signup`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(userData),
-      });
+      // Check if we have a profile image to upload
+      if (userData.profileImage) {
+        const formData = new FormData();
+        formData.append("firstName", userData.firstName);
+        formData.append("lastName", userData.lastName);
+        formData.append("email", userData.email);
+        formData.append("password", userData.password);
+        formData.append("profileImage", userData.profileImage);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Signup failed: ${response.status}`);
+        const response = await fetch(`${API_BASE_URL}/api/signup-with-image`, {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(
+            errorData.error || `Signup failed: ${response.status}`
+          );
+        }
+
+        const data: AuthResponse = await response.json();
+        console.log("Signup response data:", data);
+        console.log("Token from signup:", data.token ? "Received" : "Missing");
+        this.setAuthToken(data.token);
+        return data;
+      } else {
+        // Regular signup without image
+        const response = await fetch(`${API_BASE_URL}/api/signup`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            email: userData.email,
+            password: userData.password,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(
+            errorData.error || `Signup failed: ${response.status}`
+          );
+        }
+
+        const data: AuthResponse = await response.json();
+        console.log("Signup response data:", data);
+        console.log("Token from signup:", data.token ? "Received" : "Missing");
+        this.setAuthToken(data.token);
+        return data;
       }
-
-      const data: AuthResponse = await response.json();
-      console.log("Signup response data:", data);
-      console.log("Token from signup:", data.token ? "Received" : "Missing");
-      this.setAuthToken(data.token);
-      return data;
     } catch (error) {
       console.error("Signup Error:", error);
       if (
@@ -293,14 +342,86 @@ export class ApiService {
   }
 
   /**
-   * Get user's analysis history
+   * Update user profile
    */
-  static async getUserAnalyses(): Promise<UserAnalysesResponse> {
+  static async updateUserProfile(profileData: {
+    firstName?: string;
+    lastName?: string;
+    bio?: string;
+    profileImage?: File;
+  }): Promise<UserProfileResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/user/analyses`, {
-        method: "GET",
-        headers: this.getAuthHeaders(),
+      const token = this.getAuthToken();
+      if (!token) {
+        throw new Error("Authentication required");
+      }
+
+      const formData = new FormData();
+
+      if (profileData.firstName !== undefined) {
+        formData.append("firstName", profileData.firstName);
+      }
+      if (profileData.lastName !== undefined) {
+        formData.append("lastName", profileData.lastName);
+      }
+      if (profileData.bio !== undefined) {
+        formData.append("bio", profileData.bio);
+      }
+      if (profileData.profileImage) {
+        formData.append("profileImage", profileData.profileImage);
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/user/profile/update`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
       });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          this.removeAuthToken();
+          throw new Error("Authentication expired. Please login again.");
+        }
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: "Unknown error" }));
+        throw new Error(
+          errorData.error || `Failed to update profile: ${response.status}`
+        );
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Update Profile Error:", error);
+      if (
+        error instanceof TypeError &&
+        error.message.includes("NetworkError")
+      ) {
+        throw new Error(
+          "Unable to connect to server. Please ensure the backend is running on http://localhost:8000"
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Get user's analysis history with pagination
+   */
+  static async getUserAnalyses(
+    page: number = 0,
+    size: number = 10
+  ): Promise<UserAnalysesResponse> {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/user/analyses?page=${page}&size=${size}`,
+        {
+          method: "GET",
+          headers: this.getAuthHeaders(),
+        }
+      );
 
       if (!response.ok) {
         if (response.status === 401) {
@@ -316,6 +437,52 @@ export class ApiService {
       return await response.json();
     } catch (error) {
       console.error("Get Analyses Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a user analysis
+   */
+  static async deleteUserAnalysis(analysisId: string): Promise<void> {
+    try {
+      const token = this.getAuthToken();
+      if (!token) {
+        throw new Error("Authentication required");
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/user/analyses/${analysisId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          this.removeAuthToken();
+          throw new Error("Authentication expired. Please login again.");
+        }
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: "Unknown error" }));
+        throw new Error(
+          errorData.error || `Failed to delete analysis: ${response.status}`
+        );
+      }
+    } catch (error) {
+      console.error("Delete Analysis Error:", error);
+      if (
+        error instanceof TypeError &&
+        error.message.includes("NetworkError")
+      ) {
+        throw new Error(
+          "Unable to connect to server. Please ensure the backend is running on http://localhost:8000"
+        );
+      }
       throw error;
     }
   }
@@ -573,6 +740,279 @@ export class ApiService {
           "Network error: Unable to connect to server. Make sure the backend is running on http://localhost:8000"
         );
       }
+      throw error;
+    }
+  }
+
+  // Comparison methods
+  /**
+   * Get user's available analyses for comparison selection
+   */
+  static async getComparisonAnalyses(): Promise<any[]> {
+    try {
+      console.log("Fetching user analyses for comparison");
+      const response = await fetch(`${API_BASE_URL}/api/comparison/analyses`, {
+        method: "GET",
+        headers: this.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        console.error("Failed to fetch comparison analyses:", response.status);
+        throw new Error(`Failed to fetch analyses: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Comparison analyses fetched successfully:", data);
+      return data;
+    } catch (error) {
+      console.error("Get Comparison Analyses Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Compare existing analyses only
+   */
+  static async compareExistingAnalyses(analysisIds: string[]): Promise<any> {
+    try {
+      console.log("Comparing existing analyses:", analysisIds);
+      const response = await fetch(
+        `${API_BASE_URL}/api/comparison/compare-existing`,
+        {
+          method: "POST",
+          headers: this.getAuthHeaders(),
+          body: JSON.stringify({
+            analysisIds,
+            saveResult: true,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(
+          "Failed to compare existing analyses:",
+          response.status,
+          errorText
+        );
+        throw new Error(`Comparison failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log("Existing analyses comparison result:", result);
+      return result;
+    } catch (error) {
+      console.error("Compare Existing Analyses Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Enhanced comparison (supports mixed existing + new companies)
+   */
+  static async compareEnhanced(request: {
+    analysisIds?: string[];
+    companyNames?: string[];
+    comparisonType?: string;
+    saveNewAnalyses?: boolean;
+    saveResult?: boolean;
+    files?: (File | null)[];
+  }): Promise<any> {
+    try {
+      // Set saveResult to true by default if not specified
+      const requestWithDefaults = {
+        ...request,
+        saveResult:
+          request.saveResult !== undefined ? request.saveResult : true,
+      };
+
+      console.log("Enhanced comparison request:", requestWithDefaults);
+
+      // Check if we need to send files
+      const hasFiles =
+        request.files && request.files.some((file) => file !== null);
+
+      if (hasFiles) {
+        // Use FormData for file upload
+        const formData = new FormData();
+
+        // Add regular parameters
+        if (request.analysisIds && request.analysisIds.length > 0) {
+          request.analysisIds.forEach((id) =>
+            formData.append("analysis_ids", id)
+          );
+        }
+
+        if (request.companyNames && request.companyNames.length > 0) {
+          request.companyNames.forEach((name) =>
+            formData.append("company_names", name)
+          );
+        }
+
+        if (request.saveNewAnalyses) {
+          formData.append("save_new_analyses", "true");
+        }
+
+        if (requestWithDefaults.saveResult) {
+          formData.append("save_result", "true");
+        }
+
+        // Add files
+        if (request.files) {
+          request.files.forEach((file) => {
+            if (file) {
+              formData.append("files", file);
+            }
+          });
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/comparison/compare`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${this.getAuthToken()}`,
+            // Don't set Content-Type for FormData - let browser set it with boundary
+          },
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(
+            "Failed to perform enhanced comparison with files:",
+            response.status,
+            errorText
+          );
+          throw new Error(`Comparison failed: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log("Enhanced comparison result:", result);
+        return result;
+      } else {
+        // Use JSON for requests without files (existing logic)
+        const response = await fetch(
+          `${API_BASE_URL}/api/comparison/compare-enhanced`,
+          {
+            method: "POST",
+            headers: this.getAuthHeaders(),
+            body: JSON.stringify(requestWithDefaults),
+          }
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(
+            "Failed to perform enhanced comparison:",
+            response.status,
+            errorText
+          );
+          throw new Error(`Comparison failed: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log("Enhanced comparison result:", result);
+        return result;
+      }
+    } catch (error) {
+      console.error("Enhanced Comparison Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get user's saved comparison results
+   */
+  static async getSavedComparisons(
+    page: number = 0,
+    size: number = 10,
+    comparisonType?: string
+  ): Promise<any> {
+    try {
+      console.log("Fetching saved comparisons with pagination:", {
+        page,
+        size,
+      });
+      const params = new URLSearchParams();
+      params.append("page", page.toString());
+      params.append("size", size.toString());
+      if (comparisonType) params.append("type", comparisonType);
+
+      const url = `${API_BASE_URL}/api/comparison/saved?${params.toString()}`;
+      const response = await fetch(url, {
+        method: "GET",
+        headers: this.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        console.error("Failed to fetch saved comparisons:", response.status);
+        throw new Error(
+          `Failed to fetch saved comparisons: ${response.status}`
+        );
+      }
+
+      const data = await response.json();
+      console.log("Saved comparisons fetched successfully:", data);
+      return data;
+    } catch (error) {
+      console.error("Get Saved Comparisons Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get specific saved comparison result by ID
+   */
+  static async getSavedComparison(comparisonId: string): Promise<any> {
+    try {
+      console.log("Fetching saved comparison:", comparisonId);
+      const response = await fetch(
+        `${API_BASE_URL}/api/comparison/saved/${comparisonId}`,
+        {
+          method: "GET",
+          headers: this.getAuthHeaders(),
+        }
+      );
+
+      if (!response.ok) {
+        console.error("Failed to fetch saved comparison:", response.status);
+        throw new Error(`Failed to fetch saved comparison: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Saved comparison fetched successfully:", data);
+      return data;
+    } catch (error) {
+      console.error("Get Saved Comparison Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete saved comparison result
+   */
+  static async deleteSavedComparison(comparisonId: string): Promise<any> {
+    try {
+      console.log("Deleting saved comparison:", comparisonId);
+      const response = await fetch(
+        `${API_BASE_URL}/api/comparison/saved/${comparisonId}`,
+        {
+          method: "DELETE",
+          headers: this.getAuthHeaders(),
+        }
+      );
+
+      if (!response.ok) {
+        console.error("Failed to delete saved comparison:", response.status);
+        throw new Error(
+          `Failed to delete saved comparison: ${response.status}`
+        );
+      }
+
+      const data = await response.json();
+      console.log("Saved comparison deleted successfully:", data);
+      return data;
+    } catch (error) {
+      console.error("Delete Saved Comparison Error:", error);
       throw error;
     }
   }

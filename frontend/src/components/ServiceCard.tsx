@@ -15,7 +15,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, onClick }) => {
 
   return (
     <div 
-      className="bg-purple-800/30 backdrop-blur-sm rounded-2xl p-6 flex flex-col items-center transition-all duration-300 group cursor-pointer hover:bg-purple-800/40"
+      className="bg-blue-800/30 backdrop-blur-sm rounded-2xl p-6 flex flex-col items-center transition-all duration-300 group cursor-pointer hover:bg-blue-800/40"
       onClick={onClick}
     >
       <div className="relative mb-4">
@@ -28,8 +28,8 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, onClick }) => {
         </div>
       </div>
       
-      <h3 className="text-white text-center font-semibold text-lg mb-2">{service.title}</h3>
-      <p className="text-gray-300 text-center text-sm mb-6">{service.description}</p>
+      <h3 className="text-cyan-900 text-center font-semibold text-lg mb-2">{service.title}</h3>
+      <p className="text-gray-900 text-center text-sm mb-6">{service.description}</p>
       
       <div className="mt-auto">
         <button 

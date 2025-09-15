@@ -17,7 +17,7 @@ public class TavilyUtilTest {
     @Test
     public void testTavilySearch() {
         try {
-            List<Map<String, Object>> results = tavilyUtil.search("OpenAI latest news", 3);
+            List<Map<String, Object>> results = tavilyUtil.search("OpenAI latest news", 3, null);
             
             System.out.println("✅ Tavily search results: " + results.size() + " items");
             for (int i = 0; i < results.size(); i++) {

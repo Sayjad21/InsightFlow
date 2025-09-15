@@ -33,7 +33,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
 
       {/* Modal */}
       <div
-        className="bg-purple-800/30 backdrop-blur-sm rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-auto relative z-10 shadow-xl shadow-blue-900/20"
+        className="bg-blue-800/30 backdrop-blur-sm rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-auto relative z-10 shadow-xl shadow-blue-900/20"
         style={{
           animation: isOpen ? "modalFadeIn 0.3s ease-out forwards" : "none",
         }}
@@ -48,7 +48,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
 
         {/* Content */}
         <div className="p-8">
-          <h2 className="text-2xl font-bold text-black mb-4">
+          <h2 className="text-2xl font-bold text-blue-400 mb-4">
             {service.title}
           </h2>
 
@@ -251,7 +251,13 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
                     SWOT Visualization
                   </h3>
                   <img
-                    src={`data:image/png;base64,${analysisResult.swot_image}`}
+                    src={
+                      analysisResult.swot_image.startsWith("data:")
+                        ? analysisResult.swot_image
+                        : analysisResult.swot_image.startsWith("http")
+                        ? analysisResult.swot_image
+                        : `data:image/png;base64,${analysisResult.swot_image}`
+                    }
                     alt="SWOT Analysis"
                     className="w-full rounded-lg"
                   />
@@ -265,9 +271,15 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
                     PESTEL Analysis for {analysisResult.company_name}
                   </h3>
                   <img
-                    src={`data:image/png;base64,${analysisResult.pestel_image}`}
+                    src={
+                      analysisResult.pestel_image?.startsWith("data:")
+                        ? analysisResult.pestel_image
+                        : analysisResult.pestel_image?.startsWith("http")
+                        ? analysisResult.pestel_image
+                        : `data:image/png;base64,${analysisResult.pestel_image}`
+                    }
                     alt="PESTEL Analysis"
-                    className="w-full rounded-lg"
+                    className="w-full max-w-full h-auto rounded-lg"
                   />
                 </div>
               </div>
@@ -279,9 +291,15 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
                     Porter's Five Forces Analysis
                   </h3>
                   <img
-                    src={`data:image/png;base64,${analysisResult.porter_image}`}
+                    src={
+                      analysisResult.porter_image?.startsWith("data:")
+                        ? analysisResult.porter_image
+                        : analysisResult.porter_image?.startsWith("http")
+                        ? analysisResult.porter_image
+                        : `data:image/png;base64,${analysisResult.porter_image}`
+                    }
                     alt="Porter's Five Forces"
-                    className="w-full rounded-lg"
+                    className="w-full max-w-full h-auto rounded-lg"
                   />
                   <div className="grid grid-cols-2 gap-4 mt-4">
                     {Object.entries(analysisResult.porter_forces).map(
@@ -309,9 +327,15 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
                     BCG Matrix Analysis
                   </h3>
                   <img
-                    src={`data:image/png;base64,${analysisResult.bcg_image}`}
+                    src={
+                      analysisResult.bcg_image?.startsWith("data:")
+                        ? analysisResult.bcg_image
+                        : analysisResult.bcg_image?.startsWith("http")
+                        ? analysisResult.bcg_image
+                        : `data:image/png;base64,${analysisResult.bcg_image}`
+                    }
                     alt="BCG Matrix"
-                    className="w-full rounded-lg"
+                    className="w-full max-w-full h-auto rounded-lg"
                   />
                   <div className="grid grid-cols-2 gap-4 mt-4">
                     {Object.entries(analysisResult.bcg_matrix).map(
@@ -343,9 +367,15 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
                     McKinsey 7S Model
                   </h3>
                   <img
-                    src={`data:image/png;base64,${analysisResult.mckinsey_image}`}
+                    src={
+                      analysisResult.mckinsey_image?.startsWith("data:")
+                        ? analysisResult.mckinsey_image
+                        : analysisResult.mckinsey_image?.startsWith("http")
+                        ? analysisResult.mckinsey_image
+                        : `data:image/png;base64,${analysisResult.mckinsey_image}`
+                    }
                     alt="McKinsey 7S Model"
-                    className="w-full rounded-lg"
+                    className="w-full max-w-full h-auto rounded-lg"
                   />
                   <div className="grid grid-cols-2 gap-4 mt-4">
                     {Object.entries(analysisResult.mckinsey_7s).map(

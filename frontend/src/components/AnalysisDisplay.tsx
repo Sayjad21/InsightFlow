@@ -3,11 +3,10 @@ import {
   BarChart3,
   Target,
   Users2,
-  TrendingUp,
-  Shield,
-  AlertTriangle,
   Lightbulb,
   ExternalLink,
+  LucideLinkedin,
+  Link,
 } from "lucide-react";
 import type { AnalysisResult } from "../types";
 
@@ -25,7 +24,7 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
   return (
     <div className="space-y-8">
       {/* Company Summary */}
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+      <div className="bg-yellow-50 rounded-xl p-6 shadow-sm border border-gray-200">
         <h3 className="text-xl font-bold text-gray-900 mb-4">
           {companyName || analysisResult.company_name} - Key Insights
         </h3>
@@ -71,7 +70,7 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {/* Strengths */}
-          <div className="bg-green-50 rounded-lg p-5 border border-green-200">
+          {/* <div className="bg-green-50 rounded-lg p-5 border border-green-200">
             <div className="flex items-center mb-3">
               <Shield className="h-5 w-5 text-green-600 mr-2" />
               <h5 className="font-semibold text-green-800">Strengths</h5>
@@ -87,10 +86,10 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
                 </li>
               ))}
             </ul>
-          </div>
+          </div> */}
 
           {/* Weaknesses */}
-          <div className="bg-red-50 rounded-lg p-5 border border-red-200">
+          {/* <div className="bg-red-50 rounded-lg p-5 border border-red-200">
             <div className="flex items-center mb-3">
               <AlertTriangle className="h-5 w-5 text-red-600 mr-2" />
               <h5 className="font-semibold text-red-800">Weaknesses</h5>
@@ -106,10 +105,10 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
                 </li>
               ))}
             </ul>
-          </div>
+          </div> */}
 
           {/* Opportunities */}
-          <div className="bg-blue-50 rounded-lg p-5 border border-blue-200">
+          {/* <div className="bg-blue-50 rounded-lg p-5 border border-blue-200">
             <div className="flex items-center mb-3">
               <TrendingUp className="h-5 w-5 text-blue-600 mr-2" />
               <h5 className="font-semibold text-blue-800">Opportunities</h5>
@@ -127,10 +126,10 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
                 )
               )}
             </ul>
-          </div>
+          </div> */}
 
           {/* Threats */}
-          <div className="bg-orange-50 rounded-lg p-5 border border-orange-200">
+          {/* <div className="bg-orange-50 rounded-lg p-5 border border-orange-200">
             <div className="flex items-center mb-3">
               <AlertTriangle className="h-5 w-5 text-orange-600 mr-2" />
               <h5 className="font-semibold text-orange-800">Threats</h5>
@@ -146,28 +145,88 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
                 </li>
               ))}
             </ul>
-          </div>
+          </div> */}
         </div>
 
-        {/* SWOT Image */}
+        {/* SWOT Visualization */}
         {analysisResult.swot_image && (
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <img
-              src={
-                analysisResult.swot_image.startsWith("data:")
-                  ? analysisResult.swot_image
-                  : `data:image/png;base64,${analysisResult.swot_image}`
-              }
-              alt="SWOT Analysis Diagram"
-              className="w-full max-w-4xl mx-auto rounded-lg shadow-sm"
-              onError={(e) => {
-                console.error(
-                  "Failed to load SWOT image:",
-                  analysisResult.swot_image
-                );
-                e.currentTarget.style.display = "none";
-              }}
-            />
+          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 mt-6">
+            <h5 className="text-lg font-semibold text-gray-900 mb-4">
+              SWOT Matrix Visualization
+            </h5>
+            <div className="flex justify-center">
+              <img
+                src={
+                  analysisResult.swot_image.startsWith("data:")
+                    ? analysisResult.swot_image
+                    : analysisResult.swot_image.startsWith("http")
+                    ? analysisResult.swot_image
+                    : `data:image/png;base64,${analysisResult.swot_image}`
+                }
+                alt="SWOT Analysis Diagram"
+                className="max-w-full h-auto rounded-lg shadow-sm"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* PESTEL Analysis */}
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+        <div className="flex items-center mb-6">
+          <div className="p-2 bg-emerald-500 rounded-lg">
+            <BarChart3 className="h-6 w-6 text-white" />
+          </div>
+          <h4 className="text-xl font-semibold text-gray-900 ml-3">
+            PESTEL Analysis
+          </h4>
+        </div>
+
+        {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          {Object.entries(analysisResult.pestel_lists).map(
+            ([factor, items]) => (
+              <div
+                key={factor}
+                className="bg-emerald-50 rounded-lg p-4 border border-emerald-200"
+              >
+                <h5 className="font-semibold text-emerald-800 mb-2 capitalize">
+                  {factor}
+                </h5>
+                <ul className="space-y-1">
+                  {items.map((item, index) => (
+                    <li
+                      key={index}
+                      className="text-sm text-emerald-700 flex items-start"
+                    >
+                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )
+          )}
+        </div> */}
+
+        {/* PESTEL Visualization */}
+        {analysisResult.pestel_image && (
+          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 mt-6">
+            <h5 className="text-lg font-semibold text-gray-900 mb-4">
+              PESTEL Matrix Visualization
+            </h5>
+            <div className="flex justify-center">
+              <img
+                src={
+                  analysisResult.pestel_image.startsWith("data:")
+                    ? analysisResult.pestel_image
+                    : analysisResult.pestel_image.startsWith("http")
+                    ? analysisResult.pestel_image
+                    : `data:image/png;base64,${analysisResult.pestel_image}`
+                }
+                alt="PESTEL Analysis Diagram"
+                className="max-w-full h-auto rounded-lg shadow-sm"
+              />
+            </div>
           </div>
         )}
       </div>
@@ -209,25 +268,25 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
           )}
         </div>
 
-        {/* Porter's Image */}
+        {/* Porter's Forces Visualization */}
         {analysisResult.porter_image && (
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <img
-              src={
-                analysisResult.porter_image.startsWith("data:")
-                  ? analysisResult.porter_image
-                  : `data:image/png;base64,${analysisResult.porter_image}`
-              }
-              alt="Porter's Five Forces Diagram"
-              className="w-full max-w-4xl mx-auto rounded-lg shadow-sm"
-              onError={(e) => {
-                console.error(
-                  "Failed to load Porter image:",
-                  analysisResult.porter_image
-                );
-                e.currentTarget.style.display = "none";
-              }}
-            />
+          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 mt-6">
+            <h5 className="text-lg font-semibold text-gray-900 mb-4">
+              Porter's Five Forces Diagram
+            </h5>
+            <div className="flex justify-center">
+              <img
+                src={
+                  analysisResult.porter_image.startsWith("data:")
+                    ? analysisResult.porter_image
+                    : analysisResult.porter_image.startsWith("http")
+                    ? analysisResult.porter_image
+                    : `data:image/png;base64,${analysisResult.porter_image}`
+                }
+                alt="Porter's Five Forces Diagram"
+                className="max-w-full h-auto rounded-lg shadow-sm"
+              />
+            </div>
           </div>
         )}
       </div>
@@ -259,25 +318,25 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
           )}
         </div>
 
-        {/* McKinsey Image */}
+        {/* McKinsey 7S Visualization */}
         {analysisResult.mckinsey_image && (
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <img
-              src={
-                analysisResult.mckinsey_image.startsWith("data:")
-                  ? analysisResult.mckinsey_image
-                  : `data:image/png;base64,${analysisResult.mckinsey_image}`
-              }
-              alt="McKinsey 7S Framework Diagram"
-              className="w-full max-w-4xl mx-auto rounded-lg shadow-sm"
-              onError={(e) => {
-                console.error(
-                  "Failed to load McKinsey image:",
-                  analysisResult.mckinsey_image
-                );
-                e.currentTarget.style.display = "none";
-              }}
-            />
+          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 mt-6">
+            <h5 className="text-lg font-semibold text-gray-900 mb-4">
+              McKinsey 7S Framework Diagram
+            </h5>
+            <div className="flex justify-center">
+              <img
+                src={
+                  analysisResult.mckinsey_image.startsWith("data:")
+                    ? analysisResult.mckinsey_image
+                    : analysisResult.mckinsey_image.startsWith("http")
+                    ? analysisResult.mckinsey_image
+                    : `data:image/png;base64,${analysisResult.mckinsey_image}`
+                }
+                alt="McKinsey 7S Framework Diagram"
+                className="max-w-full h-auto rounded-lg shadow-sm"
+              />
+            </div>
           </div>
         )}
       </div>
@@ -309,7 +368,7 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
                       Market Share: {(data.market_share * 100).toFixed(1)}%
                     </p>
                     <p className="text-sm text-orange-700">
-                      Growth Rate: {(data.growth_rate * 100).toFixed(1)}%
+                      Growth Rate: {data.growth_rate.toFixed(1)}%
                     </p>
                   </div>
                 </div>
@@ -317,25 +376,25 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
             )}
           </div>
 
-          {/* BCG Image */}
+          {/* BCG Matrix Visualization */}
           {analysisResult.bcg_image && (
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <img
-                src={
-                  analysisResult.bcg_image.startsWith("data:")
-                    ? analysisResult.bcg_image
-                    : `data:image/png;base64,${analysisResult.bcg_image}`
-                }
-                alt="BCG Matrix Diagram"
-                className="w-full max-w-4xl mx-auto rounded-lg shadow-sm"
-                onError={(e) => {
-                  console.error(
-                    "Failed to load BCG image:",
-                    analysisResult.bcg_image
-                  );
-                  e.currentTarget.style.display = "none";
-                }}
-              />
+            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 mt-6">
+              <h5 className="text-lg font-semibold text-gray-900 mb-4">
+                BCG Matrix Diagram
+              </h5>
+              <div className="flex justify-center">
+                <img
+                  src={
+                    analysisResult.bcg_image.startsWith("data:")
+                      ? analysisResult.bcg_image
+                      : analysisResult.bcg_image.startsWith("http")
+                      ? analysisResult.bcg_image
+                      : `data:image/png;base64,${analysisResult.bcg_image}`
+                  }
+                  alt="BCG Matrix Diagram"
+                  className="max-w-full h-auto rounded-lg shadow-sm"
+                />
+              </div>
             </div>
           )}
         </div>
@@ -344,9 +403,11 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
       {/* LinkedIn Analysis */}
       {analysisResult.linkedin_analysis && (
         <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
-          <h4 className="text-lg font-semibold text-blue-900 mb-3">
-            LinkedIn Analysis
+          <h4 className="text-lg font-semibold text-blue-900 mb-3 flex items-center gap-2">
+            <LucideLinkedin className="h-5 w-5 text-blue-700" />
+            Analysis
           </h4>
+
           <div
             className="text-blue-800 prose prose-sm max-w-none"
             dangerouslySetInnerHTML={{
@@ -358,8 +419,11 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
 
       {/* Sources */}
       {analysisResult.sources && analysisResult.sources.length > 0 && (
-        <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-          <h4 className="text-lg font-semibold text-gray-900 mb-3">Sources</h4>
+        <div className="bg-pink-50 rounded-xl p-6 border border-gray-200">
+          <h4 className="text-lg font-semibold text-gray-900 mb-3">
+            <Link className="h-5 w-5 inline-block mr-2 text-gray-700" />
+            Sources
+          </h4>
           <div className="space-y-2">
             {analysisResult.sources.map((source, index) => (
               <div
@@ -373,7 +437,7 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
                   rel="noopener noreferrer"
                   className="hover:text-blue-600 transition-colors duration-200"
                 >
-                  {source}
+                  {new URL(source).origin}
                 </a>
               </div>
             ))}

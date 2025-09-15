@@ -7,6 +7,7 @@ import org.jfree.chart.plot.SpiderWebPlot;
 import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
@@ -17,6 +18,12 @@ import java.util.Map;
 
 @Service
 public class ComparisonVisualizationService {
+
+    // @Autowired
+    // private FirebaseStorageService firebaseStorageService;
+
+    @Autowired
+    private SupabaseStorageService supabaseStorageService;
 
     public String generateRadarChart(Map<String, Object> comparisonData) {
         try {
@@ -38,15 +45,36 @@ public class ComparisonVisualizationService {
             SpiderWebPlot plot = new SpiderWebPlot(dataset);
             plot.setStartAngle(54);
             JFreeChart chart = new JFreeChart(
-                "Competitive Positioning Radar",
-                JFreeChart.DEFAULT_TITLE_FONT,
-                plot,
-                true
-            );
+                    "Competitive Positioning Radar",
+                    JFreeChart.DEFAULT_TITLE_FONT,
+                    plot,
+                    true);
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ChartUtils.writeChartAsPNG(baos, chart, 800, 600);
-            return Base64.getEncoder().encodeToString(baos.toByteArray());
+
+            // Try to upload to Supabase first, then Firebase as fallback
+            if (supabaseStorageService.isAvailable()) {
+                String supabaseUrl = supabaseStorageService.uploadImageFromStream(baos, "comparison_radar.png",
+                        "image/png");
+                System.out.println("Uploaded to Supabase: Comparison Radar Chart");
+                if (supabaseUrl != null) {
+                    return supabaseUrl;
+                }
+            }
+
+            // Try Firebase as fallback
+            // if (firebaseStorageService.isAvailable()) {
+            // String firebaseUrl = firebaseStorageService.uploadImageFromStream(baos,
+            // "comparison_radar.png",
+            // "image/png");
+            // if (firebaseUrl != null) {
+            // return firebaseUrl;
+            // }
+            // }
+
+            // Fallback to base64 if both uploads fail
+            return "data:image/png;base64," + Base64.getEncoder().encodeToString(baos.toByteArray());
         } catch (IOException e) {
             throw new RuntimeException("Failed to generate radar chart", e);
         }
@@ -70,14 +98,35 @@ public class ComparisonVisualizationService {
             }
 
             JFreeChart chart = ChartFactory.createBarChart(
-                "Bar Comparison",
-                "Metric",
-                "Value",
-                dataset
-            );
+                    "Bar Comparison",
+                    "Metric",
+                    "Value",
+                    dataset);
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ChartUtils.writeChartAsPNG(baos, chart, 800, 600);
-            return Base64.getEncoder().encodeToString(baos.toByteArray());
+
+            // Try Superbase first
+            if (supabaseStorageService.isAvailable()) {
+                String supabaseUrl = supabaseStorageService.uploadImageFromStream(baos, "comparison_bar.png",
+                        "image/png");
+                System.out.println("Uploaded to Supabase: Comparison Bar Chart");
+                if (supabaseUrl != null) {
+                    return supabaseUrl;
+                }
+            }
+
+            // Try to upload to Firebase, fallback to base64 if Firebase is not available
+            // if (firebaseStorageService.isAvailable()) {
+            // String firebaseUrl = firebaseStorageService.uploadImageFromStream(baos,
+            // "comparison_bar.png",
+            // "image/png");
+            // if (firebaseUrl != null) {
+            // return firebaseUrl;
+            // }
+            // }
+
+            // Fallback to base64 if Firebase upload fails
+            return "data:image/png;base64," + Base64.getEncoder().encodeToString(baos.toByteArray());
         } catch (IOException e) {
             throw new RuntimeException("Failed to generate bar graph", e);
         }
@@ -99,14 +148,35 @@ public class ComparisonVisualizationService {
             }
 
             JFreeChart chart = ChartFactory.createScatterPlot(
-                "Scatter Positioning",
-                "Growth Rate",
-                "Market Share",
-                dataset
-            );
+                    "Scatter Positioning",
+                    "Growth Rate",
+                    "Market Share",
+                    dataset);
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ChartUtils.writeChartAsPNG(baos, chart, 800, 600);
-            return Base64.getEncoder().encodeToString(baos.toByteArray());
+
+            // Try Superbase first
+            if (supabaseStorageService.isAvailable()) {
+                String supabaseUrl = supabaseStorageService.uploadImageFromStream(baos, "comparison_scatter.png",
+                        "image/png");
+                System.out.println("Uploaded to Supabase: Comparison Scatter Plot");
+                if (supabaseUrl != null) {
+                    return supabaseUrl;
+                }
+            }
+
+            // Try to upload to Firebase, fallback to base64 if Firebase is not available
+            // if (firebaseStorageService.isAvailable()) {
+            // String firebaseUrl = firebaseStorageService.uploadImageFromStream(baos,
+            // "comparison_scatter.png",
+            // "image/png");
+            // if (firebaseUrl != null) {
+            // return firebaseUrl;
+            // }
+            // }
+
+            // Fallback to base64 if Firebase upload fails
+            return "data:image/png;base64," + Base64.getEncoder().encodeToString(baos.toByteArray());
         } catch (IOException e) {
             throw new RuntimeException("Failed to generate scatter plot", e);
         }

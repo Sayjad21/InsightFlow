@@ -75,7 +75,7 @@ const CompanyAnalysis: React.FC<CompanyAnalysisProps> = ({
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex flex-col gap-2">
           <label htmlFor="file-upload" className="text-black/80">
-            Upload .txt Document (Optional - enables differentiation analysis)
+            Upload .txt Document
           </label>
           <div className="relative">
             <input
@@ -116,7 +116,7 @@ const CompanyAnalysis: React.FC<CompanyAnalysisProps> = ({
         </div>
 
         {/* Additional Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-white/20">
+        {/* <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-white/20">
           <div className="flex-1">
             <h3 className="text-black/80 mb-2 font-medium">
               Generate Company Analysis File
@@ -141,7 +141,7 @@ const CompanyAnalysis: React.FC<CompanyAnalysisProps> = ({
                 : "📄 Generate Basic Analysis File"}
             </button>
           </div>
-        </div>
+        </div> */}
       </form>
 
       {(error || fileError) && (

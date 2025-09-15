@@ -22,6 +22,14 @@ export interface AnalysisResult {
     threats: string[];
   };
   swot_image: string;
+  pestel_lists: {
+    political: string[];
+    economic: string[];
+    social: string[];
+    technological: string[];
+    environmental: string[];
+    legal: string[];
+  };
   pestel_image: string;
   porter_forces: {
     rivalry: string[];
@@ -56,7 +64,8 @@ export interface User {
   firstName: string;
   lastName: string;
   email: string;
-  avatar?: string;
+  avatar: string;
+  bio?: string;
   createdAt: string;
   lastLogin: string;
 }
@@ -79,6 +88,14 @@ export interface UserAnalysis {
     threats: string[];
   };
   swotImage?: string;
+  pestelLists?: {
+    political: string[];
+    economic: string[];
+    social: string[];
+    technological: string[];
+    environmental: string[];
+    legal: string[];
+  };
   pestelImage?: string;
   porterForces?: {
     rivalry: string[];
@@ -111,4 +128,88 @@ export interface UserAnalysis {
 
   // Legacy support - for backwards compatibility
   result?: AnalysisResult;
+}
+
+export interface ComparisonMetric {
+  sentimentScore: number;
+  growthRate: number;
+  riskRating: number;
+  marketShare: number;
+}
+
+export interface ComparisonBenchmarks {
+  avgMarketShare: number;
+  avgGrowthRate: number;
+  avgRiskRating: number;
+  avgSentimentScore: number;
+}
+
+export interface CompanyAnalysis {
+  companyName: string;
+  analysisId?: string;
+  summaries?: string[];
+  swotLists?: {
+    strengths: string[];
+    weaknesses: string[];
+    opportunities: string[];
+    threats: string[];
+  };
+  swotImage?: string;
+  pestelLists?: {
+    political: string[];
+    economic: string[];
+    social: string[];
+    technological: string[];
+    environmental: string[];
+    legal: string[];
+  };
+  pestelImage?: string;
+  porterForces?: {
+    rivalry: string[];
+    newEntrants: string[];
+    substitutes: string[];
+    buyerPower: string[];
+    supplierPower: string[];
+  };
+  porterImage?: string;
+  bcgMatrix?: {
+    [productName: string]: {
+      marketShare: number;
+      growthRate: number;
+    };
+  };
+  bcgImage?: string;
+  mckinsey7s?: {
+    strategy: string;
+    structure: string;
+    systems: string;
+    style: string;
+    staff: string;
+    skills: string;
+    sharedValues: string;
+  };
+  mckinseyImage?: string;
+  sources?: string[];
+  linkedinAnalysis?: string;
+  strategyRecommendations?: string;
+}
+
+export interface ComparisonResult {
+  id: string;
+  requestedBy: string;
+  comparisonDate: string;
+  comparisonType: "existing" | "enhanced" | "mixed";
+  savedAnalysisIds?: string[];
+  analyses: CompanyAnalysis[];
+  metrics: ComparisonMetric[];
+  benchmarks: ComparisonBenchmarks;
+  insights: string[];
+  investmentRecommendations?: string;
+  radarChart?: string;
+  barGraph?: string;
+  scatterPlot?: string;
+
+  // Additional fields for display
+  numberOfCompanies?: number;
+  companyNames?: string[];
 }

@@ -5,6 +5,7 @@ import {
   Navigate,
 } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext.js";
+import Landing from "./pages/Landing.js";
 import Home from "./pages/Home.js";
 import SignIn from "./pages/SignIn.js";
 import SignUp from "./pages/SignUp.js";
@@ -18,6 +19,9 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
+          {/* Landing Page - Public Route */}
+          <Route path="/" element={<Landing />} />
+
           {/* Public Routes */}
           <Route
             path="/signin"
@@ -38,7 +42,7 @@ function App() {
 
           {/* Protected Routes */}
           <Route
-            path="/home"
+            path="/analysis"
             element={
               <ProtectedRoute>
                 <Home />
@@ -62,11 +66,8 @@ function App() {
             }
           />
 
-          {/* Default redirect */}
-          <Route path="/" element={<Navigate to="/signin" replace />} />
-
           {/* Catch all redirect */}
-          <Route path="*" element={<Navigate to="/signin" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
     </AuthProvider>
