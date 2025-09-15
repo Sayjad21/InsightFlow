@@ -57,10 +57,13 @@ export class ImageUploadService {
     return new Promise((resolve, reject) => {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
-      const img = new Image();
+      if (!ctx) {
+        reject(new Error("Canvas context not available"));
+        return;
+      }
 
+      const img = new Image();
       img.onload = () => {
-        // Calculate new dimensions
         let { width, height } = img;
 
         if (width > height) {
@@ -78,8 +81,7 @@ export class ImageUploadService {
         canvas.width = width;
         canvas.height = height;
 
-        // Draw and compress
-        ctx?.drawImage(img, 0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
 
         canvas.toBlob(
           (blob) => {
@@ -90,7 +92,7 @@ export class ImageUploadService {
               });
               resolve(resizedFile);
             } else {
-              reject(new Error("Failed to resize image"));
+              reject(new Error("Failed to create blob"));
             }
           },
           file.type,
@@ -98,7 +100,7 @@ export class ImageUploadService {
         );
       };
 
-      img.onerror = reject;
+      img.onerror = () => reject(new Error("Failed to load image"));
       img.src = URL.createObjectURL(file);
     });
   }

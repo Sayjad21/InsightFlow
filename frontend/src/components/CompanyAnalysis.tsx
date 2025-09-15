@@ -86,7 +86,7 @@ const CompanyAnalysis: React.FC<CompanyAnalysisProps> = ({
               accept=".txt"
             />
             <div className="px-4 py-2 rounded-lg bg-white/10 text-black border border-white/20 flex items-center">
-              <span className="bg-blue-500 text-black px-4 py-2 rounded-lg mr-4 text-sm font-semibold hover:bg-blue-600">
+              <span className="bg-green-500 text-black px-4 py-2 rounded-lg mr-4 text-sm font-semibold hover:bg-green-600">
                 Choose File
               </span>
               <span className="text-black-400">
@@ -109,7 +109,7 @@ const CompanyAnalysis: React.FC<CompanyAnalysisProps> = ({
           <button
             type="submit"
             disabled={loading || fileGenerating}
-            className="px-6 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-black rounded-lg hover:from-blue-600 hover:to-blue-700 disabled:opacity-50"
+            className="px-6 py-2 bg-gradient-to-r from-green-500 to-green-600 text-black rounded-lg hover:from-green-600 hover:to-green-700 disabled:opacity-50"
           >
             {loading ? "Analyzing..." : "Analyze"}
           </button>

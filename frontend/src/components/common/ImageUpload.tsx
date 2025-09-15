@@ -1,6 +1,7 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Camera, Upload, X, Loader2 } from "lucide-react";
 import { ImageUploadService } from "../../services/imageUploadService";
+import { useAuth } from "../../contexts/AuthContext";
 
 interface ImageUploadProps {
   currentImage?: string;
@@ -26,6 +27,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [imageLoadError, setImageLoadError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
 
   const sizeClasses = {
     small: "w-16 h-16",
@@ -33,32 +35,43 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     large: "w-32 h-32",
   };
 
+  // No cleanup needed for base64 URLs
+  useEffect(() => {
+    console.log("Current previewUrl:", previewUrl);
+  }, [previewUrl]);
+
   const handleFileSelect = async (file: File) => {
     setError(null);
+    setImageLoadError(false);
+    console.log("Selected file:", file.name, file.type, file.size);
 
-    // Validate the image
     const validation = ImageUploadService.validateImage(file);
+    console.log("Validation result:", validation);
     if (!validation.isValid) {
       setError(validation.error!);
       return;
     }
 
     try {
-      // Resize the image to reduce file size
       const resizedFile = await ImageUploadService.resizeImage(file);
-      const preview = ImageUploadService.createPreviewUrl(resizedFile);
-
-      // Clean up previous preview URL
-      if (previewUrl) {
-        ImageUploadService.revokePreviewUrl(previewUrl);
-      }
+      console.log(
+        "Resized file:",
+        resizedFile.name,
+        resizedFile.type,
+        resizedFile.size
+      );
+      const preview = await ImageUploadService.fileToBase64(resizedFile);
+      console.log(
+        "Generated base64 preview:",
+        preview.substring(0, 50) + "..."
+      );
 
       setPreviewUrl(preview);
-      setImageLoadError(false);
       onImageChange(resizedFile, preview);
     } catch (err) {
       setError("Failed to process image. Please try another file.");
       console.error("Image processing error:", err);
+      setImageLoadError(true);
     }
   };
 
@@ -97,10 +110,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   };
 
   const handleRemoveImage = () => {
-    if (previewUrl) {
-      ImageUploadService.revokePreviewUrl(previewUrl);
-      setPreviewUrl(null);
-    }
+    setPreviewUrl(null);
     setError(null);
     setImageLoadError(false);
     onImageChange(null, null);
@@ -114,7 +124,17 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     fileInputRef.current?.click();
   };
 
-  const displayImage = previewUrl || currentImage;
+  // Use currentImage by default, switch to previewUrl only when a new image is uploaded
+  const displayImage =
+    previewUrl && !imageLoadError ? previewUrl : currentImage || "";
+  console.log(
+    "Rendering with displayImage:",
+    displayImage.substring(0, 50) + "...",
+    "previewUrl:",
+    previewUrl ? previewUrl.substring(0, 50) + "..." : null,
+    "currentImage:",
+    currentImage
+  );
 
   return (
     <div className={`space-y-3 ${className}`}>
@@ -125,34 +145,28 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       )}
 
       <div className="flex items-center space-x-4">
-        {/* Image Preview */}
         <div
           className={`
             ${
               sizeClasses[size]
             } rounded-full overflow-hidden border-4 border-white shadow-lg
-            relative group cursor-pointer bg-gray-100
+            relative group cursor-pointer bg-gray-200
             ${isUploading ? "opacity-50" : ""}
           `}
           onClick={handleClick}
         >
-          {displayImage && !imageLoadError ? (
+          {user && displayImage && !imageLoadError ? (
             <>
               <img
                 src={displayImage}
                 alt="Profile"
-                className="w-full h-full object-cover"
-                onError={() => {
-                  console.error("Image failed to load:", displayImage);
-                  setImageLoadError(true);
-                }}
-                onLoad={() => {
-                  console.log("Image loaded successfully:", displayImage);
-                  setImageLoadError(false);
-                }}
+                className="w-full h-full object-cover relative z-10"
+                onError={(e) => setImageLoadError(true)}
+                onLoad={() => setImageLoadError(false)}
               />
+
               {!isUploading && (
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 flex items-center justify-center transition-opacity">
+                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 flex items-center justify-center transition-opacity pointer-events-none group-hover:pointer-events-auto">
                   <Camera
                     className="text-white opacity-0 group-hover:opacity-100 transition-opacity"
                     size={size === "small" ? 16 : size === "medium" ? 20 : 24}
@@ -179,7 +193,6 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           )}
         </div>
 
-        {/* Upload Area */}
         <div className="flex-1">
           <div
             className={`
@@ -207,14 +220,13 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
             </p>
           </div>
 
-          {/* Action Buttons */}
           {(displayImage || error) && !isUploading && (
             <div className="flex space-x-2 mt-2">
-              {displayImage && (
+              {previewUrl && (
                 <button
                   type="button"
                   onClick={handleRemoveImage}
-                  className="flex items-center px-3 py-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                  className="flex items-center px-3 py-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors cursor-pointer"
                 >
                   <X size={14} className="mr-1" />
                   Remove
@@ -225,7 +237,6 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         </div>
       </div>
 
-      {/* Error Messages */}
       {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
       {imageLoadError && displayImage && (
         <p className="text-sm text-yellow-600 mt-2">
@@ -233,7 +244,6 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         </p>
       )}
 
-      {/* Hidden File Input */}
       <input
         ref={fileInputRef}
         type="file"

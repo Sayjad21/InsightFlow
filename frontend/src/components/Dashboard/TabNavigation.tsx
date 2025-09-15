@@ -42,7 +42,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
           onClick={() => onTabChange("analysis")}
           className={`group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm ${
             activeTab === "analysis"
-              ? "border-purple-500 text-purple-600"
+              ? "border-green-500 text-green-600"
               : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
           }`}
         >
@@ -51,7 +51,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
           <span
             className={`ml-2 py-0.5 px-2 rounded-full text-xs ${
               activeTab === "analysis"
-                ? "bg-purple-100 text-purple-600"
+                ? "bg-green-100 text-green-600"
                 : "bg-gray-100 text-gray-500"
             }`}
           >
@@ -142,7 +142,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
           onClick={() => onTabChange("sentiment_analysis")}
           className={`group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm ${
             activeTab === "sentiment_analysis"
-              ? "border-purple-500 text-purple-600"
+              ? "border-blue-500 text-blue-600"
               : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
           }`}
         >

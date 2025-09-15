@@ -43,8 +43,8 @@ const Header: React.FC<HeaderProps> = ({ onAnalysisComplete }) => {
 
       <h1
         className={cn(
-          "text-4xl sm:text-5xl lg:text-6xl font-extrabold",
-          "bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent",
+          "text-4xl sm:text-5xl lg:text-6xl font-extrabold pb-3",
+          "bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent",
           "animate-fade-in-down mb-6"
         )}
       >
@@ -68,8 +68,8 @@ const Header: React.FC<HeaderProps> = ({ onAnalysisComplete }) => {
         variant="default"
         size="lg"
         className={cn(
-          "mt-4 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600",
-          "text-white font-semibold py-3 px-6 rounded-full",
+          "mt-4 bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600",
+          "text-gray-900 font-semibold py-3 px-6 rounded-full",
           "transition-all duration-300 transform hover:scale-105"
         )}
         onClick={() =>

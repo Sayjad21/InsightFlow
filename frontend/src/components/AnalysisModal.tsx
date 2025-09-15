@@ -9,6 +9,7 @@ import {
   BarChart3,
   Link as LinkIcon,
   Lightbulb,
+  LinkedinIcon,
 } from "lucide-react";
 import type { AnalysisResult } from "../types";
 import { LucideLinkedin } from "lucide-react";
@@ -36,7 +37,7 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
 
       {/* Modal */}
       <div
-        className="bg-cyan-800/30 backdrop-blur-sm rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-auto relative z-10 shadow-xl shadow-blue-900/20"
+        className="bg-teal-800/30 backdrop-blur-sm rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-auto relative z-10 shadow-xl shadow-blue-900/20"
         style={{
           animation: "modalFadeIn 0.3s ease-out forwards",
         }}
@@ -58,7 +59,7 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
           <div className="space-y-8">
             {/* Company Summary */}
             <div className="bg-white/5 rounded-xl p-6">
-              <h3 className="text-xl font-semibold text-blue-400 mb-4">
+              <h3 className="text-xl font-semibold text-green-400 mb-4">
                 {companyName || analysisResult.company_name} - Key Insights
               </h3>
               {analysisResult.summaries &&
@@ -76,7 +77,7 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
                             className="bg-gray-500/10 border border-gray-500/30 rounded-lg p-4"
                           >
                             <div className="flex items-start">
-                              <span className="flex-shrink-0 w-6 h-6 bg-gray-400 text-gray-900 rounded-full flex items-center justify-center text-xs font-medium mr-3 mt-0.5">
+                              <span className="flex-shrink-0 w-6 h-6 bg-green-600 text-gray-900 rounded-full flex items-center justify-center text-xs font-medium mr-3 mt-0.5">
                                 {idx + 1}
                               </span>
                               <div className="flex-1">
@@ -97,7 +98,7 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
             {/* Strategy Recommendations */}
             {analysisResult.strategy_recommendations && (
               <div className="mb-6">
-                <h5 className="font-medium text-blue-400 mb-3">
+                <h5 className="font-medium text-green-400 mb-3">
                   Strategic Recommendations
                 </h5>
                 <div className="bg-blue-500/10 border border-blue-500/30 border-l-4 border-l-blue-400 rounded-r-lg p-4">
@@ -117,26 +118,26 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
                 <div className="p-2 bg-purple-500/20 rounded-lg border border-purple-500/30">
                   <BarChart3 className="h-6 w-6 text-purple-300" />
                 </div>
-                <h4 className="text-xl font-semibold text-blue-400 ml-3">
+                <h4 className="text-xl font-semibold text-green-400 ml-3">
                   SWOT Analysis
                 </h4>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                {/* Strengths */}
-                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-5">
+              {/* Strengths */}
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-5">
                   <div className="flex items-center mb-3">
-                    <Shield className="h-5 w-5 text-green-400 mr-2" />
-                    <h5 className="font-semibold text-green-300">Strengths</h5>
+                    <Shield className="h-5 w-5 text-blue-400 mr-2" />
+                    <h5 className="font-semibold text-blue-300">Strengths</h5>
                   </div>
                   <ul className="space-y-2">
                     {analysisResult.swot_lists.strengths.map(
                       (strength: string, index: number) => (
                         <li
                           key={index}
-                          className="text-sm text-green-300 flex items-start"
+                          className="text-sm text-blue-300 flex items-start"
                         >
-                          <span className="w-2 h-2 bg-green-400 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                          <span className="w-2 h-2 bg-blue-400 rounded-full mt-2 mr-2 flex-shrink-0"></span>
                           {strength}
                         </li>
                       )
@@ -144,20 +145,20 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
                   </ul>
                 </div>
 
-                {/* Weaknesses */}
-                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-5">
+              {/* Weaknesses */}
+              <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-5">
                   <div className="flex items-center mb-3">
-                    <AlertTriangle className="h-5 w-5 text-red-400 mr-2" />
-                    <h5 className="font-semibold text-red-300">Weaknesses</h5>
+                    <AlertTriangle className="h-5 w-5 text-orange-400 mr-2" />
+                    <h5 className="font-semibold text-orange-300">Weaknesses</h5>
                   </div>
                   <ul className="space-y-2">
                     {analysisResult.swot_lists.weaknesses.map(
                       (weakness: string, index: number) => (
                         <li
                           key={index}
-                          className="text-sm text-red-300 flex items-start"
+                          className="text-sm text-orange-300 flex items-start"
                         >
-                          <span className="w-2 h-2 bg-red-400 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                          <span className="w-2 h-2 bg-orange-400 rounded-full mt-2 mr-2 flex-shrink-0"></span>
                           {weakness}
                         </li>
                       )
@@ -165,11 +166,11 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
                   </ul>
                 </div>
 
-                {/* Opportunities */}
-                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-5">
+              {/* Opportunities */}
+              <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-5">
                   <div className="flex items-center mb-3">
-                    <TrendingUp className="h-5 w-5 text-blue-400 mr-2" />
-                    <h5 className="font-semibold text-blue-300">
+                    <TrendingUp className="h-5 w-5 text-green-400 mr-2" />
+                    <h5 className="font-semibold text-green-300">
                       Opportunities
                     </h5>
                   </div>
@@ -178,9 +179,9 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
                       (opportunity: string, index: number) => (
                         <li
                           key={index}
-                          className="text-sm text-blue-300 flex items-start"
+                          className="text-sm text-green-300 flex items-start"
                         >
-                          <span className="w-2 h-2 bg-blue-400 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                          <span className="w-2 h-2 bg-green-400 rounded-full mt-2 mr-2 flex-shrink-0"></span>
                           {opportunity}
                         </li>
                       )
@@ -188,20 +189,20 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
                   </ul>
                 </div>
 
-                {/* Threats */}
-                <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-5">
+              {/* Threats */}
+              <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-5">
                   <div className="flex items-center mb-3">
-                    <AlertTriangle className="h-5 w-5 text-orange-400 mr-2" />
-                    <h5 className="font-semibold text-orange-300">Threats</h5>
+                    <AlertTriangle className="h-5 w-5 text-red-400 mr-2" />
+                    <h5 className="font-semibold text-red-300">Threats</h5>
                   </div>
                   <ul className="space-y-2">
                     {analysisResult.swot_lists.threats.map(
                       (threat: string, index: number) => (
                         <li
                           key={index}
-                          className="text-sm text-orange-300 flex items-start"
+                          className="text-sm text-red-300 flex items-start"
                         >
-                          <span className="w-2 h-2 bg-orange-400 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                          <span className="w-2 h-2 bg-red-400 rounded-full mt-2 mr-2 flex-shrink-0"></span>
                           {threat}
                         </li>
                       )
@@ -213,9 +214,9 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
               {/* SWOT Visualization */}
               {analysisResult.swot_image && (
                 <div className="bg-white/5 rounded-lg p-6 mt-6 border border-gray-500/30">
-                  <h5 className="text-lg font-semibold text-blue-400 mb-4">
+                  {/* <h5 className="text-lg font-semibold text-blue-400 mb-4">
                     SWOT Matrix Visualization
-                  </h5>
+                  </h5> */}
                   <div className="flex justify-center">
                     <img
                       src={
@@ -239,7 +240,7 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
                 <div className="p-2 bg-emerald-500/20 rounded-lg border border-emerald-500/30">
                   <BarChart3 className="h-6 w-6 text-emerald-300" />
                 </div>
-                <h4 className="text-xl font-semibold text-blue-400 ml-3">
+                <h4 className="text-xl font-semibold text-green-400 ml-3">
                   PESTEL Analysis
                 </h4>
               </div>
@@ -273,9 +274,9 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
               {/* PESTEL Visualization */}
               {analysisResult.pestel_image && (
                 <div className="bg-white/5 rounded-lg p-6 mt-6 border border-gray-500/30">
-                  <h5 className="text-lg font-semibold text-blue-400 mb-4">
+                  {/* <h5 className="text-lg font-semibold text-blue-400 mb-4">
                     PESTEL Matrix Visualization
-                  </h5>
+                  </h5> */}
                   <div className="flex justify-center">
                     <img
                       src={
@@ -299,7 +300,7 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
                 <div className="p-2 bg-indigo-500/20 rounded-lg border border-indigo-500/30">
                   <Target className="h-6 w-6 text-indigo-300" />
                 </div>
-                <h4 className="text-xl font-semibold text-blue-400 ml-3">
+                <h4 className="text-xl font-semibold text-green-400 ml-3">
                   Porter's Five Forces
                 </h4>
               </div>
@@ -333,7 +334,7 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
               {/* Porter's Forces Visualization */}
               {analysisResult.porter_image && (
                 <div className="bg-white/5 rounded-lg p-6 mt-6 border border-gray-500/30">
-                  <h5 className="text-lg font-semibold text-blue-400 mb-4">
+                  <h5 className="text-lg font-semibold text-green-400 mb-4">
                     Porter's Five Forces Diagram
                   </h5>
                   <div className="flex justify-center">
@@ -359,7 +360,7 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
                 <div className="p-2 bg-green-500/20 rounded-lg border border-green-500/30">
                   <Users2 className="h-6 w-6 text-green-300" />
                 </div>
-                <h4 className="text-xl font-semibold text-blue-400 ml-3">
+                <h4 className="text-xl font-semibold text-green-400 ml-3">
                   McKinsey 7S Framework
                 </h4>
               </div>
@@ -383,7 +384,7 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
               {/* McKinsey 7S Visualization */}
               {analysisResult.mckinsey_image && (
                 <div className="bg-white/5 rounded-lg p-6 mt-6 border border-gray-500/30">
-                  <h5 className="text-lg font-semibold text-blue-400 mb-4">
+                  <h5 className="text-lg font-semibold text-green-400 mb-4">
                     McKinsey 7S Framework Diagram
                   </h5>
                   <div className="flex justify-center">
@@ -410,7 +411,7 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
                   <div className="p-2 bg-orange-500/20 rounded-lg border border-orange-500/30">
                     <BarChart3 className="h-6 w-6 text-orange-300" />
                   </div>
-                  <h4 className="text-xl font-semibold text-blue-400 ml-3">
+                  <h4 className="text-xl font-semibold text-green-400 ml-3">
                     BCG Matrix
                   </h4>
                 </div>
@@ -440,7 +441,7 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
                 {/* BCG Matrix Visualization */}
                 {analysisResult.bcg_image && (
                   <div className="bg-white/5 rounded-lg p-6 mt-6 border border-gray-500/30">
-                    <h5 className="text-lg font-semibold text-blue-400 mb-4">
+                    <h5 className="text-lg font-semibold text-green-400 mb-4">
                       BCG Matrix Diagram
                     </h5>
                     <div className="flex justify-center">
@@ -464,9 +465,10 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
             {/* LinkedIn Analysis */}
             {analysisResult.linkedin_analysis && (
               <div className="mb-6">
-                <h5 className="font-medium text-blue-400 mb-3">
-                  LinkedIn-Based Analysis
-                </h5>
+                <h4 className="font-medium text-green-400 mb-3 flex items-center space-x-2">
+                  <LinkedinIcon className="h-5 w-5 text-blue-300" />
+                  <span>LinkedIn-Based Analysis</span>
+                </h4>
                 <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
                   <div
                     className="text-sm text-blue-200 leading-relaxed"
@@ -481,7 +483,7 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
             {/* Sources */}
             {analysisResult.sources && analysisResult.sources.length > 0 && (
               <div className="bg-white/5 rounded-xl p-6">
-                <h4 className="text-lg font-semibold text-blue-400 mb-3">
+                <h4 className="text-lg font-semibold text-green-400 mb-3">
                   <LinkIcon className="h-5 w-5 inline-block mr-2 text-blue-300" />
                   Sources
                 </h4>

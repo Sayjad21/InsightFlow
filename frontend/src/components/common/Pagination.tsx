@@ -22,6 +22,11 @@ const Pagination: React.FC<PaginationProps> = ({
       newPage
     );
     onPageChange(newPage);
+
+    // Use requestAnimationFrame to ensure scroll happens after DOM updates
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
   };
 
   const getVisiblePages = () => {
@@ -82,8 +87,8 @@ const Pagination: React.FC<PaginationProps> = ({
       <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
         <div>
           <p className="text-sm text-gray-700">
-            Showing page <span className="font-medium">{currentPage}</span> of{" "}
-            <span className="font-medium">{totalPages}</span>
+            Showing page <span className="font-medium ml-2">{currentPage}</span> of{" "}
+            <span className="font-medium  mr-2">{totalPages}</span>
           </p>
         </div>
 

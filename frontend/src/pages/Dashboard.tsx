@@ -86,6 +86,8 @@ const Dashboard: React.FC = () => {
               expandedComparison={dashboardData.expandedComparison}
               setExpandedComparison={dashboardData.setExpandedComparison}
               setSelectedComparison={dashboardData.setSelectedComparison}
+              onComparisonDeleted={dashboardData.refreshComparisons}
+              isLoading={dashboardData.isLoadingComparisons} // NEW
             />
           ) : activeTab === "reports" ? (
             <ReportsTab />

@@ -13,9 +13,11 @@ import {
   Search,
   Database,
 } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
 
 const Landing: React.FC = () => {
   const featuresRef = useRef<HTMLDivElement>(null);
+  const { isAuthenticated } = useAuth();
 
   // Add smooth scrolling animation on load
   useEffect(() => {
@@ -51,18 +53,37 @@ const Landing: React.FC = () => {
               </span>
             </div>
             <div className="flex items-center space-x-4">
-              <Link
-                to="/signin"
-                className="text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium"
-              >
-                Sign In
-              </Link>
-              <Link
-                to="/signup"
-                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-2 rounded-full hover:from-purple-700 hover:to-blue-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-              >
-                Get Started
-              </Link>
+              {isAuthenticated ? (
+                <>
+                  <Link
+                    to="/dashboard"
+                    className="text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium"
+                  >
+                    Dashboard
+                  </Link>
+                  <Link
+                    to="/analysis"
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-2 rounded-full hover:from-purple-700 hover:to-blue-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                  >
+                    New Analysis
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/signin"
+                    className="text-gray-600 hover:text-gray-900 transition-colors duration-200 font-medium"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    to="/signup"
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-2 rounded-full hover:from-purple-700 hover:to-blue-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                  >
+                    Get Started
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -81,35 +102,67 @@ const Landing: React.FC = () => {
 
             <div className="relative z-10">
               <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold text-gray-900 mb-8 leading-tight">
-                <span className="block">Transform Data Into</span>
-                <span className="bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  Actionable Insights
-                </span>
+                {isAuthenticated ? (
+                  <>
+                    <span className="block">Welcome Back to</span>
+                    <span className="bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                      Your Analytics Hub
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="block">Transform Data Into</span>
+                    <span className="bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                      Actionable Insights
+                    </span>
+                  </>
+                )}
               </h1>
               <p className="text-xl sm:text-2xl text-gray-600 mb-12 max-w-4xl mx-auto leading-relaxed">
-                Harness the power of AI-driven analysis to unlock deep insights
-                from your data. Make informed decisions with comprehensive
-                reports and intelligent comparisons.
+                {isAuthenticated
+                  ? "Continue your journey with AI-driven analysis. Create new insights, track your progress, and make informed decisions with your comprehensive analytics dashboard."
+                  : "Harness the power of AI-driven analysis to unlock deep insights from your data. Make informed decisions with comprehensive reports and intelligent comparisons."}
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <Link
-                  to="/signup"
-                  className="group bg-gradient-to-r from-purple-600 to-blue-600 text-white px-8 py-4 rounded-full text-lg font-semibold hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 flex items-center"
-                >
-                  Start Free Analysis
-                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </Link>
-                <button
-                  onClick={() =>
-                    featuresRef.current?.scrollIntoView({
-                      behavior: "smooth",
-                    })
-                  }
-                  className="group text-gray-700 px-8 py-4 rounded-full text-lg font-semibold border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all duration-200 flex items-center"
-                >
-                  Learn More
-                  <ChevronRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </button>
+                {isAuthenticated ? (
+                  <>
+                    <Link
+                      to="/dashboard"
+                      className="group bg-gradient-to-r from-purple-600 to-blue-600 text-white px-8 py-4 rounded-full text-lg font-semibold hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 flex items-center"
+                    >
+                      Go to Dashboard
+                      <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                    </Link>
+                    <Link
+                      to="/analysis"
+                      className="group text-gray-700 px-8 py-4 rounded-full text-lg font-semibold border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all duration-200 flex items-center"
+                    >
+                      Create New Analysis
+                      <ChevronRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      to="/signup"
+                      className="group bg-gradient-to-r from-purple-600 to-blue-600 text-white px-8 py-4 rounded-full text-lg font-semibold hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 flex items-center"
+                    >
+                      Start Free Analysis
+                      <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                    </Link>
+                    <button
+                      onClick={() =>
+                        featuresRef.current?.scrollIntoView({
+                          behavior: "smooth",
+                        })
+                      }
+                      className="group text-gray-700 px-8 py-4 rounded-full text-lg font-semibold border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all duration-200 flex items-center"
+                    >
+                      Learn More
+                      <ChevronRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -329,34 +382,69 @@ const Landing: React.FC = () => {
       <section className="py-20 bg-gradient-to-br from-slate-900 via-purple-900 to-blue-900">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="fade-in-on-scroll">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-8">
-              Ready to Unlock Your Data's{" "}
-              <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                Full Potential?
-              </span>
-            </h2>
-            <p className="text-xl text-gray-300 mb-12 max-w-2xl mx-auto">
-              Join thousands of organizations already using InsightFlow to make
-              smarter, data-driven decisions every day.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Link
-                to="/signup"
-                className="group bg-gradient-to-r from-purple-600 to-blue-600 text-white px-8 py-4 rounded-full text-lg font-semibold hover:from-purple-500 hover:to-blue-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 flex items-center"
-              >
-                Start Free Trial
-                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link
-                to="/signin"
-                className="text-gray-300 px-8 py-4 rounded-full text-lg font-semibold border-2 border-gray-500 hover:border-purple-400 hover:bg-purple-500/10 hover:text-white transition-all duration-200 flex items-center"
-              >
-                Sign In
-              </Link>
-            </div>
-            <p className="text-gray-400 mt-6">
-              No credit card required • 14-day free trial • Cancel anytime
-            </p>
+            {isAuthenticated ? (
+              <>
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-8">
+                  Ready to Create Your Next{" "}
+                  <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                    Analysis?
+                  </span>
+                </h2>
+                <p className="text-xl text-gray-300 mb-12 max-w-2xl mx-auto">
+                  Continue your journey with InsightFlow. Create new analyses,
+                  view your dashboard, or explore your past insights.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                  <Link
+                    to="/analysis"
+                    className="group bg-gradient-to-r from-purple-600 to-blue-600 text-white px-8 py-4 rounded-full text-lg font-semibold hover:from-purple-500 hover:to-blue-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 flex items-center"
+                  >
+                    Create New Analysis
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                  <Link
+                    to="/dashboard"
+                    className="text-gray-300 px-8 py-4 rounded-full text-lg font-semibold border-2 border-gray-500 hover:border-purple-400 hover:bg-purple-500/10 hover:text-white transition-all duration-200 flex items-center"
+                  >
+                    View Dashboard
+                  </Link>
+                </div>
+                <p className="text-gray-400 mt-6">
+                  Welcome back! • Your insights await • Let's analyze together
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-8">
+                  Ready to Unlock Your Data's{" "}
+                  <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                    Full Potential?
+                  </span>
+                </h2>
+                <p className="text-xl text-gray-300 mb-12 max-w-2xl mx-auto">
+                  Join thousands of organizations already using InsightFlow to
+                  make smarter, data-driven decisions every day.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                  <Link
+                    to="/signup"
+                    className="group bg-gradient-to-r from-purple-600 to-blue-600 text-white px-8 py-4 rounded-full text-lg font-semibold hover:from-purple-500 hover:to-blue-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 flex items-center"
+                  >
+                    Start Free Trial
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                  <Link
+                    to="/signin"
+                    className="text-gray-300 px-8 py-4 rounded-full text-lg font-semibold border-2 border-gray-500 hover:border-purple-400 hover:bg-purple-500/10 hover:text-white transition-all duration-200 flex items-center"
+                  >
+                    Sign In
+                  </Link>
+                </div>
+                <p className="text-gray-400 mt-6">
+                  No credit card required • 14-day free trial • Cancel anytime
+                </p>
+              </>
+            )}
           </div>
         </div>
       </section>

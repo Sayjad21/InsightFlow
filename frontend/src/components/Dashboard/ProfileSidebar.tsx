@@ -71,15 +71,15 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
       <div className="space-y-4 mb-6">
         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
           <div className="flex items-center">
-            <Building2 className="h-5 w-5 text-blue-600 mr-3" />
+            <Building2 className="h-5 w-5 text-green-600 mr-3" />
             <span className="text-gray-700">Total Analyses</span>
           </div>
-          <span className="font-semibold text-blue-600">
+          <span className="font-semibold text-green-600">
             {userProfile?.totalAnalyses || 0}
           </span>
         </div>
 
-        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+        {/* <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
           <div className="flex items-center">
             <CheckCircle className="h-5 w-5 text-green-600 mr-3" />
             <span className="text-gray-700">Successful</span>
@@ -87,24 +87,24 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
           <span className="font-semibold text-green-600">
             {userProfile?.successfulAnalyses || 0}
           </span>
-        </div>
+        </div> */}
 
         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
           <div className="flex items-center">
-            <ChartNoAxesCombined className="h-5 w-5 text-indigo-600 mr-3" />
+            <ChartNoAxesCombined className="h-5 w-5 text-purple-600 mr-3" />
             <span className="text-gray-700">Total Comparisons</span>
           </div>
-          <span className="font-semibold text-indigo-600">
+          <span className="font-semibold text-purple-600">
             {userProfile?.totalComparisons || 0}
           </span>
         </div>
 
         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
           <div className="flex items-center">
-            <Calendar className="h-5 w-5 text-purple-600 mr-3" />
+            <Calendar className="h-5 w-5 text-indigo-600 mr-3" />
             <span className="text-gray-700">Member Since</span>
           </div>
-          <span className="font-semibold text-purple-600 text-sm">
+          <span className="font-semibold text-indigo-600 text-sm">
             {userProfile?.createdAt ? formatDate(userProfile.createdAt) : "N/A"}
           </span>
         </div>
@@ -112,10 +112,10 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
         {userProfile?.lastLogin && (
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
             <div className="flex items-center">
-              <Clock className="h-5 w-5 text-orange-600 mr-3" />
+              <Clock className="h-5 w-5 text-cyan-600 mr-3" />
               <span className="text-gray-700">Last Login</span>
             </div>
-            <span className="font-semibold text-orange-600 text-sm">
+            <span className="font-semibold text-cyan-600 text-sm">
               {formatDate(userProfile.lastLogin)}
             </span>
           </div>
@@ -126,16 +126,16 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
       <div className="space-y-2 mb-6">
         <Link
           to="/"
-          className="flex items-center w-full p-3 text-left rounded-lg transition-colors text-gray-700 hover:bg-gray-100"
+          className="flex items-center w-full p-3 text-left rounded-lg hover:bg-blue-50 transition-colors text-gray-700"
         >
           <HomeIcon className="h-5 w-5 mr-3" />
           Home
         </Link>
         <Link
           to="/analysis"
-          className={`flex items-center w-full p-3 text-left rounded-lg transition-colors ${
+          className={`flex items-center w-full p-3 text-left rounded-lg hover:bg-green-50 transition-colors ${
             isActivePage("/analysis")
-              ? "bg-purple-100 text-purple-700 hover:bg-purple-200"
+              ? "bg-green-100 text-green-700 hover:bg-green-200"
               : "text-gray-700 hover:bg-gray-100"
           }`}
         >
@@ -144,9 +144,9 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
         </Link>
         <Link
           to="/dashboard"
-          className={`flex items-center w-full p-3 text-left rounded-lg transition-colors ${
+          className={`flex items-center w-full p-3 text-left rounded-lg hover:bg-teal-50 transition-colors ${
             isActivePage("/dashboard")
-              ? "bg-purple-100 text-purple-700 hover:bg-purple-200"
+              ? "bg-teal-100 text-teal-700 hover:bg-teal-200"
               : "text-gray-700 hover:bg-gray-100"
           }`}
         >
@@ -155,9 +155,9 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
         </Link>
         <Link
           to="/settings"
-          className={`flex items-center w-full p-3 text-left rounded-lg transition-colors ${
+          className={`flex items-center w-full p-3 text-left rounded-lg hover:bg-orange-50 transition-colors ${
             isActivePage("/settings")
-              ? "bg-purple-100 text-purple-700 hover:bg-purple-200"
+              ? "bg-orange-100 text-orange-700 hover:bg-orange-200"
               : "text-gray-700 hover:bg-gray-100"
           }`}
         >

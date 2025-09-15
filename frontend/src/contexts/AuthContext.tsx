@@ -26,7 +26,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Start with loading true
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Check if user is authenticated on mount
@@ -55,6 +55,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         } finally {
           setIsLoading(false);
         }
+      } else {
+        // No authentication token found
+        setIsLoading(false);
       }
     };
 
