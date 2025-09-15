@@ -31,8 +31,8 @@ public class SentimentScheduler {
     // Track companies to skip in the next run
     private final Set<String> skipNextRun = Collections.synchronizedSet(new HashSet<>());
 
-    // @Scheduled(cron = "0 0 9 * * ?")  // Daily at 9 AM
-    @Scheduled(cron = "0 */2 * * * ?")  // Every 2 minutes
+    @Scheduled(cron = "0 0 9 * * ?")  // Daily at 9 AM
+    // @Scheduled(cron = "0 */2 * * * ?")  // Every 2 minutes
     public void collectDailySentiment() {
         logger.info("Starting daily sentiment collection for companies: {}", monitoredCompanies);
         
