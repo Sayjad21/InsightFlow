@@ -19,6 +19,7 @@ import type { UserAnalysis } from "../../types";
 import type { UserProfileResponse } from "../../services/api";
 import { ApiService } from "../../services/api";
 import AnalysisDisplay from "../AnalysisDisplay";
+import AnalysisModal from "../AnalysisModal";
 import ExportButtons from "../ExportButtons";
 import Pagination from "../common/Pagination";
 
@@ -782,37 +783,11 @@ const AnalysisTab: React.FC<AnalysisTabProps> = ({
 
       {/* Analysis Detail Modal */}
       {selectedAnalysis && (
-        <div
-          className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-          onClick={() => setSelectedAnalysis(null)} // close when clicking background
-          style={{
-            animation: "modalFadeIn 0.3s ease-out forwards",
-          }}
-        >
-          <div
-            className="bg-white rounded-2xl max-w-6xl max-h-[90vh] overflow-y-auto w-full"
-            onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside modal
-          >
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900">
-                {selectedAnalysis.companyName} - Analysis Report
-              </h2>
-              <button
-                onClick={() => setSelectedAnalysis(null)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="h-5 w-5 text-gray-500" />
-              </button>
-            </div>
-            <div className="p-6">
-              {selectedAnalysis.summaries && (
-                <AnalysisDisplay
-                  analysisResult={createAnalysisResult(selectedAnalysis)}
-                />
-              )}
-            </div>
-          </div>
-        </div>
+        <AnalysisModal
+          analysisResult={createAnalysisResult(selectedAnalysis)}
+          companyName={selectedAnalysis.companyName}
+          onClose={() => setSelectedAnalysis(null)}
+        />
       )}
     </>
   );
