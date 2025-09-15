@@ -33,7 +33,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
 
       {/* Modal */}
       <div
-        className="bg-purple-800/30 backdrop-blur-sm rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-auto relative z-10 shadow-xl shadow-blue-900/20"
+        className="bg-blue-800/30 backdrop-blur-sm rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-auto relative z-10 shadow-xl shadow-blue-900/20"
         style={{
           animation: isOpen ? "modalFadeIn 0.3s ease-out forwards" : "none",
         }}
@@ -48,7 +48,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
 
         {/* Content */}
         <div className="p-8">
-          <h2 className="text-2xl font-bold text-black mb-4">
+          <h2 className="text-2xl font-bold text-blue-400 mb-4">
             {service.title}
           </h2>
 

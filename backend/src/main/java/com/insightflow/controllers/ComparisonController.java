@@ -938,9 +938,11 @@ public class ComparisonController {
 
     // Get saved comparison results for user
     @GetMapping("/saved")
-    public ResponseEntity<List<Map<String, Object>>> getSavedComparisons(
+    public ResponseEntity<?> getSavedComparisons(
             @RequestParam(value = "type", required = false) String comparisonType,
-            @RequestParam(value = "limit", required = false, defaultValue = "20") Integer limit,
+            @RequestParam(value = "limit", required = false) Integer limit,
+            @RequestParam(value = "page", required = false, defaultValue = "0") Integer page,
+            @RequestParam(value = "size", required = false, defaultValue = "10") Integer size,
             Authentication authentication) {
         String username = authentication.getName();
 
@@ -955,7 +957,50 @@ public class ComparisonController {
                         .findByRequestedByOrderByComparisonDateDesc(username);
             }
 
-            // Limit results if specified
+            // Handle pagination if page parameter is provided
+            if (page != null && size != null) {
+                int totalElements = results.size();
+                int totalPages = (int) Math.ceil((double) totalElements / size);
+                int startIndex = page * size;
+                int endIndex = Math.min(startIndex + size, totalElements);
+
+                List<ComparisonResult> paginatedResults = startIndex < totalElements
+                        ? results.subList(startIndex, endIndex)
+                        : new ArrayList<>();
+
+                List<Map<String, Object>> content = new ArrayList<>();
+                for (ComparisonResult result : paginatedResults) {
+                    Map<String, Object> summary = new HashMap<>();
+                    summary.put("id", result.getId());
+                    summary.put("comparisonDate", result.getComparisonDate());
+                    summary.put("comparisonType", result.getComparisonType());
+                    summary.put("numberOfCompanies", result.getAnalyses() != null ? result.getAnalyses().size() : 0);
+
+                    // Add company names for easy identification
+                    if (result.getAnalyses() != null) {
+                        List<String> companyNames = result.getAnalyses().stream()
+                                .map(ComparisonResult.CompanyAnalysis::getCompanyName)
+                                .toList();
+                        summary.put("companyNames", companyNames);
+                    }
+
+                    content.add(summary);
+                }
+
+                // Return paginated response
+                Map<String, Object> paginatedResponse = new HashMap<>();
+                paginatedResponse.put("content", content);
+                paginatedResponse.put("totalElements", totalElements);
+                paginatedResponse.put("totalPages", totalPages);
+                paginatedResponse.put("currentPage", page);
+                paginatedResponse.put("pageSize", size);
+                paginatedResponse.put("hasNext", page < totalPages - 1);
+                paginatedResponse.put("hasPrevious", page > 0);
+
+                return ResponseEntity.ok(paginatedResponse);
+            }
+
+            // Legacy support: Limit results if specified
             if (limit != null && limit > 0 && results.size() > limit) {
                 results = results.subList(0, limit);
             }

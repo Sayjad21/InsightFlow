@@ -20,10 +20,15 @@ import type { UserProfileResponse } from "../../services/api";
 import { ApiService } from "../../services/api";
 import AnalysisDisplay from "../AnalysisDisplay";
 import ExportButtons from "../ExportButtons";
+import Pagination from "../common/Pagination";
 
 interface AnalysisTabProps {
   userAnalyses: UserAnalysis[];
   userProfile: UserProfileResponse | null;
+  analysisCurrentPage: number;
+  setAnalysisCurrentPage: (page: number) => void;
+  analysisTotalPages: number;
+  totalAnalyses: number;
   expandedAnalysis: string | null;
   setExpandedAnalysis: (id: string | null) => void;
   selectedAnalysis: UserAnalysis | null;
@@ -48,6 +53,10 @@ interface AnalysisTabProps {
 const AnalysisTab: React.FC<AnalysisTabProps> = ({
   userAnalyses,
   userProfile,
+  analysisCurrentPage,
+  setAnalysisCurrentPage,
+  analysisTotalPages,
+  totalAnalyses,
   expandedAnalysis,
   setExpandedAnalysis,
   selectedAnalysis,
@@ -744,6 +753,17 @@ const AnalysisTab: React.FC<AnalysisTabProps> = ({
                 )}
             </div>
           ))}
+
+          {/* Pagination Controls */}
+          {userAnalyses.length > 0 && analysisTotalPages > 1 && (
+            <div className="px-6 py-4 border-t border-gray-200">
+              <Pagination
+                currentPage={analysisCurrentPage}
+                totalPages={analysisTotalPages}
+                onPageChange={setAnalysisCurrentPage}
+              />
+            </div>
+          )}
 
           {userAnalyses.length === 0 && (
             <div className="text-center py-12">

@@ -1,4 +1,5 @@
 import React, { useImperativeHandle, forwardRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useUserProfile } from "../hooks/useUserProfile";
@@ -28,6 +29,7 @@ const Layout = forwardRef<LayoutRef, LayoutProps>(
     ref
   ) => {
     const { logout } = useAuth();
+    const navigate = useNavigate();
     const { userProfile, isLoading, error, refreshProfile } = useUserProfile();
 
     // Expose refreshProfile function to parent components
@@ -38,6 +40,7 @@ const Layout = forwardRef<LayoutRef, LayoutProps>(
     const handleLogout = async () => {
       try {
         await logout();
+        navigate("/");
       } catch (error) {
         console.error("Logout failed:", error);
       }

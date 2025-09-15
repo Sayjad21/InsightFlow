@@ -26,6 +26,7 @@ public class User {
     private String password;
     private String role;
     private String avatar;
+    private String bio;
     private LocalDateTime createdAt;
     private LocalDateTime lastLogin;
     private List<String> analysisHistoryIds = new ArrayList<>();
@@ -82,7 +83,10 @@ public class User {
 
     public void setFirstName(String firstName) {
         this.firstName = firstName;
-        updateAvatar();
+        // Only update avatar if using default generated one
+        if (avatar != null && avatar.contains("ui-avatars.com")) {
+            updateAvatar();
+        }
     }
 
     public String getLastName() {
@@ -91,7 +95,10 @@ public class User {
 
     public void setLastName(String lastName) {
         this.lastName = lastName;
-        updateAvatar();
+        // Only update avatar if using default generated one
+        if (avatar != null && avatar.contains("ui-avatars.com")) {
+            updateAvatar();
+        }
     }
 
     public String getPassword() {
@@ -116,6 +123,14 @@ public class User {
 
     public void setAvatar(String avatar) {
         this.avatar = avatar;
+    }
+
+    public String getBio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
     }
 
     public LocalDateTime getCreatedAt() {

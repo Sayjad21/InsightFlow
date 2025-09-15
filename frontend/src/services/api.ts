@@ -11,6 +11,14 @@ export interface SignupRequest {
   lastName: string;
   email: string;
   password: string;
+  profileImage?: File;
+}
+
+export interface SignupFormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
 }
 
 export interface LoginRequest {
@@ -29,6 +37,7 @@ export interface UserProfileResponse {
   lastName: string;
   email: string;
   avatar: string;
+  bio?: string;
   role: string;
   createdAt: string;
   lastLogin: string;
@@ -40,6 +49,9 @@ export interface UserProfileResponse {
 export interface UserAnalysesResponse {
   analyses: UserAnalysis[];
   total: number;
+  totalPages: number;
+  currentPage: number;
+  size: number;
 }
 
 export class ApiService {
@@ -98,24 +110,60 @@ export class ApiService {
    */
   static async signup(userData: SignupRequest): Promise<AuthResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/signup`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(userData),
-      });
+      // Check if we have a profile image to upload
+      if (userData.profileImage) {
+        const formData = new FormData();
+        formData.append("firstName", userData.firstName);
+        formData.append("lastName", userData.lastName);
+        formData.append("email", userData.email);
+        formData.append("password", userData.password);
+        formData.append("profileImage", userData.profileImage);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Signup failed: ${response.status}`);
+        const response = await fetch(`${API_BASE_URL}/api/signup-with-image`, {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(
+            errorData.error || `Signup failed: ${response.status}`
+          );
+        }
+
+        const data: AuthResponse = await response.json();
+        console.log("Signup response data:", data);
+        console.log("Token from signup:", data.token ? "Received" : "Missing");
+        this.setAuthToken(data.token);
+        return data;
+      } else {
+        // Regular signup without image
+        const response = await fetch(`${API_BASE_URL}/api/signup`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            email: userData.email,
+            password: userData.password,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(
+            errorData.error || `Signup failed: ${response.status}`
+          );
+        }
+
+        const data: AuthResponse = await response.json();
+        console.log("Signup response data:", data);
+        console.log("Token from signup:", data.token ? "Received" : "Missing");
+        this.setAuthToken(data.token);
+        return data;
       }
-
-      const data: AuthResponse = await response.json();
-      console.log("Signup response data:", data);
-      console.log("Token from signup:", data.token ? "Received" : "Missing");
-      this.setAuthToken(data.token);
-      return data;
     } catch (error) {
       console.error("Signup Error:", error);
       if (
@@ -294,14 +342,86 @@ export class ApiService {
   }
 
   /**
-   * Get user's analysis history
+   * Update user profile
    */
-  static async getUserAnalyses(): Promise<UserAnalysesResponse> {
+  static async updateUserProfile(profileData: {
+    firstName?: string;
+    lastName?: string;
+    bio?: string;
+    profileImage?: File;
+  }): Promise<UserProfileResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/user/analyses`, {
-        method: "GET",
-        headers: this.getAuthHeaders(),
+      const token = this.getAuthToken();
+      if (!token) {
+        throw new Error("Authentication required");
+      }
+
+      const formData = new FormData();
+
+      if (profileData.firstName !== undefined) {
+        formData.append("firstName", profileData.firstName);
+      }
+      if (profileData.lastName !== undefined) {
+        formData.append("lastName", profileData.lastName);
+      }
+      if (profileData.bio !== undefined) {
+        formData.append("bio", profileData.bio);
+      }
+      if (profileData.profileImage) {
+        formData.append("profileImage", profileData.profileImage);
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/user/profile/update`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
       });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          this.removeAuthToken();
+          throw new Error("Authentication expired. Please login again.");
+        }
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: "Unknown error" }));
+        throw new Error(
+          errorData.error || `Failed to update profile: ${response.status}`
+        );
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Update Profile Error:", error);
+      if (
+        error instanceof TypeError &&
+        error.message.includes("NetworkError")
+      ) {
+        throw new Error(
+          "Unable to connect to server. Please ensure the backend is running on http://localhost:8000"
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Get user's analysis history with pagination
+   */
+  static async getUserAnalyses(
+    page: number = 0,
+    size: number = 10
+  ): Promise<UserAnalysesResponse> {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/user/analyses?page=${page}&size=${size}`,
+        {
+          method: "GET",
+          headers: this.getAuthHeaders(),
+        }
+      );
 
       if (!response.ok) {
         if (response.status === 401) {
@@ -317,6 +437,52 @@ export class ApiService {
       return await response.json();
     } catch (error) {
       console.error("Get Analyses Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a user analysis
+   */
+  static async deleteUserAnalysis(analysisId: string): Promise<void> {
+    try {
+      const token = this.getAuthToken();
+      if (!token) {
+        throw new Error("Authentication required");
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/user/analyses/${analysisId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          this.removeAuthToken();
+          throw new Error("Authentication expired. Please login again.");
+        }
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: "Unknown error" }));
+        throw new Error(
+          errorData.error || `Failed to delete analysis: ${response.status}`
+        );
+      }
+    } catch (error) {
+      console.error("Delete Analysis Error:", error);
+      if (
+        error instanceof TypeError &&
+        error.message.includes("NetworkError")
+      ) {
+        throw new Error(
+          "Unable to connect to server. Please ensure the backend is running on http://localhost:8000"
+        );
+      }
       throw error;
     }
   }
@@ -757,18 +923,21 @@ export class ApiService {
    * Get user's saved comparison results
    */
   static async getSavedComparisons(
-    comparisonType?: string,
-    limit?: number
-  ): Promise<any[]> {
+    page: number = 0,
+    size: number = 10,
+    comparisonType?: string
+  ): Promise<any> {
     try {
-      console.log("Fetching saved comparisons");
+      console.log("Fetching saved comparisons with pagination:", {
+        page,
+        size,
+      });
       const params = new URLSearchParams();
+      params.append("page", page.toString());
+      params.append("size", size.toString());
       if (comparisonType) params.append("type", comparisonType);
-      if (limit) params.append("limit", limit.toString());
 
-      const url = `${API_BASE_URL}/api/comparison/saved${
-        params.toString() ? "?" + params.toString() : ""
-      }`;
+      const url = `${API_BASE_URL}/api/comparison/saved?${params.toString()}`;
       const response = await fetch(url, {
         method: "GET",
         headers: this.getAuthHeaders(),

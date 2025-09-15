@@ -13,9 +13,14 @@ import {
 } from "lucide-react";
 import type { ComparisonResult } from "../../types";
 import { ApiService } from "../../services/api";
+import Pagination from "../common/Pagination";
 
 interface ComparisonTabProps {
   comparisonResults: ComparisonResult[];
+  comparisonCurrentPage: number;
+  setComparisonCurrentPage: (page: number) => void;
+  comparisonTotalPages: number;
+  totalComparisons: number;
   expandedComparison?: string | null;
   setExpandedComparison?: (id: string | null) => void;
   setSelectedComparison?: (comparison: ComparisonResult | null) => void;
@@ -23,6 +28,10 @@ interface ComparisonTabProps {
 
 const ComparisonTab: React.FC<ComparisonTabProps> = ({
   comparisonResults,
+  comparisonCurrentPage,
+  setComparisonCurrentPage,
+  comparisonTotalPages,
+  totalComparisons,
   expandedComparison = null,
   setExpandedComparison = () => {},
   setSelectedComparison = () => {},
@@ -265,6 +274,17 @@ const ComparisonTab: React.FC<ComparisonTabProps> = ({
               )}
             </div>
           ))}
+
+          {/* Pagination Controls */}
+          {comparisonResults.length > 0 && comparisonTotalPages > 1 && (
+            <div className="px-6 py-4 border-t border-gray-200">
+              <Pagination
+                currentPage={comparisonCurrentPage}
+                totalPages={comparisonTotalPages}
+                onPageChange={setComparisonCurrentPage}
+              />
+            </div>
+          )}
 
           {comparisonResults.length === 0 && (
             <div className="text-center py-12">

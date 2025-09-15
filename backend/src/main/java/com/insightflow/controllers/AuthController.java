@@ -8,10 +8,12 @@ import com.insightflow.models.UserAnalysis.PorterForces;
 import com.insightflow.models.UserAnalysis.BcgProduct;
 import com.insightflow.models.UserAnalysis.McKinsey7s;
 import com.insightflow.services.UserService;
+import com.insightflow.services.SupabaseStorageService;
 import com.insightflow.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
 import java.util.List;
@@ -29,6 +31,9 @@ public class AuthController {
     @Autowired
     private JwtUtil jwtUtil;
 
+    @Autowired
+    private SupabaseStorageService supabaseStorageService;
+
     @PostMapping("/signup")
     public ResponseEntity<Map<String, Object>> signup(@RequestBody Map<String, String> request) {
         try {
@@ -39,6 +44,44 @@ public class AuthController {
             String username = request.getOrDefault("username", email); // Use email as username if not provided
 
             String token = userService.signup(username, password, firstName, lastName, email);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("token", token);
+            response.put("message", "User created successfully");
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
+
+    @PostMapping(value = "/signup-with-image", consumes = "multipart/form-data")
+    public ResponseEntity<Map<String, Object>> signupWithImage(
+            @RequestParam("firstName") String firstName,
+            @RequestParam("lastName") String lastName,
+            @RequestParam("email") String email,
+            @RequestParam("password") String password,
+            @RequestParam(value = "profileImage", required = false) MultipartFile profileImage) {
+        try {
+            String username = email; // Use email as username
+
+            // Handle profile image upload if provided
+            String avatarUrl = null;
+            if (profileImage != null && !profileImage.isEmpty()) {
+                try {
+                    avatarUrl = supabaseStorageService.uploadImage(
+                            profileImage.getBytes(),
+                            "profile_" + email + "_" + profileImage.getOriginalFilename(),
+                            profileImage.getContentType());
+                } catch (Exception e) {
+                    System.err.println("Failed to upload profile image: " + e.getMessage());
+                    // Continue with signup even if image upload fails
+                }
+            }
+
+            String token = userService.signupWithImage(username, password, firstName, lastName, email, avatarUrl);
 
             Map<String, Object> response = new HashMap<>();
             response.put("token", token);
@@ -98,6 +141,7 @@ public class AuthController {
                 response.put("lastName", user.getLastName());
                 response.put("email", user.getEmail());
                 response.put("avatar", user.getAvatar());
+                response.put("bio", user.getBio());
                 response.put("role", user.getRole());
                 response.put("createdAt", user.getCreatedAt());
                 response.put("lastLogin", user.getLastLogin());
@@ -123,8 +167,13 @@ public class AuthController {
         }
     }
 
-    @GetMapping("/user/analyses")
-    public ResponseEntity<Map<String, Object>> getUserAnalyses(@RequestHeader("Authorization") String token) {
+    @PostMapping(value = "/user/profile/update", consumes = "multipart/form-data")
+    public ResponseEntity<Map<String, Object>> updateUserProfile(
+            @RequestHeader("Authorization") String token,
+            @RequestParam(value = "firstName", required = false) String firstName,
+            @RequestParam(value = "lastName", required = false) String lastName,
+            @RequestParam(value = "bio", required = false) String bio,
+            @RequestParam(value = "profileImage", required = false) MultipartFile profileImage) {
         try {
             String jwtToken = token.replace("Bearer ", "");
             String username = jwtUtil.extractUsername(jwtToken);
@@ -136,11 +185,107 @@ public class AuthController {
 
             if (userOpt.isPresent()) {
                 User user = userOpt.get();
-                List<UserAnalysis> analyses = userService.getUserAnalyses(user.getId());
+
+                // Update basic info if provided
+                if (firstName != null && !firstName.trim().isEmpty()) {
+                    user.setFirstName(firstName.trim());
+                }
+                if (lastName != null && !lastName.trim().isEmpty()) {
+                    user.setLastName(lastName.trim());
+                }
+                if (bio != null) {
+                    // Validate bio length (max 500 characters)
+                    if (bio.length() > 500) {
+                        Map<String, Object> error = new HashMap<>();
+                        error.put("error", "Bio must be less than 500 characters");
+                        return ResponseEntity.badRequest().body(error);
+                    }
+                    user.setBio(bio.trim().isEmpty() ? null : bio.trim());
+                }
+
+                // Handle profile image upload if provided
+                if (profileImage != null && !profileImage.isEmpty()) {
+                    try {
+                        String avatarUrl = supabaseStorageService.uploadImage(
+                                profileImage.getBytes(),
+                                "profile_" + user.getEmail() + "_" + System.currentTimeMillis() + "_"
+                                        + profileImage.getOriginalFilename(),
+                                profileImage.getContentType());
+                        if (avatarUrl != null) {
+                            user.setAvatar(avatarUrl);
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Failed to upload profile image: " + e.getMessage());
+                        Map<String, Object> error = new HashMap<>();
+                        error.put("error", "Failed to upload profile image");
+                        return ResponseEntity.status(500).body(error);
+                    }
+                }
+
+                // Save updated user
+                userService.updateUser(user);
+
+                // Return updated user data
+                Map<String, Object> response = new HashMap<>();
+                response.put("id", user.getId());
+                response.put("firstName", user.getFirstName());
+                response.put("lastName", user.getLastName());
+                response.put("email", user.getEmail());
+                response.put("avatar", user.getAvatar());
+                response.put("bio", user.getBio());
+                response.put("role", user.getRole());
+                response.put("createdAt", user.getCreatedAt());
+                response.put("lastLogin", user.getLastLogin());
+                response.put("message", "Profile updated successfully");
+
+                return ResponseEntity.ok(response);
+            } else {
+                Map<String, Object> error = new HashMap<>();
+                error.put("error", "User not found");
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Failed to update profile: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+
+    @GetMapping("/user/analyses")
+    public ResponseEntity<Map<String, Object>> getUserAnalyses(
+            @RequestHeader("Authorization") String token,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        try {
+            String jwtToken = token.replace("Bearer ", "");
+            String username = jwtUtil.extractUsername(jwtToken);
+
+            Optional<User> userOpt = userService.findByUsername(username);
+            if (userOpt.isEmpty()) {
+                userOpt = userService.findByEmail(username);
+            }
+
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
+                List<UserAnalysis> allAnalyses = userService.getUserAnalyses(user.getId());
+
+                // Calculate pagination
+                int totalElements = allAnalyses.size();
+                int totalPages = (int) Math.ceil((double) totalElements / size);
+                int startIndex = page * size;
+                int endIndex = Math.min(startIndex + size, totalElements);
+
+                List<UserAnalysis> paginatedAnalyses = allAnalyses.subList(
+                        Math.max(0, startIndex),
+                        Math.max(0, endIndex));
 
                 Map<String, Object> response = new HashMap<>();
-                response.put("analyses", analyses);
-                response.put("total", analyses.size());
+                response.put("analyses", paginatedAnalyses);
+                response.put("total", totalElements);
+                response.put("totalPages", totalPages);
+                response.put("currentPage", page);
+                response.put("size", size);
 
                 return ResponseEntity.ok(response);
             } else {
@@ -152,6 +297,60 @@ public class AuthController {
             Map<String, Object> error = new HashMap<>();
             error.put("error", "Invalid token");
             return ResponseEntity.status(401).body(error);
+        }
+    }
+
+    @DeleteMapping("/user/analyses/{analysisId}")
+    public ResponseEntity<Map<String, Object>> deleteUserAnalysis(
+            @RequestHeader("Authorization") String token,
+            @PathVariable String analysisId) {
+        try {
+            String jwtToken = token.replace("Bearer ", "");
+            String username = jwtUtil.extractUsername(jwtToken);
+
+            Optional<User> userOpt = userService.findByUsername(username);
+            if (userOpt.isEmpty()) {
+                userOpt = userService.findByEmail(username);
+            }
+
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
+
+                // Verify the analysis belongs to this user
+                Optional<UserAnalysis> analysisOpt = userService.getAnalysisById(analysisId);
+                if (analysisOpt.isEmpty()) {
+                    Map<String, Object> error = new HashMap<>();
+                    error.put("error", "Analysis not found");
+                    return ResponseEntity.notFound().build();
+                }
+
+                UserAnalysis analysis = analysisOpt.get();
+                if (!analysis.getUserId().equals(user.getId())) {
+                    Map<String, Object> error = new HashMap<>();
+                    error.put("error", "Unauthorized to delete this analysis");
+                    return ResponseEntity.status(403).body(error);
+                }
+
+                // Delete the analysis
+                userService.deleteUserAnalysis(analysisId);
+
+                // Remove from user's analysis history
+                user.getAnalysisHistoryIds().remove(analysisId);
+                userService.updateUser(user);
+
+                Map<String, Object> response = new HashMap<>();
+                response.put("message", "Analysis deleted successfully");
+                return ResponseEntity.ok(response);
+            } else {
+                Map<String, Object> error = new HashMap<>();
+                error.put("error", "User not found");
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Failed to delete analysis: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
         }
     }
 

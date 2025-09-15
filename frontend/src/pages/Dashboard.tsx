@@ -17,12 +17,16 @@ const Dashboard: React.FC = () => {
   const {
     activeTab,
     setActiveTab,
-    userAnalyses,
     isLoading,
     error,
     comparisonResults,
     selectedComparison,
     setSelectedComparison,
+    totalAnalyses,
+    comparisonCurrentPage,
+    setComparisonCurrentPage,
+    comparisonTotalPages,
+    totalComparisons,
   } = dashboardData;
 
   // Function to refresh profile data after successful operations
@@ -49,8 +53,8 @@ const Dashboard: React.FC = () => {
           <TabNavigation
             activeTab={activeTab}
             onTabChange={setActiveTab}
-            analysisCount={userAnalyses.length}
-            comparisonCount={comparisonResults.length}
+            analysisCount={totalAnalyses || 0}
+            comparisonCount={totalComparisons || 0}
           />
 
           {/* Show loading or error state only in content area */}
@@ -74,6 +78,10 @@ const Dashboard: React.FC = () => {
           ) : activeTab === "comparison" ? (
             <ComparisonTab
               comparisonResults={comparisonResults}
+              comparisonCurrentPage={comparisonCurrentPage}
+              setComparisonCurrentPage={setComparisonCurrentPage}
+              comparisonTotalPages={comparisonTotalPages}
+              totalComparisons={totalComparisons}
               expandedComparison={dashboardData.expandedComparison}
               setExpandedComparison={dashboardData.setExpandedComparison}
               setSelectedComparison={dashboardData.setSelectedComparison}

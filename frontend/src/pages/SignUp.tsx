@@ -10,6 +10,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import ImageUpload from "../components/common/ImageUpload";
 
 const SignUp: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -23,6 +24,11 @@ const SignUp: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [profileImage, setProfileImage] = useState<File | null>(null);
+  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(
+    null
+  );
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const { signup, isLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -33,6 +39,12 @@ const SignUp: React.FC = () => {
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
+  };
+
+  const handleImageChange = (file: File | null, previewUrl: string | null) => {
+    setProfileImage(file);
+    setProfileImagePreview(previewUrl);
+    setIsUploadingImage(false);
   };
 
   const validateForm = () => {
@@ -85,7 +97,8 @@ const SignUp: React.FC = () => {
         formData.firstName,
         formData.lastName,
         formData.email,
-        formData.password
+        formData.password,
+        profileImage || undefined
       );
       navigate("/dashboard");
     } catch (error) {
@@ -174,6 +187,17 @@ const SignUp: React.FC = () => {
                   <p className="mt-1 text-xs text-red-300">{errors.lastName}</p>
                 )}
               </div>
+            </div>
+
+            {/* Profile Image Upload (Optional) */}
+            <div>
+              <ImageUpload
+                onImageChange={handleImageChange}
+                isUploading={isUploadingImage}
+                size="medium"
+                label="Profile Picture (Optional)"
+                className="mb-1"
+              />
             </div>
 
             {/* Email Field */}

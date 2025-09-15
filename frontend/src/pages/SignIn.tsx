@@ -179,11 +179,11 @@ const SignIn: React.FC = () => {
         </div>
 
         {/* Demo Credentials */}
-        <div className="mt-6 p-4 bg-white/5 backdrop-blur-sm rounded-lg border border-white/10">
+        {/* <div className="mt-6 p-4 bg-white/5 backdrop-blur-sm rounded-lg border border-white/10">
           <p className="text-xs text-white/60 text-center">
             Demo: Use any email and password to sign in
           </p>
-        </div>
+        </div> */}
       </div>
     </div>
   );

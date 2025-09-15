@@ -40,6 +40,12 @@ public class UserService {
 
     // New signup method with additional fields
     public String signup(String username, String password, String firstName, String lastName, String email) {
+        return signupWithImage(username, password, firstName, lastName, email, null);
+    }
+
+    // Signup method with optional profile image
+    public String signupWithImage(String username, String password, String firstName, String lastName, String email,
+            String avatarUrl) {
         // Check if username already exists (if provided)
         if (username != null && !username.isEmpty() && userRepository.existsByUsername(username)) {
             throw new RuntimeException("Username already exists");
@@ -58,7 +64,14 @@ public class UserService {
         user.setFirstName(firstName);
         user.setLastName(lastName);
         user.setRole("USER");
-        user.setAvatar(generateAvatarUrl(firstName, lastName)); // Generate avatar URL
+
+        // Use provided avatar URL or generate default
+        if (avatarUrl != null && !avatarUrl.isEmpty()) {
+            user.setAvatar(avatarUrl);
+        } else {
+            user.setAvatar(generateAvatarUrl(firstName, lastName)); // Generate avatar URL
+        }
+
         userRepository.save(user);
 
         return jwtUtil.generateToken(user.getUsername()); // Use the actual username for JWT
@@ -150,5 +163,13 @@ public class UserService {
 
     public long getUserComparisonCount(String username) {
         return comparisonResultRepository.countByRequestedBy(username);
+    }
+
+    public void updateUser(User user) {
+        userRepository.save(user);
+    }
+
+    public void deleteUserAnalysis(String analysisId) {
+        userAnalysisRepository.deleteById(analysisId);
     }
 }

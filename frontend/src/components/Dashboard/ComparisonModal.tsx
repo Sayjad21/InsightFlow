@@ -87,7 +87,7 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
 
       {/* Modal */}
       <div
-        className="bg-purple-800/30 backdrop-blur-sm rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-auto relative z-10 shadow-xl shadow-blue-900/20"
+        className="bg-cyan-800/30 backdrop-blur-sm rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-auto relative z-10 shadow-xl shadow-blue-900/20"
         style={{
           animation: "modalFadeIn 0.3s ease-out forwards",
         }}

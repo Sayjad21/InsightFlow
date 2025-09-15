@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { ApiService, type UserProfileResponse } from "../services/api";
 import type { UserAnalysis, ComparisonResult } from "../types";
@@ -24,6 +24,15 @@ export const useDashboardData = () => {
     null
   );
   const [userAnalyses, setUserAnalyses] = useState<UserAnalysis[]>([]);
+  const [analysisCurrentPage, setAnalysisCurrentPage] = useState(1);
+  const [analysisTotalPages, setAnalysisTotalPages] = useState(1);
+  const [totalAnalyses, setTotalAnalyses] = useState(0);
+
+  // Comparison pagination state
+  const [comparisonCurrentPage, setComparisonCurrentPage] = useState(1);
+  const [comparisonTotalPages, setComparisonTotalPages] = useState(1);
+  const [totalComparisons, setTotalComparisons] = useState(0);
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,32 +86,66 @@ export const useDashboardData = () => {
   }, [activeTab, location.pathname]);
 
   // Fetch user data and analyses
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
 
+      console.log("Fetching analyses for page:", analysisCurrentPage);
+
       const [profileData, analysesData] = await Promise.all([
         ApiService.getUserProfile(),
-        ApiService.getUserAnalyses(),
+        ApiService.getUserAnalyses(analysisCurrentPage - 1, 10), // Use pagination
       ]);
+
+      console.log("Analysis response:", analysesData);
 
       setUserProfile(profileData);
       setUserAnalyses(analysesData.analyses || []);
+      setAnalysisTotalPages(analysesData.totalPages);
+      setTotalAnalyses(analysesData.total);
     } catch (err) {
       console.error("Failed to fetch user data:", err);
       setError(err instanceof Error ? err.message : "Failed to load data");
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [analysisCurrentPage]);
 
   // Fetch comparison results
-  const fetchComparisonResults = async () => {
+  const fetchComparisonResults = useCallback(async () => {
     try {
       setIsLoadingComparisons(true);
-      const results = await ApiService.getSavedComparisons();
-      setComparisonResults(results);
+
+      console.log("Fetching comparisons for page:", comparisonCurrentPage);
+
+      const response = await ApiService.getSavedComparisons(
+        comparisonCurrentPage - 1,
+        10
+      );
+
+      console.log("Comparison response:", response);
+
+      // Handle paginated response
+      if (response && typeof response === "object" && "content" in response) {
+        // Handle PageableResponse structure
+        console.log("Using paginated response structure");
+        setComparisonResults(response.content || []);
+        setTotalComparisons(response.totalElements || 0);
+        setComparisonTotalPages(response.totalPages || 1);
+      } else if (Array.isArray(response)) {
+        // Handle legacy array response (fallback)
+        console.log("Using legacy array response");
+        setComparisonResults(response);
+        setTotalComparisons(response.length);
+        setComparisonTotalPages(Math.ceil(response.length / 10));
+      } else {
+        console.log("No comparison data received");
+        setComparisonResults([]);
+        setTotalComparisons(0);
+        setComparisonTotalPages(1);
+      }
+
       setComparisonError(null);
     } catch (err) {
       console.error("Failed to fetch comparison results:", err);
@@ -112,13 +155,23 @@ export const useDashboardData = () => {
     } finally {
       setIsLoadingComparisons(false);
     }
-  };
+  }, [comparisonCurrentPage]);
 
   // Initial data fetch
   useEffect(() => {
     fetchUserData();
-    fetchComparisonResults(); // Load comparisons on initial render
+    fetchComparisonResults();
   }, []);
+
+  // Fetch analyses when page changes
+  useEffect(() => {
+    fetchUserData();
+  }, [fetchUserData]);
+
+  // Fetch comparisons when page changes
+  useEffect(() => {
+    fetchComparisonResults();
+  }, [fetchComparisonResults]);
 
   // No longer need to fetch on tab change since we load on initial render
   // useEffect(() => {
@@ -146,6 +199,12 @@ export const useDashboardData = () => {
     error,
     refreshAnalyses,
 
+    // Analysis pagination
+    analysisCurrentPage,
+    setAnalysisCurrentPage,
+    analysisTotalPages,
+    totalAnalyses,
+
     // Analysis state
     expandedAnalysis,
     setExpandedAnalysis,
@@ -157,6 +216,12 @@ export const useDashboardData = () => {
     isLoadingComparisons,
     comparisonError,
     refreshComparisons,
+
+    // Comparison pagination
+    comparisonCurrentPage,
+    setComparisonCurrentPage,
+    comparisonTotalPages,
+    totalComparisons,
 
     // Comparison state
     expandedComparison,

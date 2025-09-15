@@ -9,6 +9,7 @@ import {
   Settings,
   ChartNoAxesCombined,
   Home as HomeIcon,
+  LayoutDashboard,
 } from "lucide-react";
 import type { UserProfileResponse } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
@@ -52,11 +53,17 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
           )}
         </div>
         <h2 className="text-xl font-semibold text-gray-900">
-          {userProfile?.firstName} {userProfile?.lastName}
+          {user?.firstName || userProfile?.firstName}{" "}
+          {user?.lastName || userProfile?.lastName}
         </h2>
-        <p className="text-gray-600">{userProfile?.email}</p>
+        <p className="text-gray-600">{user?.email || userProfile?.email}</p>
+        {(user?.bio || userProfile?.bio) && (
+          <p className="text-sm text-gray-500 mt-2 italic">
+            "{user?.bio || userProfile?.bio}"
+          </p>
+        )}
         <span className="inline-block mt-2 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm capitalize">
-          {userProfile?.role}
+          {userProfile?.role || "USER"}
         </span>
       </div>
 
@@ -118,9 +125,16 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
       {/* Navigation */}
       <div className="space-y-2 mb-6">
         <Link
-          to="/home"
+          to="/"
+          className="flex items-center w-full p-3 text-left rounded-lg transition-colors text-gray-700 hover:bg-gray-100"
+        >
+          <HomeIcon className="h-5 w-5 mr-3" />
+          Home
+        </Link>
+        <Link
+          to="/analysis"
           className={`flex items-center w-full p-3 text-left rounded-lg transition-colors ${
-            isActivePage("/home")
+            isActivePage("/analysis")
               ? "bg-purple-100 text-purple-700 hover:bg-purple-200"
               : "text-gray-700 hover:bg-gray-100"
           }`}
@@ -136,7 +150,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
               : "text-gray-700 hover:bg-gray-100"
           }`}
         >
-          <HomeIcon className="h-5 w-5 mr-3" />
+          <LayoutDashboard className="h-5 w-5 mr-3" />
           Dashboard
         </Link>
         <Link

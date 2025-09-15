@@ -10,8 +10,10 @@ interface AuthContextType {
     firstName: string,
     lastName: string,
     email: string,
-    password: string
+    password: string,
+    profileImage?: File
   ) => Promise<boolean>;
+  updateUserProfile: () => Promise<void>;
   logout: () => void;
   handleAuthError: () => void;
   isLoading: boolean;
@@ -40,6 +42,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
             lastName: userProfile.lastName,
             email: userProfile.email,
             avatar: userProfile.avatar,
+            bio: userProfile.bio,
             createdAt: userProfile.createdAt,
             lastLogin: userProfile.lastLogin,
           });
@@ -105,11 +108,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     firstName: string,
     lastName: string,
     email: string,
-    password: string
+    password: string,
+    profileImage?: File
   ): Promise<boolean> => {
     setIsLoading(true);
     try {
-      await ApiService.signup({ firstName, lastName, email, password });
+      await ApiService.signup({
+        firstName,
+        lastName,
+        email,
+        password,
+        profileImage,
+      });
       setIsAuthenticated(true);
 
       // Try to get user profile - if this fails, still consider signup successful
@@ -121,6 +131,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           lastName: userProfile.lastName,
           email: userProfile.email,
           avatar: userProfile.avatar,
+          bio: userProfile.bio,
           createdAt: userProfile.createdAt,
           lastLogin: userProfile.lastLogin,
         });
@@ -159,12 +170,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     logout();
   };
 
+  const updateUserProfile = async () => {
+    try {
+      const userProfile = await ApiService.getUserProfile();
+      setUser({
+        id: userProfile.id,
+        firstName: userProfile.firstName,
+        lastName: userProfile.lastName,
+        email: userProfile.email,
+        avatar: userProfile.avatar,
+        bio: userProfile.bio,
+        createdAt: userProfile.createdAt,
+        lastLogin: userProfile.lastLogin,
+      });
+    } catch (error) {
+      console.error("Failed to update user profile:", error);
+      throw error;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
         user,
         login,
         signup,
+        updateUserProfile,
         logout,
         handleAuthError,
         isLoading,

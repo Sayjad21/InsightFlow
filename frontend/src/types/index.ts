@@ -64,7 +64,8 @@ export interface User {
   firstName: string;
   lastName: string;
   email: string;
-  avatar?: string;
+  avatar: string;
+  bio?: string;
   createdAt: string;
   lastLogin: string;
 }
