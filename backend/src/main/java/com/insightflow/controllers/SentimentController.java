@@ -314,68 +314,74 @@ public class SentimentController {
             return ResponseEntity.badRequest().body(errorResponse);
         }
     }
-    @GetMapping("/test/chart/{companyName}")
-public ResponseEntity<Map<String, Object>> testChartGeneration(
-        @PathVariable String companyName,
-        @RequestParam(defaultValue = "30") int days,
-        Authentication authentication) {
-    String username = authentication.getName();
-    System.out.println("Test chart generation requested by " + username + " for " + companyName);
+//     @GetMapping("/test/comparison/chart")
+// public ResponseEntity<Map<String, Object>> testComparisonChartGeneration(
+//         @RequestParam String companies,
+//         @RequestParam(defaultValue = "30") int days,
+//         Authentication authentication) {
+//     String username = authentication.getName();
+//     System.out.println("Test comparison chart generation requested by " + username + " for companies: " + companies);
 
-    try {
-        // Get the trend analysis data
-        Map<String, Object> analysis = trendService.analyzeTrends(companyName, days, null);
+//     try {
+//         List<String> companyList = Arrays.asList(companies.split(","));
         
-        // Generate chart from the analysis data
-        String chartResult = visualizationService.generateTrendGraph(analysis);
+//         // Get trend analysis data for each company
+//         Map<String, Map<String, Object>> companiesData = new HashMap<>();
+//         for (String company : companyList) {
+//             Map<String, Object> analysis = trendService.analyzeTrends(company, days, null);
+//             companiesData.put(company, analysis);
+//         }
         
-        if (chartResult == null) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("status", "error");
-            errorResponse.put("message", "Failed to generate chart: No data available");
-            return ResponseEntity.badRequest().body(errorResponse);
-        }
+//         // Generate comparison chart
+//         String chartResult = visualizationService.generateComparisonChart(companiesData);
         
-        Map<String, Object> response = new HashMap<>();
-        response.put("status", "success");
-        response.put("company", companyName);
-        response.put("days", days);
-        response.put("requested_by", username);
+//         if (chartResult == null) {
+//             Map<String, Object> errorResponse = new HashMap<>();
+//             errorResponse.put("status", "error");
+//             errorResponse.put("message", "Failed to generate comparison chart: No data available");
+//             return ResponseEntity.badRequest().body(errorResponse);
+//         }
         
-        // Handle both Supabase URL and base64 results
-        if (chartResult.startsWith("http")) {
-            // It's a Supabase URL - no need to decode
-            response.put("message", "Chart generated and uploaded to Supabase successfully");
-            response.put("chart_url", chartResult);
-            response.put("chart_type", "url");
-            response.put("storage", "supabase");
-        } else {
-            // It's base64 - decode and save locally as before
-            byte[] imageBytes = Base64.getDecoder().decode(chartResult);
+//         Map<String, Object> response = new HashMap<>();
+//         response.put("status", "success");
+//         response.put("companies", companyList);
+//         response.put("days", days);
+//         response.put("requested_by", username);
+        
+//         // Handle both Supabase URL and base64 results
+//         if (chartResult.startsWith("http")) {
+//             // It's a Supabase URL - no need to decode
+//             response.put("message", "Comparison chart generated and uploaded to Supabase successfully");
+//             response.put("chart_url", chartResult);
+//             response.put("chart_type", "url");
+//             response.put("storage", "supabase");
+//         } else {
+//             // It's base64 - decode and save locally
+//             byte[] imageBytes = Base64.getDecoder().decode(chartResult);
             
-            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-            String filename = "sentiment_chart_" + companyName + "_" + timestamp + ".png";
-            String projectDir = System.getProperty("user.dir");
-            String filepath = projectDir + "/" + filename;
+//             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+//             String filename = "comparison_chart_" + String.join("_", companyList) + "_" + timestamp + ".png";
+//             String projectDir = System.getProperty("user.dir");
+//             String filepath = projectDir + "/" + filename;
             
-            Files.write(Paths.get(filepath), imageBytes);
+//             Files.write(Paths.get(filepath), imageBytes);
             
-            response.put("message", "Chart generated and saved locally successfully");
-            response.put("file_path", filepath);
-            response.put("file_name", filename);
-            response.put("chart", "data:image/png;base64," + chartResult);
-            response.put("chart_type", "base64");
-            response.put("storage", "local");
-        }
+//             response.put("message", "Comparison chart generated and saved locally successfully");
+//             response.put("file_path", filepath);
+//             response.put("file_name", filename);
+//             response.put("chart", "data:image/png;base64," + chartResult);
+//             response.put("chart_type", "base64");
+//             response.put("storage", "local");
+//         }
         
-        return ResponseEntity.ok(response);
-    } catch (Exception e) {
-        Map<String, Object> errorResponse = new HashMap<>();
-        errorResponse.put("status", "error");
-        errorResponse.put("message", "Failed to generate chart: " + e.getMessage());
-        return ResponseEntity.badRequest().body(errorResponse);
-    }
-}
+//         return ResponseEntity.ok(response);
+//     } catch (Exception e) {
+//         Map<String, Object> errorResponse = new HashMap<>();
+//         errorResponse.put("status", "error");
+//         errorResponse.put("message", "Failed to generate comparison chart: " + e.getMessage());
+//         return ResponseEntity.badRequest().body(errorResponse);
+//     }
+// }
 }
 
 
