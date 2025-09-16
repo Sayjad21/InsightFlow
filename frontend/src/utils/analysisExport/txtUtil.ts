@@ -65,22 +65,77 @@ export function generateTextContent(analysisResult: AnalysisResult): string {
       sections.push(`• ${item}`)
     );
     sections.push("");
+
+    // Add SWOT visualization
+    if (analysisResult.swot_image) {
+      sections.push(
+        `[SWOT Analysis Visualization: ${analysisResult.swot_image}]`
+      );
+      sections.push("");
+    }
+  }
+
+  // PESTEL Analysis
+  if (analysisResult.pestel_lists) {
+    sections.push("5. PESTEL ANALYSIS");
+    sections.push("-".repeat(50));
+    sections.push("POLITICAL:");
+    analysisResult.pestel_lists.political.forEach((item) =>
+      sections.push(`• ${item}`)
+    );
+    sections.push("\nECONOMIC:");
+    analysisResult.pestel_lists.economic.forEach((item) =>
+      sections.push(`• ${item}`)
+    );
+    sections.push("\nSOCIAL:");
+    analysisResult.pestel_lists.social.forEach((item) =>
+      sections.push(`• ${item}`)
+    );
+    sections.push("\nTECHNOLOGICAL:");
+    analysisResult.pestel_lists.technological.forEach((item) =>
+      sections.push(`• ${item}`)
+    );
+    sections.push("\nENVIRONMENTAL:");
+    analysisResult.pestel_lists.environmental.forEach((item) =>
+      sections.push(`• ${item}`)
+    );
+    sections.push("\nLEGAL:");
+    analysisResult.pestel_lists.legal.forEach((item) =>
+      sections.push(`• ${item}`)
+    );
+    sections.push("");
+
+    // Add PESTEL visualization
+    if (analysisResult.pestel_image) {
+      sections.push(
+        `[PESTEL Analysis Visualization: ${analysisResult.pestel_image}]`
+      );
+      sections.push("");
+    }
   }
 
   // Porter's Five Forces
   if (analysisResult.porter_forces) {
-    sections.push("5. PORTER'S FIVE FORCES");
+    sections.push("6. PORTER'S FIVE FORCES");
     sections.push("-".repeat(50));
     Object.entries(analysisResult.porter_forces).forEach(([force, items]) => {
       sections.push(`${force.toUpperCase().replace("_", " ")}:`);
       items.forEach((item) => sections.push(`• ${item}`));
       sections.push("");
     });
+
+    // Add Porter visualization
+    if (analysisResult.porter_image) {
+      sections.push(
+        `[Porter's Five Forces Visualization: ${analysisResult.porter_image}]`
+      );
+      sections.push("");
+    }
   }
 
   // BCG Matrix
   if (analysisResult.bcg_matrix) {
-    sections.push("6. BCG MATRIX");
+    sections.push("7. BCG MATRIX");
     sections.push("-".repeat(50));
     Object.entries(analysisResult.bcg_matrix).forEach(([product, values]) => {
       sections.push(`${product}:`);
@@ -88,16 +143,30 @@ export function generateTextContent(analysisResult: AnalysisResult): string {
       sections.push(`  Growth Rate: ${values.growth_rate}%`);
       sections.push("");
     });
+
+    // Add BCG visualization
+    if (analysisResult.bcg_image) {
+      sections.push(`[BCG Matrix Visualization: ${analysisResult.bcg_image}]`);
+      sections.push("");
+    }
   }
 
   // McKinsey 7S
   if (analysisResult.mckinsey_7s) {
-    sections.push("7. MCKINSEY 7S MODEL");
+    sections.push("8. MCKINSEY 7S MODEL");
     sections.push("-".repeat(50));
     Object.entries(analysisResult.mckinsey_7s).forEach(([element, value]) => {
       sections.push(`${element.toUpperCase().replace("_", " ")}: ${value}`);
     });
     sections.push("");
+
+    // Add McKinsey visualization
+    if (analysisResult.mckinsey_image) {
+      sections.push(
+        `[McKinsey 7S Model Visualization: ${analysisResult.mckinsey_image}]`
+      );
+      sections.push("");
+    }
   }
 
   sections.push("=".repeat(80));

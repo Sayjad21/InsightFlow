@@ -3,9 +3,10 @@ import { cleanHtmlContent } from "../helpers/htmlCleanup";
 import { formatDate } from "../helpers/dateFormatter";
 import { getCompanyNames } from "../helpers/comparisonCompanyNames";
 
-
 // Generate text content for comparison exports
-export function generateComparisonTextContent(comparison: ComparisonResult): string {
+export function generateComparisonTextContent(
+  comparison: ComparisonResult
+): string {
   const sections: string[] = [];
 
   // Header
@@ -132,9 +133,33 @@ export function generateComparisonTextContent(comparison: ComparisonResult): str
     sections.push("");
   }
 
+  // Visual Analytics
+  if (comparison.radarChart || comparison.barGraph || comparison.scatterPlot) {
+    sections.push("5. VISUAL ANALYTICS");
+    sections.push("-".repeat(50));
+
+    if (comparison.radarChart) {
+      sections.push("RADAR CHART ANALYSIS:");
+      sections.push(`[Radar Chart Visualization: ${comparison.radarChart}]`);
+      sections.push("");
+    }
+
+    if (comparison.barGraph) {
+      sections.push("PERFORMANCE COMPARISON:");
+      sections.push(`[Bar Chart Visualization: ${comparison.barGraph}]`);
+      sections.push("");
+    }
+
+    if (comparison.scatterPlot) {
+      sections.push("RISK VS GROWTH ANALYSIS:");
+      sections.push(`[Scatter Plot Visualization: ${comparison.scatterPlot}]`);
+      sections.push("");
+    }
+  }
+
   // Individual Company Analysis
   if (comparison.analyses && comparison.analyses.length > 0) {
-    sections.push("5. INDIVIDUAL COMPANY ANALYSIS");
+    sections.push("6. INDIVIDUAL COMPANY ANALYSIS");
     sections.push("-".repeat(50));
 
     comparison.analyses.forEach((analysis, index) => {

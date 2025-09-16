@@ -23,20 +23,45 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
 
   return (
     <div className="space-y-8">
-      {/* Company Summary */}
-      <div className="bg-yellow-50 rounded-xl p-6 shadow-sm border border-gray-200">
-        <h3 className="text-xl font-bold text-gray-900 mb-4">
-          {companyName || analysisResult.company_name} - Key Insights
-        </h3>
-        <div className="space-y-3">
-          {analysisResult.summaries.map((summary, index) => (
+      <div className="space-y-4">
+        {analysisResult.summaries.map((summary, index) => (
+          <div
+            key={index}
+            className="bg-yellow-50 rounded-xl p-6 shadow-sm border border-gray-200"
+          >
+            {/* Optional label: Analysis 1, 2, ... */}
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">
+              Insight {index + 1}
+            </h3>
+
+            {/* Summary */}
             <div
-              key={index}
-              className="text-gray-700 leading-relaxed prose prose-sm max-w-none"
+              className="text-gray-700 leading-relaxed prose prose-sm max-w-none mb-4"
               dangerouslySetInnerHTML={{ __html: summary }}
             />
-          ))}
-        </div>
+
+            {/* Corresponding sources */}
+            {analysisResult.sources && analysisResult.sources[index] && (
+              <div className="bg-pink-50 rounded-xl p-4 border border-gray-200">
+                <h4 className="text-lg font-semibold text-gray-900 mb-2 flex items-center">
+                  <Link className="h-5 w-5 inline-block mr-2 text-gray-700" />
+                  Source
+                </h4>
+                <div className="flex items-center text-sm text-gray-600">
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  <a
+                    href={analysisResult.sources[index]}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-blue-600 transition-colors duration-200"
+                  >
+                    {new URL(analysisResult.sources[index]).origin}
+                  </a>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
       </div>
 
       {/* Strategy Recommendations */}
@@ -418,7 +443,7 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
       )}
 
       {/* Sources */}
-      {analysisResult.sources && analysisResult.sources.length > 0 && (
+      {/* {analysisResult.sources && analysisResult.sources.length > 0 && (
         <div className="bg-pink-50 rounded-xl p-6 border border-gray-200">
           <h4 className="text-lg font-semibold text-gray-900 mb-3">
             <Link className="h-5 w-5 inline-block mr-2 text-gray-700" />
@@ -443,7 +468,7 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
             ))}
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 };

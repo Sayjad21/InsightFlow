@@ -81,7 +81,7 @@ public class SentimentTrendVisualizationService {
                 // FIX: Use Hour instead of Day for better granularity
                 // Round to 3-hour intervals:
                 int roundedHour = (dateTime.getHour() / 3) * 3; // Rounds to 0, 3, 6, 9, 12, 15, 18, 21
-                series.add(new Hour(roundedHour, dateTime.getDayOfMonth(), 
+                series.addOrUpdate(new Hour(roundedHour, dateTime.getDayOfMonth(), 
                                   dateTime.getMonthValue(), dateTime.getYear()), score);
                 processedPoints++;
             } catch (Exception e) {
@@ -236,9 +236,9 @@ public class SentimentTrendVisualizationService {
                     // Use Hour for better granularity:
                     // Round to 3-hour intervals:
                     int roundedHour = (dateTime.getHour() / 3) * 3;
-                    series.add(new Hour(roundedHour, dateTime.getDayOfMonth(), dateTime.getMonthValue(), dateTime.getYear()), score);
+                    series.addOrUpdate(new Hour(roundedHour, dateTime.getDayOfMonth(), dateTime.getMonthValue(), dateTime.getYear()), score);
                     // Or use Minute for maximum precision:
-                    // series.add(new Minute(dateTime.getMinute(), dateTime.getHour(), dateTime.getDayOfMonth(), dateTime.getMonthValue(), dateTime.getYear()), score);
+                    // series.addOrUpdate(new Minute(dateTime.getMinute(), dateTime.getHour(), dateTime.getDayOfMonth(), dateTime.getMonthValue(), dateTime.getYear()), score);
                 } catch (Exception e) {
                     logger.warn("Failed to process data point for {}: {}", company, point, e);
                 }

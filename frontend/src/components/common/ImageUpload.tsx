@@ -31,22 +31,15 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
   const sizeClasses = {
     small: "w-16 h-16",
-    medium: "w-24 h-24",
-    large: "w-32 h-32",
+    medium: "w-28 h-28",
+    large: "w-36 h-36",
   };
-
-  // No cleanup needed for base64 URLs
-  useEffect(() => {
-    console.log("Current previewUrl:", previewUrl);
-  }, [previewUrl]);
 
   const handleFileSelect = async (file: File) => {
     setError(null);
     setImageLoadError(false);
-    console.log("Selected file:", file.name, file.type, file.size);
 
     const validation = ImageUploadService.validateImage(file);
-    console.log("Validation result:", validation);
     if (!validation.isValid) {
       setError(validation.error!);
       return;
@@ -54,32 +47,19 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
     try {
       const resizedFile = await ImageUploadService.resizeImage(file);
-      console.log(
-        "Resized file:",
-        resizedFile.name,
-        resizedFile.type,
-        resizedFile.size
-      );
       const preview = await ImageUploadService.fileToBase64(resizedFile);
-      console.log(
-        "Generated base64 preview:",
-        preview.substring(0, 50) + "..."
-      );
 
       setPreviewUrl(preview);
       onImageChange(resizedFile, preview);
-    } catch (err) {
+    } catch {
       setError("Failed to process image. Please try another file.");
-      console.error("Image processing error:", err);
       setImageLoadError(true);
     }
   };
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      handleFileSelect(file);
-    }
+    if (file) handleFileSelect(file);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -89,52 +69,29 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
     const files = Array.from(e.dataTransfer.files);
     const imageFile = files.find((file) => file.type.startsWith("image/"));
-
-    if (imageFile) {
-      handleFileSelect(imageFile);
-    } else {
-      setError("Please drop an image file");
-    }
+    if (imageFile) handleFileSelect(imageFile);
+    else setError("Please drop an image file");
   };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    e.stopPropagation();
     setDragActive(true);
   };
 
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-  };
+  const handleDragLeave = () => setDragActive(false);
 
   const handleRemoveImage = () => {
     setPreviewUrl(null);
     setError(null);
     setImageLoadError(false);
     onImageChange(null, null);
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleClick = () => {
-    fileInputRef.current?.click();
-  };
+  const handleClick = () => fileInputRef.current?.click();
 
-  // Use currentImage by default, switch to previewUrl only when a new image is uploaded
   const displayImage =
     previewUrl && !imageLoadError ? previewUrl : currentImage || "";
-  console.log(
-    "Rendering with displayImage:",
-    displayImage.substring(0, 50) + "...",
-    "previewUrl:",
-    previewUrl ? previewUrl.substring(0, 50) + "..." : null,
-    "currentImage:",
-    currentImage
-  );
 
   return (
     <div className={`space-y-3 ${className}`}>
@@ -145,28 +102,28 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       )}
 
       <div className="flex items-center space-x-4">
+        {/* Profile Image */}
         <div
           className={`
             ${
               sizeClasses[size]
-            } rounded-full overflow-hidden border-4 border-white shadow-lg
-            relative group cursor-pointer bg-gray-200
-            ${isUploading ? "opacity-50" : ""}
+            } rounded-full overflow-hidden border-4 border-white shadow-xl
+            relative group cursor-pointer bg-gradient-to-tr from-gray-200 to-gray-300 transition-transform transform hover:scale-105
+            ${isUploading ? "opacity-60 cursor-not-allowed" : ""}
           `}
           onClick={handleClick}
         >
-          {user && displayImage && !imageLoadError ? (
+          {displayImage && !imageLoadError ? (
             <>
               <img
                 src={displayImage}
                 alt="Profile"
                 className="w-full h-full object-cover relative z-10"
-                onError={(e) => setImageLoadError(true)}
+                onError={() => setImageLoadError(true)}
                 onLoad={() => setImageLoadError(false)}
               />
-
               {!isUploading && (
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 flex items-center justify-center transition-opacity pointer-events-none group-hover:pointer-events-auto">
+                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 flex items-center justify-center transition-opacity">
                   <Camera
                     className="text-white opacity-0 group-hover:opacity-100 transition-opacity"
                     size={size === "small" ? 16 : size === "medium" ? 20 : 24}
@@ -175,16 +132,16 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
               )}
             </>
           ) : (
-            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+            <div className="w-full h-full flex items-center justify-center bg-gray-200 rounded-full">
               <Camera
-                className="text-gray-400"
+                className="text-gray-400 animate-pulse"
                 size={size === "small" ? 16 : size === "medium" ? 20 : 24}
               />
             </div>
           )}
 
           {isUploading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full">
               <Loader2
                 className="animate-spin text-white"
                 size={size === "small" ? 16 : size === "medium" ? 20 : 24}
@@ -193,14 +150,15 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           )}
         </div>
 
+        {/* Drag & Drop Area */}
         <div className="flex-1">
           <div
             className={`
-              border-2 border-dashed rounded-lg p-4 text-center transition-colors cursor-pointer
+              border-2 border-dashed rounded-xl p-5 text-center transition-all duration-300 cursor-pointer
               ${
                 dragActive
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-gray-300 hover:border-gray-400"
+                  ? "border-blue-400 bg-blue-50 shadow-inner"
+                  : "border-gray-300 hover:border-blue-400 hover:shadow-md"
               }
               ${isUploading ? "opacity-50 cursor-not-allowed" : ""}
             `}
@@ -210,10 +168,8 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
             onClick={!isUploading ? handleClick : undefined}
           >
             <Upload className="mx-auto mb-2 text-gray-400" size={20} />
-            <p className="text-sm text-gray-600">
-              {isUploading
-                ? "Uploading..."
-                : "Click to upload or drag and drop"}
+            <p className="text-sm text-gray-600 font-medium">
+              {isUploading ? "Uploading..." : "Click or drag & drop to upload"}
             </p>
             <p className="text-xs text-gray-500 mt-1">
               PNG, JPG, WebP up to 5MB
@@ -226,7 +182,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                 <button
                   type="button"
                   onClick={handleRemoveImage}
-                  className="flex items-center px-3 py-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                  className="flex items-center px-3 py-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg shadow-sm transition-all cursor-pointer"
                 >
                   <X size={14} className="mr-1" />
                   Remove

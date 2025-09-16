@@ -29,6 +29,8 @@ export function generateMarkdownContent(
     );
   if (analysisResult.swot_lists)
     sections.push(`${tocIndex++}. [SWOT Analysis](#swot-analysis)`);
+  if (analysisResult.pestel_lists)
+    sections.push(`${tocIndex++}. [PESTEL Analysis](#pestel-analysis)`);
   if (analysisResult.porter_forces)
     sections.push(
       `${tocIndex++}. [Porter's Five Forces](#porters-five-forces)`
@@ -106,6 +108,51 @@ export function generateMarkdownContent(
     sections.push("");
   }
 
+  // SWOT Visualization
+  if (analysisResult.swot_image) {
+    sections.push("### SWOT Analysis Visualization");
+    sections.push(`![SWOT Analysis](${analysisResult.swot_image})`);
+    sections.push("");
+  }
+
+  // PESTEL Analysis
+  if (analysisResult.pestel_lists) {
+    sections.push("## PESTEL Analysis");
+    sections.push('<a id="pestel-analysis"></a>');
+    sections.push("### Political");
+    analysisResult.pestel_lists.political.forEach((item) =>
+      sections.push(`- ${item}`)
+    );
+    sections.push("\n### Economic");
+    analysisResult.pestel_lists.economic.forEach((item) =>
+      sections.push(`- ${item}`)
+    );
+    sections.push("\n### Social");
+    analysisResult.pestel_lists.social.forEach((item) =>
+      sections.push(`- ${item}`)
+    );
+    sections.push("\n### Technological");
+    analysisResult.pestel_lists.technological.forEach((item) =>
+      sections.push(`- ${item}`)
+    );
+    sections.push("\n### Environmental");
+    analysisResult.pestel_lists.environmental.forEach((item) =>
+      sections.push(`- ${item}`)
+    );
+    sections.push("\n### Legal");
+    analysisResult.pestel_lists.legal.forEach((item) =>
+      sections.push(`- ${item}`)
+    );
+    sections.push("");
+  }
+
+  // PESTEL Visualization
+  if (analysisResult.pestel_image) {
+    sections.push("### PESTEL Analysis Visualization");
+    sections.push(`![PESTEL Analysis](${analysisResult.pestel_image})`);
+    sections.push("");
+  }
+
   // Porter's Five Forces
   if (analysisResult.porter_forces) {
     sections.push("## Porter's Five Forces");
@@ -119,6 +166,13 @@ export function generateMarkdownContent(
       items.forEach((item) => sections.push(`- ${item}`));
       sections.push("");
     });
+  }
+
+  // Porter Visualization
+  if (analysisResult.porter_image) {
+    sections.push("### Porter's Five Forces Visualization");
+    sections.push(`![Porter's Five Forces](${analysisResult.porter_image})`);
+    sections.push("");
   }
 
   // BCG Matrix
@@ -135,6 +189,13 @@ export function generateMarkdownContent(
     sections.push("");
   }
 
+  // BCG Visualization
+  if (analysisResult.bcg_image) {
+    sections.push("### BCG Matrix Visualization");
+    sections.push(`![BCG Matrix](${analysisResult.bcg_image})`);
+    sections.push("");
+  }
+
   // McKinsey 7S
   if (analysisResult.mckinsey_7s) {
     sections.push("## McKinsey 7S Model");
@@ -148,6 +209,13 @@ export function generateMarkdownContent(
       sections.push(value);
       sections.push("");
     });
+  }
+
+  // McKinsey 7S Visualization
+  if (analysisResult.mckinsey_image) {
+    sections.push("### McKinsey 7S Model Visualization");
+    sections.push(`![McKinsey 7S Model](${analysisResult.mckinsey_image})`);
+    sections.push("");
   }
 
   sections.push("---");
