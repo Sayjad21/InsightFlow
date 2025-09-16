@@ -7,6 +7,8 @@ import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.time.Day;
+import org.jfree.data.time.Hour;
+import org.jfree.data.time.Minute;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
 import org.slf4j.Logger;
@@ -71,7 +73,9 @@ public class SentimentTrendVisualizationService {
                     continue;
                 }
                 
-                series.add(new Day(dateTime.getDayOfMonth(), dateTime.getMonthValue(), dateTime.getYear()), score);
+                // FIX: Use Hour instead of Day for better granularity
+                series.add(new Hour(dateTime.getHour(), dateTime.getDayOfMonth(), 
+                                  dateTime.getMonthValue(), dateTime.getYear()), score);
                 processedPoints++;
             } catch (Exception e) {
                 logger.warn("Failed to process data point: {}", point, e);
@@ -203,7 +207,10 @@ public class SentimentTrendVisualizationService {
                         continue;
                     }
                     
-                    series.add(new Day(dateTime.getDayOfMonth(), dateTime.getMonthValue(), dateTime.getYear()), score);
+                    // Use Hour for better granularity:
+                    series.add(new Hour(dateTime.getHour(), dateTime.getDayOfMonth(), dateTime.getMonthValue(), dateTime.getYear()), score);
+                    // Or use Minute for maximum precision:
+                    // series.add(new Minute(dateTime.getMinute(), dateTime.getHour(), dateTime.getDayOfMonth(), dateTime.getMonthValue(), dateTime.getYear()), score);
                 } catch (Exception e) {
                     logger.warn("Failed to process data point for {}: {}", company, point, e);
                 }

@@ -8,7 +8,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -220,4 +225,59 @@ public class SentimentController {
             return ResponseEntity.badRequest().body(errorResponse);
         }
     }
+    @GetMapping("/test/chart/{companyName}")
+    public ResponseEntity<Map<String, Object>> testChartGeneration(
+            @PathVariable String companyName,
+            @RequestParam(defaultValue = "30") int days,
+            Authentication authentication) {
+        String username = authentication.getName();
+        System.out.println("Test chart generation requested by " + username + " for " + companyName);
+
+        try {
+            // Get the trend analysis data
+            Map<String, Object> analysis = trendService.analyzeTrends(companyName, days, null);
+            
+            // Generate chart from the analysis data
+            String base64Chart = visualizationService.generateTrendGraph(analysis);
+            
+            if (base64Chart == null) {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("status", "error");
+                errorResponse.put("message", "Failed to generate chart: No data available");
+                return ResponseEntity.badRequest().body(errorResponse);
+            }
+            
+            // Decode the base64 string to bytes
+            byte[] imageBytes = Base64.getDecoder().decode(base64Chart);
+            
+            // Create a filename with timestamp
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            String filename = "sentiment_chart_" + companyName + "_" + timestamp + ".png";
+            
+            // Get the current project directory
+            String projectDir = System.getProperty("user.dir");
+            String filepath = projectDir + "/" + filename;
+            
+            // Save the image to the project directory
+            Files.write(Paths.get(filepath), imageBytes);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "success");
+            response.put("message", "Chart generated and saved successfully");
+            response.put("company", companyName);
+            response.put("file_path", filepath);
+            response.put("file_name", filename);
+            response.put("chart", base64Chart); // Still include the base64 for reference
+            response.put("requested_by", username);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("status", "error");
+            errorResponse.put("message", "Failed to generate chart: " + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
 }
+
+
