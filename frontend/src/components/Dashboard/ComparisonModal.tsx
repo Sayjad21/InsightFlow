@@ -1,5 +1,5 @@
-import React from "react";
-import { X, Download, FileText, FileImage, File } from "lucide-react";
+import React, { useState } from "react";
+import { X, Download, FileText, File, FileDown, Loader2 } from "lucide-react";
 import type { ComparisonResult } from "../../types";
 import {
   exportComparisonToTxt,
@@ -37,6 +37,10 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
   selectedComparison,
   onClose,
 }) => {
+  const [exportingType, setExportingType] = useState<
+    "txt" | "markdown" | "html" | "pdf" | null
+  >(null);
+
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return "Unknown date";
     try {
@@ -53,27 +57,47 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
   };
 
   // Custom export handlers for comparison reports
-  const handleExportMarkdown = () => {
-    exportComparisonToMarkdown(selectedComparison);
+  const handleExportMarkdown = async () => {
+    try {
+      setExportingType("markdown");
+      exportComparisonToMarkdown(selectedComparison);
+    } catch (error) {
+      console.error("Export to Markdown failed:", error);
+    } finally {
+      setExportingType(null);
+    }
   };
 
-  const handleExportText = () => {
-    exportComparisonToTxt(selectedComparison);
+  const handleExportText = async () => {
+    try {
+      setExportingType("txt");
+      exportComparisonToTxt(selectedComparison);
+    } catch (error) {
+      console.error("Export to TXT failed:", error);
+    } finally {
+      setExportingType(null);
+    }
   };
 
   const handleExportPDF = async () => {
     try {
+      setExportingType("pdf");
       await exportComparisonToPdf(selectedComparison);
     } catch (error) {
       console.error("Export to PDF failed:", error);
+    } finally {
+      setExportingType(null);
     }
   };
 
-  const handleExportHTML = () => {
+  const handleExportHTML = async () => {
     try {
+      setExportingType("html");
       exportComparisonToHtml(selectedComparison);
     } catch (error) {
       console.error("Export to HTML failed:", error);
+    } finally {
+      setExportingType(null);
     }
   };
 
@@ -87,7 +111,7 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
 
       {/* Modal */}
       <div
-        className="bg-cyan-800/30 backdrop-blur-sm rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-auto relative z-10 shadow-xl shadow-blue-900/20"
+        className="bg-purple-800/30 backdrop-blur-sm rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-auto relative z-10 shadow-xl shadow-blue-900/20"
         style={{
           animation: "modalFadeIn 0.3s ease-out forwards",
         }}
@@ -1174,38 +1198,54 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
               <h3 className="text-xl font-semibold text-blue-400 mb-4">
                 Export Comparison Report
               </h3>
-              <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={handleExportMarkdown}
-                  className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                  title="Export as Markdown file with formatting"
-                >
-                  <File className="h-4 w-4 mr-2" />
-                  Markdown
-                </button>
+              <div className="flex flex-wrap gap-2">
                 <button
                   onClick={handleExportText}
-                  className="flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-                  title="Export as plain text file"
+                  disabled={exportingType === "txt"}
+                  className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50/10 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Export as TXT"
                 >
-                  <FileText className="h-4 w-4 mr-2" />
-                  TXT
+                  {exportingType === "txt" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <FileText className="h-4 w-4" />
+                  )}
+                </button>
+                <button
+                  onClick={handleExportMarkdown}
+                  disabled={exportingType === "markdown"}
+                  className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50/10 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Export as Markdown"
+                >
+                  {exportingType === "markdown" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <FileDown className="h-4 w-4" />
+                  )}
                 </button>
                 <button
                   onClick={handleExportHTML}
-                  className="flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
-                  title="Export as HTML file with formatting"
+                  disabled={exportingType === "html"}
+                  className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50/10 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Export as HTML"
                 >
-                  <Download className="h-4 w-4 mr-2" />
-                  HTML
+                  {exportingType === "html" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <File className="h-4 w-4" />
+                  )}
                 </button>
                 <button
                   onClick={handleExportPDF}
-                  className="flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
-                  title="Export as PDF with professional formatting"
+                  disabled={exportingType === "pdf"}
+                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50/10 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Export as PDF"
                 >
-                  <FileImage className="h-4 w-4 mr-2" />
-                  PDF
+                  {exportingType === "pdf" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
                 </button>
               </div>
             </div>

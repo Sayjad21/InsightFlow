@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Users } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -12,6 +12,7 @@ const SignIn: React.FC = () => {
   );
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -39,7 +40,14 @@ const SignIn: React.FC = () => {
 
     try {
       await login(email, password);
-      navigate("/dashboard");
+
+      // Navigate to the intended location or default to dashboard
+      const from = (location.state as any)?.from;
+      if (from?.pathname && from?.pathname !== "/signin") {
+        navigate(`${from.pathname}${from.search || ""}`, { replace: true });
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Login failed";

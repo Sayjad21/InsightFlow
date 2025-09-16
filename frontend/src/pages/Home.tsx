@@ -109,7 +109,7 @@ const Home: React.FC = () => {
 
         {/* Footer */}
         <footer className="w-full py-4 text-center text-gray-600 border-t border-gray-200 bg-gray-50">
-          Powered by Ollama, tavily
+          InsightFlow &copy; {new Date().getFullYear()}. All rights reserved.
         </footer>
       </div>
     </Layout>

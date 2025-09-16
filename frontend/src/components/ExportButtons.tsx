@@ -1,5 +1,5 @@
-import React from "react";
-import { Download, FileText, FileImage, File } from "lucide-react";
+import React, { useState } from "react";
+import { Download, FileText, FileDown, Loader2 } from "lucide-react";
 import {
   exportToTxt,
   exportToMarkdown,
@@ -12,16 +12,41 @@ interface ExportButtonsProps {
 }
 
 const ExportButtons: React.FC<ExportButtonsProps> = ({ analysisResult }) => {
-  const handleTxtExport = () => {
-    exportToTxt(analysisResult);
+  const [exportingType, setExportingType] = useState<
+    "txt" | "markdown" | "pdf" | null
+  >(null);
+
+  const handleTxtExport = async () => {
+    try {
+      setExportingType("txt");
+      exportToTxt(analysisResult);
+    } catch (error) {
+      console.error("Export to TXT failed:", error);
+    } finally {
+      setExportingType(null);
+    }
   };
 
-  const handleMarkdownExport = () => {
-    exportToMarkdown(analysisResult);
+  const handleMarkdownExport = async () => {
+    try {
+      setExportingType("markdown");
+      exportToMarkdown(analysisResult);
+    } catch (error) {
+      console.error("Export to Markdown failed:", error);
+    } finally {
+      setExportingType(null);
+    }
   };
 
   const handlePdfExport = async () => {
-    await exportToPdf(analysisResult);
+    try {
+      setExportingType("pdf");
+      await exportToPdf(analysisResult);
+    } catch (error) {
+      console.error("Export to PDF failed:", error);
+    } finally {
+      setExportingType(null);
+    }
   };
 
   return (
@@ -33,29 +58,41 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({ analysisResult }) => {
       <div className="flex flex-wrap gap-2">
         <button
           onClick={handleTxtExport}
-          className="inline-flex items-center px-3 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-          title="Export as plain text file"
+          disabled={exportingType === "txt"}
+          className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Export as TXT"
         >
-          <FileText className="w-4 h-4 mr-1.5" />
-          TXT
+          {exportingType === "txt" ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <FileText className="h-4 w-4" />
+          )}
         </button>
 
         <button
           onClick={handleMarkdownExport}
-          className="inline-flex items-center px-3 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-          title="Export as Markdown file with formatting"
+          disabled={exportingType === "markdown"}
+          className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Export as Markdown"
         >
-          <File className="w-4 h-4 mr-1.5" />
-          Markdown
+          {exportingType === "markdown" ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <FileDown className="h-4 w-4" />
+          )}
         </button>
 
         <button
           onClick={handlePdfExport}
-          className="inline-flex items-center px-3 py-2 text-xs font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
-          title="Export as PDF with professional formatting"
+          disabled={exportingType === "pdf"}
+          className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Export as PDF"
         >
-          <FileImage className="w-4 h-4 mr-1.5" />
-          PDF
+          {exportingType === "pdf" ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4" />
+          )}
         </button>
       </div>
       <p className="text-xs text-gray-500 mt-2">

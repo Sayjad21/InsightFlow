@@ -19,6 +19,7 @@ import type { UserAnalysis } from "../../types";
 import type { UserProfileResponse } from "../../services/api";
 import { ApiService } from "../../services/api";
 import AnalysisDisplay from "../AnalysisDisplay";
+import AnalysisModal from "../AnalysisModal";
 import ExportButtons from "../ExportButtons";
 import Pagination from "../common/Pagination";
 
@@ -28,7 +29,6 @@ interface AnalysisTabProps {
   analysisCurrentPage: number;
   setAnalysisCurrentPage: (page: number) => void;
   analysisTotalPages: number;
-  totalAnalyses: number;
   expandedAnalysis: string | null;
   setExpandedAnalysis: (id: string | null) => void;
   selectedAnalysis: UserAnalysis | null;
@@ -56,7 +56,6 @@ const AnalysisTab: React.FC<AnalysisTabProps> = ({
   analysisCurrentPage,
   setAnalysisCurrentPage,
   analysisTotalPages,
-  totalAnalyses,
   expandedAnalysis,
   setExpandedAnalysis,
   selectedAnalysis,
@@ -141,6 +140,21 @@ const AnalysisTab: React.FC<AnalysisTabProps> = ({
         setExpandedAnalysis(null);
       } else {
         setExpandedAnalysis(analysis.id);
+
+        // Scroll to the analysis item after a short delay to allow for expansion
+        setTimeout(() => {
+          const analysisElement = document.getElementById(
+            `analysis-${analysis.id}`
+          );
+          if (analysisElement) {
+            const elementTop = analysisElement.offsetTop;
+            const offset = 100; // Add some offset from the top
+            window.scrollTo({
+              top: elementTop - offset,
+              behavior: "smooth",
+            });
+          }
+        }, 300); // Wait for the expansion animation
       }
     }
   };
@@ -378,6 +392,34 @@ const AnalysisTab: React.FC<AnalysisTabProps> = ({
 
   return (
     <>
+      {/* Header */}
+      <div className="bg-gradient-to-r from-green-50 to-teal-50 border border-blue-200 rounded-xl p-6 mb-8">
+        <div className="flex items-center justify-center mb-4">
+          <div className="bg-blue-100 p-3 rounded-full mr-4">
+            <Building2 className="h-8 w-8 text-green-600" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-teal-900">
+              Company Analysis
+            </h2>
+            <p className="text-blue-700">
+              Create comprehensive business analysis reports and compare
+              companies.
+            </p>
+          </div>
+        </div>
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">
+            Generate detailed insights using SWOT, PESTEL, Porter's Forces, and
+            other strategic frameworks.
+          </p>
+          <div className="flex items-center justify-center text-sm text-gray-500">
+            <Clock className="h-4 w-4 mr-2" />
+            Updated 2025
+          </div>
+        </div>
+      </div>
+
       {/* Comparison Controls Section */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
         <div className="px-6 py-4 border-b border-gray-200">
@@ -409,11 +451,11 @@ const AnalysisTab: React.FC<AnalysisTabProps> = ({
         {comparisonMode && (
           <div className="p-6 space-y-6">
             {/* Instructions */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h4 className="text-sm font-semibold text-blue-900 mb-2">
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+              <h4 className="text-sm font-semibold text-purple-900 mb-2">
                 How to Compare:
               </h4>
-              <ul className="text-sm text-blue-800 space-y-1">
+              <ul className="text-sm text-purple-800 space-y-1">
                 <li>• Select 2-5 completed analyses from your history below</li>
                 <li>• Or add new company names for fresh analysis</li>
                 <li>• Or mix both existing and new companies</li>
@@ -443,7 +485,7 @@ const AnalysisTab: React.FC<AnalysisTabProps> = ({
                         onChange={(e) =>
                           handleCompanyNameChange(index, e.target.value)
                         }
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 placeholder-gray-400"
+                        className="w-full px-4 py-2 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-purple-900 placeholder-purple-400"
                       />
                       {/* File upload section - only show when company name is entered */}
                       {name.trim() && (
@@ -580,7 +622,7 @@ const AnalysisTab: React.FC<AnalysisTabProps> = ({
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center">
             <div className="p-2 bg-blue-100 rounded-lg">
@@ -636,7 +678,7 @@ const AnalysisTab: React.FC<AnalysisTabProps> = ({
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Analysis History */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
@@ -651,7 +693,11 @@ const AnalysisTab: React.FC<AnalysisTabProps> = ({
 
         <div className="divide-y divide-gray-200">
           {userAnalyses.map((analysis) => (
-            <div key={analysis.id} className="p-6">
+            <div
+              key={analysis.id}
+              id={`analysis-${analysis.id}`}
+              className="p-6"
+            >
               <div
                 className={`flex items-center justify-between transition-all duration-200 ${
                   !comparisonMode && analysis.status === "COMPLETED"
@@ -782,37 +828,11 @@ const AnalysisTab: React.FC<AnalysisTabProps> = ({
 
       {/* Analysis Detail Modal */}
       {selectedAnalysis && (
-        <div
-          className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-          onClick={() => setSelectedAnalysis(null)} // close when clicking background
-          style={{
-            animation: "modalFadeIn 0.3s ease-out forwards",
-          }}
-        >
-          <div
-            className="bg-white rounded-2xl max-w-6xl max-h-[90vh] overflow-y-auto w-full"
-            onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside modal
-          >
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900">
-                {selectedAnalysis.companyName} - Analysis Report
-              </h2>
-              <button
-                onClick={() => setSelectedAnalysis(null)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="h-5 w-5 text-gray-500" />
-              </button>
-            </div>
-            <div className="p-6">
-              {selectedAnalysis.summaries && (
-                <AnalysisDisplay
-                  analysisResult={createAnalysisResult(selectedAnalysis)}
-                />
-              )}
-            </div>
-          </div>
-        </div>
+        <AnalysisModal
+          analysisResult={createAnalysisResult(selectedAnalysis)}
+          companyName={selectedAnalysis.companyName}
+          onClose={() => setSelectedAnalysis(null)}
+        />
       )}
     </>
   );

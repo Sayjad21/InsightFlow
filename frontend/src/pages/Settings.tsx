@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   User,
@@ -11,15 +11,25 @@ import {
   FileText,
   BarChart3,
   Trash2,
+  Info,
+  Heart,
+  Target,
+  Users,
+  Zap,
+  Shield,
+  TrendingUp,
+  Eye,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { ApiService } from "../services/api";
-import Layout from "../components/Layout";
+import Layout, { type LayoutRef } from "../components/Layout";
 import ImageUpload from "../components/common/ImageUpload";
 import Pagination from "../components/common/Pagination";
+import ComparisonModal from "../components/Dashboard/ComparisonModal";
 import type { UserAnalysis } from "../types";
 
 const Settings: React.FC = () => {
+  const layoutRef = useRef<LayoutRef>(null);
   const { user, updateUserProfile } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "profile";
@@ -45,6 +55,16 @@ const Settings: React.FC = () => {
   const [comparisonTotalPages, setComparisonTotalPages] = useState(1);
   const [totalComparisons, setTotalComparisons] = useState(0);
   const [isLoadingComparisons, setIsLoadingComparisons] = useState(false);
+  const [selectedComparison, setSelectedComparison] = useState<any | null>(
+    null
+  );
+  const [showComparisonModal, setShowComparisonModal] = useState(false);
+  const [deletingComparison, setDeletingComparison] = useState<string | null>(
+    null
+  );
+  const [showDeleteComparisonModal, setShowDeleteComparisonModal] = useState<
+    string | null
+  >(null);
 
   const [message, setMessage] = useState<{
     type: "success" | "error";
@@ -208,6 +228,7 @@ const Settings: React.FC = () => {
       }
 
       setShowDeleteModal(null);
+      layoutRef.current?.refreshProfile();
       setMessage({ type: "success", text: "Analysis deleted successfully!" });
       setTimeout(() => setMessage(null), 3000);
     } catch (error) {
@@ -221,6 +242,54 @@ const Settings: React.FC = () => {
       setTimeout(() => setMessage(null), 3000);
     } finally {
       setIsDeletingAnalysis(null);
+    }
+  };
+
+  const handleViewComparison = async (comparisonId: string) => {
+    try {
+      const comparison = await ApiService.getSavedComparison(comparisonId);
+      setSelectedComparison(comparison);
+      setShowComparisonModal(true);
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: "Failed to load comparison. Please try again.",
+      });
+      setTimeout(() => setMessage(null), 3000);
+    }
+  };
+
+  const handleDeleteComparison = async (comparisonId: string) => {
+    try {
+      setDeletingComparison(comparisonId);
+      await ApiService.deleteSavedComparison(comparisonId);
+
+      // Update total count
+      setTotalComparisons((prev) => prev - 1);
+
+      // Remove from local state
+      setComparisonResults((prev) =>
+        prev.filter((comparison) => comparison.id !== comparisonId)
+      );
+
+      // If this was the last item on the current page and not the first page, go to previous page
+      if (comparisonResults.length === 1 && comparisonCurrentPage > 1) {
+        setComparisonCurrentPage((prev) => prev - 1);
+      }
+
+      setShowDeleteComparisonModal(null);
+
+      layoutRef.current?.refreshProfile();
+      setMessage({ type: "success", text: "Comparison deleted successfully!" });
+      setTimeout(() => setMessage(null), 3000);
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: "Failed to delete comparison. Please try again.",
+      });
+      setTimeout(() => setMessage(null), 3000);
+    } finally {
+      setDeletingComparison(null);
     }
   };
 
@@ -238,45 +307,73 @@ const Settings: React.FC = () => {
     setSearchParams({ tab });
   };
 
-  const renderTabNavigation = () => (
-    <div className="border-b border-gray-200 mb-6">
-      <div className="flex space-x-8">
-        {[
-          { id: "profile", label: "Profile", icon: User },
-          { id: "analyses", label: "Analyses", icon: Building2 },
-          {
-            id: "comparisons",
-            label: "Comparisons",
-            icon: ChartNoAxesCombined,
-          },
-          { id: "reports", label: "Reports", icon: FileText },
-          { id: "insights", label: "Insights", icon: BarChart3 },
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => handleTabChange(tab.id)}
-              className={`flex items-center px-3 py-2 border-b-2 font-medium text-sm transition-colors ${
-                isActive
-                  ? "border-blue-500 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-            >
-              <Icon className="h-4 w-4 mr-2" />
-              {tab.label}
-            </button>
-          );
-        })}
+  const renderTabNavigation = () => {
+    const tabClasses: Record<string, { active: string; inactive: string }> = {
+      profile: {
+        active: "border-orange-500 text-orange-600",
+        inactive:
+          "border-transparent text-gray-500 hover:text-orange-600 hover:border-orange-500",
+      },
+      analyses: {
+        active: "border-green-500 text-green-600",
+        inactive:
+          "border-transparent text-gray-500 hover:text-green-600 hover:border-green-500",
+      },
+      comparisons: {
+        active: "border-purple-500 text-purple-600",
+        inactive:
+          "border-transparent text-gray-500 hover:text-purple-600 hover:border-purple-500",
+      },
+      about: {
+        active: "border-red-500 text-red-600",
+        inactive:
+          "border-transparent text-gray-500 hover:text-red-600 hover:border-red-500",
+      },
+    };
+
+    return (
+      <div className="border-b border-gray-200 mb-6">
+        <div className="flex space-x-8">
+          {[
+            { id: "profile", label: "Profile", icon: User },
+            { id: "analyses", label: "Analyses", icon: Building2 },
+            {
+              id: "comparisons",
+              label: "Comparisons",
+              icon: ChartNoAxesCombined,
+            },
+            { id: "about", label: "About", icon: Info },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+
+            return (
+              <button
+                key={tab.id}
+                onClick={() => handleTabChange(tab.id)}
+                className={`flex items-center px-3 py-2 border-b-2 font-medium text-sm transition-colors ${
+                  isActive
+                    ? tabClasses[tab.id].active
+                    : tabClasses[tab.id].inactive
+                }`}
+              >
+                <Icon className="h-4 w-4 mr-2" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   if (!user) return null;
 
   return (
-    <Layout containerClass="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <Layout
+      ref={layoutRef}
+      containerClass="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50"
+    >
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -306,7 +403,7 @@ const Settings: React.FC = () => {
         {renderTabNavigation()}
 
         {/* Tab Content */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200">
+        <div className="">
           {activeTab === "profile" && (
             <>
               <div className="px-6 py-4 border-b border-gray-200">
@@ -418,7 +515,7 @@ const Settings: React.FC = () => {
                 <div className="flex justify-between items-center">
                   <div>
                     <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                      <Building2 className="h-5 w-5 mr-2" />
+                      <Building2 className="h-5 w-5 mr-2 text-green-600" />
                       Analysis Management
                     </h2>
                     <p className="text-sm text-gray-600 mt-1">
@@ -426,9 +523,9 @@ const Settings: React.FC = () => {
                     </p>
                   </div>
                   {totalAnalyses > 0 && (
-                    <div className="text-sm text-gray-600">
-                      {totalAnalyses} total analysis
-                      {totalAnalyses !== 1 ? "es" : ""}
+                    <div className="text-sm text-green-800">
+                      {totalAnalyses} total
+                      {totalAnalyses !== 1 ? " analyses" : " analysis"}
                     </div>
                   )}
                 </div>
@@ -471,7 +568,8 @@ const Settings: React.FC = () => {
                           <button
                             onClick={() => setShowDeleteModal(analysis.id)}
                             disabled={isDeletingAnalysis === analysis.id}
-                            className="ml-4 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                            className="ml-4 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
+                            title={`Delete Analysis for ${analysis.companyName}`}
                           >
                             {isDeletingAnalysis === analysis.id ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
@@ -514,7 +612,7 @@ const Settings: React.FC = () => {
             <>
               <div className="px-6 py-4 border-b border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                  <ChartNoAxesCombined className="h-5 w-5 mr-2" />
+                  <ChartNoAxesCombined className="h-5 w-5 mr-2 text-purple-600" />
                   Comparison Management
                 </h2>
                 <p className="text-sm text-gray-600 mt-1">
@@ -542,7 +640,7 @@ const Settings: React.FC = () => {
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center space-x-2 mb-2">
-                                <BarChart3 className="h-5 w-5 text-blue-600" />
+                                <BarChart3 className="h-5 w-5 text-purple-600" />
                                 <h3 className="text-lg font-medium text-gray-900">
                                   {comparison.companyNames?.join(" vs ") ||
                                     `Comparison (${
@@ -561,29 +659,32 @@ const Settings: React.FC = () => {
                               </p>
                             </div>
                             <div className="flex space-x-2">
+                              {/* View (Eye) button */}
                               <button
-                                className="px-3 py-1 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors text-sm"
-                                onClick={() => {
-                                  // Handle view comparison
-                                  console.log(
-                                    "View comparison:",
-                                    comparison.id
-                                  );
-                                }}
+                                className="flex items-center justify-center px-3 py-1 text-purple-700 rounded-md hover:bg-purple-50 transition-colors text-sm cursor-pointer"
+                                onClick={() =>
+                                  handleViewComparison(comparison.id)
+                                }
                               >
-                                View
+                                <Eye className="h-4 w-4" />
                               </button>
+
+                              {/* Delete (Trash2) button */}
                               <button
-                                className="px-3 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors text-sm"
-                                onClick={() => {
-                                  // Handle delete comparison
-                                  console.log(
-                                    "Delete comparison:",
-                                    comparison.id
-                                  );
-                                }}
+                                className="flex items-center justify-center px-3 py-1 text-red-700 rounded-md hover:bg-red-50 transition-colors text-sm cursor-pointer disabled:opacity-50"
+                                onClick={() =>
+                                  setShowDeleteComparisonModal(comparison.id)
+                                }
+                                disabled={deletingComparison === comparison.id}
                               >
-                                Delete
+                                {deletingComparison === comparison.id ? (
+                                  <div className="flex items-center">
+                                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                                    Deleting...
+                                  </div>
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
                               </button>
                             </div>
                           </div>
@@ -618,7 +719,7 @@ const Settings: React.FC = () => {
             </>
           )}
 
-          {activeTab === "reports" && (
+          {/* {activeTab === "reports" && (
             <>
               <div className="px-6 py-4 border-b border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center">
@@ -642,9 +743,9 @@ const Settings: React.FC = () => {
                 </div>
               </div>
             </>
-          )}
+          )} */}
 
-          {activeTab === "insights" && (
+          {/* {activeTab === "insights" && (
             <>
               <div className="px-6 py-4 border-b border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center">
@@ -668,29 +769,280 @@ const Settings: React.FC = () => {
                 </div>
               </div>
             </>
+          )} */}
+
+          {activeTab === "about" && (
+            <>
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <Info className="h-5 w-5 mr-2" />
+                  About InsightFlow
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  Learn about our mission, features, and the technology behind
+                  InsightFlow
+                </p>
+              </div>
+
+              <div className="p-6 space-y-8">
+                {/* Mission Section */}
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-6">
+                  <div className="flex items-center mb-4">
+                    <Target className="h-6 w-6 text-blue-600 mr-3" />
+                    <h3 className="text-xl font-semibold text-gray-900">
+                      Our Mission
+                    </h3>
+                  </div>
+                  <p className="text-gray-700 leading-relaxed">
+                    InsightFlow empowers businesses and individuals to transform
+                    raw data into actionable insights. Our AI-driven platform
+                    democratizes advanced analytics, making sophisticated
+                    business analysis accessible to everyone, regardless of
+                    their technical expertise.
+                  </p>
+                </div>
+
+                {/* Key Features */}
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                    <Zap className="h-6 w-6 text-yellow-500 mr-3" />
+                    Key Features
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center mb-2">
+                        <BarChart3 className="h-5 w-5 text-purple-600 mr-2" />
+                        <h4 className="font-medium text-gray-900">
+                          AI-Powered Analysis
+                        </h4>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        Advanced machine learning algorithms analyze your data
+                        to uncover hidden patterns and trends.
+                      </p>
+                    </div>
+                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center mb-2">
+                        <TrendingUp className="h-5 w-5 text-green-600 mr-2" />
+                        <h4 className="font-medium text-gray-900">
+                          Predictive Insights
+                        </h4>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        Forecast trends and identify opportunities before your
+                        competition with our predictive models.
+                      </p>
+                    </div>
+                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center mb-2">
+                        <Users className="h-5 w-5 text-blue-600 mr-2" />
+                        <h4 className="font-medium text-gray-900">
+                          Collaborative Workspace
+                        </h4>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        Share insights with your team and collaborate on
+                        analysis projects in real-time.
+                      </p>
+                    </div>
+                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center mb-2">
+                        <Shield className="h-5 w-5 text-red-600 mr-2" />
+                        <h4 className="font-medium text-gray-900">
+                          Enterprise Security
+                        </h4>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        Bank-level security with end-to-end encryption and
+                        compliance with industry standards.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Technology Stack */}
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                    Technology Stack
+                  </h3>
+                  <div className="bg-gray-50 rounded-lg p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <h4 className="font-medium text-gray-900 mb-3">
+                          Frontend
+                        </h4>
+                        <ul className="space-y-2 text-sm text-gray-600">
+                          <li>• React with TypeScript</li>
+                          <li>• Tailwind CSS for styling</li>
+                          <li>• Vite for build optimization</li>
+                          <li>• Responsive design principles</li>
+                        </ul>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900 mb-3">
+                          Backend
+                        </h4>
+                        <ul className="space-y-2 text-sm text-gray-600">
+                          <li>• Java Spring Boot framework</li>
+                          <li>• RESTful API architecture</li>
+                          <li>• MongoDB for data storage</li>
+                          <li>• JWT authentication</li>
+                        </ul>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900 mb-3">
+                          AI & Analytics
+                        </h4>
+                        <ul className="space-y-2 text-sm text-gray-600">
+                          <li>• Ollama for local AI processing</li>
+                          <li>• Tavily for web search integration</li>
+                          <li>• Custom analysis algorithms</li>
+                          <li>• Machine learning models</li>
+                        </ul>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900 mb-3">
+                          Infrastructure
+                        </h4>
+                        <ul className="space-y-2 text-sm text-gray-600">
+                          <li>• Docker containerization</li>
+                          <li>• Cloud-ready deployment</li>
+                          <li>• Scalable architecture</li>
+                          <li>• Real-time data processing</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Company Values */}
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                    <Heart className="h-6 w-6 text-red-500 mr-3" />
+                    Our Values
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center p-4">
+                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <Users className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <h4 className="font-medium text-gray-900 mb-2">
+                        User-Centric
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        Every feature is designed with our users' needs and
+                        success in mind.
+                      </p>
+                    </div>
+                    <div className="text-center p-4">
+                      <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <TrendingUp className="h-6 w-6 text-green-600" />
+                      </div>
+                      <h4 className="font-medium text-gray-900 mb-2">
+                        Innovation
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        We continuously push the boundaries of what's possible
+                        with AI and analytics.
+                      </p>
+                    </div>
+                    <div className="text-center p-4">
+                      <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <Shield className="h-6 w-6 text-purple-600" />
+                      </div>
+                      <h4 className="font-medium text-gray-900 mb-2">
+                        Trust & Security
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        Your data privacy and security are our highest
+                        priorities.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Version & Credits */}
+                <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-6">
+                  <div className="text-center">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                      InsightFlow v1.0
+                    </h3>
+                    <p className="text-gray-600 mb-4">
+                      Built with passion for data-driven decision making
+                    </p>
+                    <div className="flex items-center justify-center space-x-4 text-sm text-gray-500">
+                      <span>© 2025 InsightFlow</span>
+                      <span>•</span>
+                      <span>Powered by Ollama & Tavily</span>
+                      <span>•</span>
+                      <span>Made with ❤️</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contact & Support */}
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                    Get in Touch
+                  </h3>
+                  <div className="bg-white border border-gray-200 rounded-lg p-6">
+                    <p className="text-gray-600 mb-4">
+                      Have questions, feedback, or suggestions? We'd love to
+                      hear from you!
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="font-medium text-gray-900 mb-2">
+                          Support
+                        </h4>
+                        <p className="text-sm text-gray-600">
+                          For technical support and bug reports, please reach
+                          out through our support channels.
+                        </p>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900 mb-2">
+                          Feedback
+                        </h4>
+                        <p className="text-sm text-gray-600">
+                          Your feedback helps us improve. Share your thoughts
+                          and feature requests with our team.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
           )}
         </div>
       </div>
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
-            <div className="flex items-center mb-4">
-              <div className="p-3 bg-red-100 rounded-full mr-4">
-                <AlertTriangle className="h-6 w-6 text-red-600" />
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          onClick={() => setShowDeleteModal(null)}
+        >
+          <div
+            className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl shadow-2xl max-w-sm w-full sm:w-96 p-6 animate-in fade-in-10 zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start mb-4">
+              <div className="p-2 bg-red-500/10 rounded-full mr-3">
+                <AlertTriangle className="h-5 w-5 text-red-400" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-white">
                   Delete Analysis
                 </h3>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-300">
                   This action cannot be undone.
                 </p>
               </div>
             </div>
 
-            <p className="text-gray-700 mb-6">
+            <p className="text-gray-200 text-sm mb-6">
               Are you sure you want to delete this analysis? All associated data
               will be permanently removed.
             </p>
@@ -698,7 +1050,7 @@ const Settings: React.FC = () => {
             <div className="flex space-x-3">
               <button
                 onClick={() => setShowDeleteModal(null)}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex-1 px-4 py-2 bg-white/10 border border-white/20 text-gray-200 rounded-md hover:bg-white/20 transition-colors duration-200 text-sm"
               >
                 Cancel
               </button>
@@ -707,7 +1059,7 @@ const Settings: React.FC = () => {
                   showDeleteModal && handleDeleteAnalysis(showDeleteModal)
                 }
                 disabled={isDeletingAnalysis === showDeleteModal}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 bg-red-600/80 text-white rounded-md hover:bg-red-700/90 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
                 {isDeletingAnalysis === showDeleteModal ? (
                   <>
@@ -721,6 +1073,74 @@ const Settings: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {showDeleteComparisonModal && (
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          onClick={() => setShowDeleteComparisonModal(null)}
+        >
+          <div
+            className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl shadow-2xl max-w-sm w-full sm:w-96 p-6 animate-in fade-in-10 zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start mb-4">
+              <div className="p-2 bg-red-500/10 rounded-full mr-3">
+                <AlertTriangle className="h-5 w-5 text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">
+                  Delete Comparison
+                </h3>
+                <p className="text-sm text-gray-300">
+                  This action cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            <p className="text-gray-200 text-sm mb-6">
+              Are you sure you want to delete this comparison? All associated
+              data will be permanently removed.
+            </p>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowDeleteComparisonModal(null)}
+                className="flex-1 px-4 py-2 bg-white/10 border border-white/20 text-gray-200 rounded-md hover:bg-white/20 transition-colors duration-200 text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() =>
+                  showDeleteComparisonModal &&
+                  handleDeleteComparison(showDeleteComparisonModal)
+                }
+                disabled={deletingComparison === showDeleteComparisonModal}
+                className="flex-1 px-4 py-2 bg-red-600/80 text-white rounded-md hover:bg-red-700/90 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              >
+                {deletingComparison === showDeleteComparisonModal ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin inline" />
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Comparison Modal */}
+      {showComparisonModal && selectedComparison && (
+        <ComparisonModal
+          selectedComparison={selectedComparison}
+          onClose={() => {
+            setShowComparisonModal(false);
+            setSelectedComparison(null);
+          }}
+        />
       )}
     </Layout>
   );

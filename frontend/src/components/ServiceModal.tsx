@@ -33,7 +33,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
 
       {/* Modal */}
       <div
-        className="bg-blue-800/30 backdrop-blur-sm rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-auto relative z-10 shadow-xl shadow-blue-900/20"
+        className="bg-green-800/30 backdrop-blur-sm rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-auto relative z-10 shadow-xl shadow-green-900/20"
         style={{
           animation: isOpen ? "modalFadeIn 0.3s ease-out forwards" : "none",
         }}
@@ -48,13 +48,13 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
 
         {/* Content */}
         <div className="p-8">
-          <h2 className="text-2xl font-bold text-blue-400 mb-4">
+          <h2 className="text-2xl font-bold text-green-400 mb-4">
             {service.title}
           </h2>
 
           {/* Service Overview (always shown) */}
           <div className="mb-6 bg-white/5 p-6 rounded-xl">
-            <h3 className="text-xl font-semibold text-blue-400 mb-3">
+            <h3 className="text-xl font-semibold text-green-400 mb-3">
               Overview
             </h3>
             <p className="text-gray-300 mb-4">{service.details.overview}</p>
@@ -86,7 +86,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
             <div className="mt-8 space-y-6 bg-white/5 p-6 rounded-xl">
               {analysisResult && analysisResult.strategy_recommendations ? (
                 <div>
-                  <h3 className="text-xl font-semibold text-blue-400 mb-4">
+                  <h3 className="text-xl font-semibold text-green-400 mb-4">
                     Differentiation Strategy for {analysisResult.company_name}
                   </h3>
                   <div
@@ -98,7 +98,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
                 </div>
               ) : (
                 <div>
-                  <h3 className="text-xl font-semibold text-blue-400 mb-2">
+                  <h3 className="text-xl font-semibold text-green-400 mb-2">
                     Generate Your Differentiation Strategy
                   </h3>
                   <p className="text-gray-300 mb-4">
@@ -129,8 +129,8 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
                       propositions that set you apart
                     </li>
                   </ul>
-                  <div className="mt-4 p-4 bg-blue-500/20 rounded-lg">
-                    <p className="text-blue-200 font-medium">💡 Pro Tip:</p>
+                  <div className="mt-4 p-4 bg-green-500/20 rounded-lg">
+                    <p className="text-green-200 font-medium">💡 Pro Tip:</p>
                     <p className="text-gray-300">
                       Upload relevant company documents or provide detailed
                       company information for more accurate strategic
@@ -148,7 +148,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
               {/* LinkedIn Analysis */}
               {analysisResult.linkedin_analysis && (
                 <div className="bg-white/5 p-6 rounded-xl">
-                  <h3 className="text-xl font-semibold text-blue-400 mb-4">
+                  <h3 className="text-xl font-semibold text-green-400 mb-4">
                     LinkedIn Analysis
                   </h3>
                   <div
@@ -164,7 +164,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
               {analysisResult.summaries &&
                 analysisResult.summaries.length > 0 && (
                   <div className="bg-white/5 p-6 rounded-xl">
-                    <h3 className="text-xl font-semibold text-blue-400 mb-4">
+                    <h3 className="text-xl font-semibold text-green-400 mb-4">
                       Competitive Monitoring for {analysisResult.company_name}
                     </h3>
                     <div className="space-y-4">
@@ -203,7 +203,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
               {/* SWOT Analysis */}
               <div className="space-y-6 bg-white/5 p-6 rounded-xl">
                 <div>
-                  <h3 className="text-xl font-semibold text-blue-400 mb-2">
+                  <h3 className="text-xl font-semibold text-green-400 mb-2">
                     SWOT Analysis for {analysisResult.company_name}
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
@@ -216,7 +216,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
                       </ul>
                     </div>
                     <div className="space-y-2">
-                      <h4 className="font-medium text-red-400">Weaknesses</h4>
+                      <h4 className="font-medium text-orange-400">Weaknesses</h4>
                       <ul className="list-disc list-inside text-gray-300">
                         {analysisResult.swot_lists.weaknesses.map((item, i) => (
                           <li key={i}>{item}</li>
@@ -236,7 +236,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
                       </ul>
                     </div>
                     <div className="space-y-2">
-                      <h4 className="font-medium text-purple-400">Threats</h4>
+                      <h4 className="font-medium text-red-400">Threats</h4>
                       <ul className="list-disc list-inside text-gray-300">
                         {analysisResult.swot_lists.threats.map((item, i) => (
                           <li key={i}>{item}</li>
@@ -247,7 +247,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
                 </div>
 
                 <div>
-                  <h3 className="text-xl font-semibold text-blue-400 mb-2">
+                  <h3 className="text-xl font-semibold text-green-400 mb-2">
                     SWOT Visualization
                   </h3>
                   <img
@@ -267,7 +267,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
               {/* PESTEL Analysis */}
               <div className="space-y-6 bg-white/5 p-6 rounded-xl">
                 <div>
-                  <h3 className="text-xl font-semibold text-blue-400 mb-2">
+                  <h3 className="text-xl font-semibold text-green-400 mb-2">
                     PESTEL Analysis for {analysisResult.company_name}
                   </h3>
                   <img
@@ -287,7 +287,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
               {/* Porter's Five Forces */}
               <div className="space-y-6 bg-white/5 p-6 rounded-xl">
                 <div>
-                  <h3 className="text-xl font-semibold text-blue-400 mb-2">
+                  <h3 className="text-xl font-semibold text-green-400 mb-2">
                     Porter's Five Forces Analysis
                   </h3>
                   <img
@@ -305,7 +305,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
                     {Object.entries(analysisResult.porter_forces).map(
                       ([force, items]) => (
                         <div key={force} className="space-y-2">
-                          <h4 className="font-medium text-blue-400 capitalize">
+                          <h4 className="font-medium text-green-400 capitalize">
                             {force.replace("_", " ")}
                           </h4>
                           <ul className="list-disc list-inside text-gray-300">
@@ -323,7 +323,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
               {/* BCG Matrix */}
               <div className="space-y-6 bg-white/5 p-6 rounded-xl">
                 <div>
-                  <h3 className="text-xl font-semibold text-blue-400 mb-2">
+                  <h3 className="text-xl font-semibold text-green-400 mb-2">
                     BCG Matrix Analysis
                   </h3>
                   <img
@@ -344,7 +344,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
                           key={product}
                           className="p-3 bg-white/5 rounded-lg"
                         >
-                          <h4 className="font-medium text-blue-400">
+                          <h4 className="font-medium text-green-400">
                             {product}
                           </h4>
                           <p className="text-gray-300">
@@ -363,7 +363,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
               {/* McKinsey 7S */}
               <div className="space-y-6 bg-white/5 p-6 rounded-xl">
                 <div>
-                  <h3 className="text-xl font-semibold text-blue-400 mb-2">
+                  <h3 className="text-xl font-semibold text-green-400 mb-2">
                     McKinsey 7S Model
                   </h3>
                   <img
@@ -384,7 +384,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
                           key={element}
                           className="p-3 bg-white/5 rounded-lg"
                         >
-                          <h4 className="font-medium text-blue-400 capitalize">
+                          <h4 className="font-medium text-green-400 capitalize">
                             {element.replace("_", " ")}
                           </h4>
                           <p className="text-gray-300">{value}</p>

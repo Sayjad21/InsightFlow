@@ -15,25 +15,25 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, onClick }) => {
 
   return (
     <div 
-      className="bg-blue-800/30 backdrop-blur-sm rounded-2xl p-6 flex flex-col items-center transition-all duration-300 group cursor-pointer hover:bg-blue-800/40"
+      className="bg-green-800/30 backdrop-blur-sm rounded-2xl p-6 flex flex-col items-center transition-all duration-300 group cursor-pointer hover:bg-green-800/40"
       onClick={onClick}
     >
       <div className="relative mb-4">
         {/* Glow effect behind icon */}
-        <div className="absolute inset-0 bg-blue-500 opacity-20 rounded-full blur-xl group-hover:opacity-30 transition-opacity"></div>
+        <div className="absolute inset-0 bg-green-500 opacity-20 rounded-full blur-xl group-hover:opacity-30 transition-opacity"></div>
         
         {/* Icon circle */}
-        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center relative z-10 transition-transform group-hover:scale-105 shadow-lg shadow-blue-900/30">
+        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center relative z-10 transition-transform group-hover:scale-105 shadow-lg shadow-green-900/30">
           <IconComponent className="w-10 h-10 text-white" />
         </div>
       </div>
       
-      <h3 className="text-cyan-900 text-center font-semibold text-lg mb-2">{service.title}</h3>
+      <h3 className="text-teal-900 text-center font-semibold text-lg mb-2">{service.title}</h3>
       <p className="text-gray-900 text-center text-sm mb-6">{service.description}</p>
       
       <div className="mt-auto">
         <button 
-          className="bg-gradient-to-r from-cyan-400 to-blue-500 text-white px-5 py-2 rounded-full text-sm font-medium transition-transform hover:scale-105 shadow-lg shadow-blue-900/20"
+          className="bg-gradient-to-r from-teal-400 to-green-500 text-white px-5 py-2 rounded-full text-sm font-medium transition-transform hover:scale-105 shadow-lg shadow-green-900/20"
         >
           Learn More
         </button>

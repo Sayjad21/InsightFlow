@@ -54,6 +54,89 @@ export interface UserAnalysesResponse {
   size: number;
 }
 
+// Sentiment Analysis interfaces
+export interface CompanyListResponse {
+  companies: string[];
+}
+
+export interface SentimentTrendData {
+  date: string;
+  positivePercentage: number;
+  negativePercentage: number;
+  neutralPercentage: number;
+  totalPosts: number;
+}
+
+export interface SentimentTrendResponse {
+  status: "success" | "insufficient_data" | "error";
+  error_type?: "insufficient_data" | "INSUFFICIENT_DATA_POINTS";
+  message?: string;
+  company?: string;
+  days?: number;
+  sources?: string[];
+  chart_url?: string;
+  chart?: string;
+  chart_type?: "url" | "base64";
+  analysis?: any;
+  requested_by?: string;
+  data_points_found?: number;
+  minimum_required?: number;
+}
+
+export interface SentimentComparisonResponse {
+  status: "success" | "insufficient_data" | "error";
+  error_type?: "insufficient_data" | "INSUFFICIENT_DATA_POINTS";
+  message?: string;
+  companies?: string[]; // ✅ present in backend
+  days?: number; // ✅
+  sources?: string[]; // ✅
+  chart_url?: string; // ✅
+  chart?: string; // ✅ (base64 fallback)
+  chart_type?: "url" | "base64"; // ✅
+  companies_data?: {
+    [key: string]: {
+      company_name: string;
+      time_period_days: number;
+      data_point_count: number;
+      time_series: {
+        date: string;
+        sentiment_score: number;
+        risk_rating: number;
+        source: string;
+      }[];
+      source_specific_trends?: {
+        [source: string]: {
+          average_score: number;
+          volatility: number;
+          slope: number;
+        };
+      };
+      significant_events?: {
+        date: string;
+        score: number;
+        slope_change: number;
+        source: string;
+        type: string;
+      }[];
+      analysis_timestamp: string;
+      overall_trends: {
+        average_score: number;
+        volatility: number;
+        slope: number;
+      };
+    };
+  };
+  requested_by?: string; // ✅
+  companies_requested?: string[]; // only in insufficient_data case
+  companies_with_insufficient_data?: string[]; // only in insufficient_data case
+  total_data_points_found?: number; // only in insufficient_data case
+  minimum_required_per_company?: number; // only in insufficient_data case
+}
+
+export interface AddCompanyRequest {
+  company: string;
+}
+
 export class ApiService {
   // Server connectivity test
   static async testConnection(): Promise<boolean> {
@@ -1013,6 +1096,123 @@ export class ApiService {
       return data;
     } catch (error) {
       console.error("Delete Saved Comparison Error:", error);
+      throw error;
+    }
+  }
+
+  // Sentiment Analysis methods
+  /**
+   * Get list of available companies for sentiment analysis
+   */
+  static async getCompanies(): Promise<CompanyListResponse> {
+    try {
+      console.log("Fetching companies list for sentiment analysis");
+      const response = await fetch(`${API_BASE_URL}/api/sentiment/companies`, {
+        method: "GET",
+        headers: this.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Get Companies Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Add a new company to the sentiment analysis system
+   */
+  static async addCompany(company: string): Promise<{ message: string }> {
+    try {
+      console.log("Adding company:", company);
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/sentiment/companies/add/${encodeURIComponent(
+          company
+        )}`,
+        {
+          method: "POST",
+          headers: this.getAuthHeaders(),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Add Company Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get sentiment trend analysis for a specific company
+   */
+  static async getSentimentTrend(
+    company: string,
+    days: number = 30,
+    sources: string = "news"
+  ): Promise<SentimentTrendResponse> {
+    try {
+      console.log("Fetching sentiment trend for:", company);
+      const params = new URLSearchParams({ days: days.toString() });
+      if (sources) params.append("sources", sources); // "news", "social", or "news,social"
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/sentiment/${company}/trend/chart?${params.toString()}`,
+        {
+          method: "GET",
+          headers: this.getAuthHeaders(),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Get Sentiment Trend Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get sentiment comparison analysis for multiple companies
+   */
+  static async getSentimentComparison(
+    companies: string[],
+    days: number = 30,
+    sources?: string
+  ): Promise<SentimentComparisonResponse> {
+    try {
+      console.log("Fetching sentiment comparison for:", companies);
+      const params = new URLSearchParams();
+      params.append("companies", companies.join(","));
+      params.append("days", days.toString());
+      if (sources) params.append("sources", sources); // "news", "social", or "news,social"
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/sentiment/comparison/chart?${params.toString()}`,
+        {
+          method: "GET",
+          headers: this.getAuthHeaders(),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Get Sentiment Comparison Error:", error);
       throw error;
     }
   }

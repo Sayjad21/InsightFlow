@@ -8,6 +8,7 @@ import ComparisonTab from "../components/Dashboard/ComparisonTab";
 import ReportsTab from "../components/Dashboard/ReportsTab";
 import InsightsTab from "../components/Dashboard/InsightsTab";
 import TrendsTab from "../components/Dashboard/TrendsTab";
+import SentimentAnalysisTab from "../components/Dashboard/SentimentAnalysisTab";
 import Layout, { type LayoutRef } from "../components/Layout";
 
 const Dashboard: React.FC = () => {
@@ -85,6 +86,8 @@ const Dashboard: React.FC = () => {
               expandedComparison={dashboardData.expandedComparison}
               setExpandedComparison={dashboardData.setExpandedComparison}
               setSelectedComparison={dashboardData.setSelectedComparison}
+              onComparisonDeleted={dashboardData.refreshComparisons}
+              isLoading={dashboardData.isLoadingComparisons} // NEW
             />
           ) : activeTab === "reports" ? (
             <ReportsTab />
@@ -92,6 +95,8 @@ const Dashboard: React.FC = () => {
             <InsightsTab />
           ) : activeTab === "trends" ? (
             <TrendsTab />
+          ) : activeTab === "sentiment_analysis" ? (
+            <SentimentAnalysisTab />
           ) : (
             <AnalysisTab {...dashboardData} />
           )}
