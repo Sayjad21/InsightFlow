@@ -5,13 +5,12 @@ import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
-
+import java.util.stream.Collectors;
 @Component
 public class FileUtil {
 
@@ -46,25 +45,58 @@ public class FileUtil {
         return targetPath.toAbsolutePath().toString();
     }
 
-    public boolean fileExists(String path) {
-        return new java.io.File(path).exists();
+    /**
+     * Checks if a file exists, handling both filesystem and classpath resources.
+     */
+    public boolean fileExists(String filePath) {
+        // Try as classpath resource first (for tests)
+        InputStream resource = getClass().getClassLoader().getResourceAsStream(filePath);
+        if (resource != null) {
+            try {
+                resource.close();
+                return true;
+            } catch (IOException e) {
+                return false;
+            }
+        }
+        // Fallback to filesystem (for production)
+        return new File(filePath).exists();
     }
 
     /**
-     * Loads document text, mirroring loaders (TXT/PDF).
-     * 
-     * @param filePath The file path.
-     * @return Full text content.
+     * Loads text from a TXT or PDF file, handling both filesystem and classpath resources.
      */
     public String loadDocumentText(String filePath) throws IOException {
+        // Try as classpath resource first (for tests)
+        InputStream resource = getClass().getClassLoader().getResourceAsStream(filePath);
+        if (resource != null) {
+            try {
+                if (filePath.toLowerCase().endsWith(".pdf")) {
+                    try (PDDocument document = PDDocument.load(resource)) {
+                        PDFTextStripper stripper = new PDFTextStripper();
+                        return stripper.getText(document);
+                    }
+                } else {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(resource))) {
+                        return reader.lines().collect(Collectors.joining("\n"));
+                    }
+                }
+            } finally {
+                resource.close();
+            }
+        }
+
+        // Fallback to filesystem (for production)
         File file = new File(filePath);
+        if (!file.exists()) {
+            throw new IOException("File does not exist: " + filePath);
+        }
         if (filePath.toLowerCase().endsWith(".pdf")) {
             try (PDDocument document = PDDocument.load(file)) {
                 PDFTextStripper stripper = new PDFTextStripper();
                 return stripper.getText(document);
             }
         } else {
-            // TXT
             return Files.readString(Paths.get(filePath));
         }
     }

@@ -254,19 +254,22 @@ public class RagService {
                 // Convert markdown to HTML and format nicely
                 strategyRecommendations = convertMarkdownToHtml(strategyRecommendations);
             } else {
-                // Fallback without RAG - use a simpler approach
+                // FIX: Fallback without RAG - use a simpler approach with actual template
                 String simpleTemplate = "You are a strategic consultant. Based on the following competitor analysis of {{competitor_name}}, provide 3 key differentiation strategies:\n\n{{competitor_summary}}";
                 Map<String, Object> variables = Map.of(
                         "competitor_name", companyName,
                         "competitor_summary",
                         combinedSummaries.length() > 2000 ? combinedSummaries.substring(0, 2000) + "..."
                                 : combinedSummaries);
+
+                // FIX: Actually call the AI util instead of just creating template
                 strategyRecommendations = aiUtil.invokeWithTemplate(simpleTemplate, variables);
                 strategyRecommendations = convertMarkdownToHtml(strategyRecommendations);
             }
 
         } catch (Exception e) {
             // Fallback strategy if AI call fails
+            System.err.println("AI strategy generation failed: " + e.getMessage());
             strategyRecommendations = generateFallbackStrategy(companyName, combinedSummaries);
         }
 
