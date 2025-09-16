@@ -315,58 +315,67 @@ public class SentimentController {
         }
     }
     @GetMapping("/test/chart/{companyName}")
-    public ResponseEntity<Map<String, Object>> testChartGeneration(
-            @PathVariable String companyName,
-            @RequestParam(defaultValue = "30") int days,
-            Authentication authentication) {
-        String username = authentication.getName();
-        System.out.println("Test chart generation requested by " + username + " for " + companyName);
+public ResponseEntity<Map<String, Object>> testChartGeneration(
+        @PathVariable String companyName,
+        @RequestParam(defaultValue = "30") int days,
+        Authentication authentication) {
+    String username = authentication.getName();
+    System.out.println("Test chart generation requested by " + username + " for " + companyName);
 
-        try {
-            // Get the trend analysis data
-            Map<String, Object> analysis = trendService.analyzeTrends(companyName, days, null);
+    try {
+        // Get the trend analysis data
+        Map<String, Object> analysis = trendService.analyzeTrends(companyName, days, null);
+        
+        // Generate chart from the analysis data
+        String chartResult = visualizationService.generateTrendGraph(analysis);
+        
+        if (chartResult == null) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("status", "error");
+            errorResponse.put("message", "Failed to generate chart: No data available");
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "success");
+        response.put("company", companyName);
+        response.put("days", days);
+        response.put("requested_by", username);
+        
+        // Handle both Supabase URL and base64 results
+        if (chartResult.startsWith("http")) {
+            // It's a Supabase URL - no need to decode
+            response.put("message", "Chart generated and uploaded to Supabase successfully");
+            response.put("chart_url", chartResult);
+            response.put("chart_type", "url");
+            response.put("storage", "supabase");
+        } else {
+            // It's base64 - decode and save locally as before
+            byte[] imageBytes = Base64.getDecoder().decode(chartResult);
             
-            // Generate chart from the analysis data
-            String base64Chart = visualizationService.generateTrendGraph(analysis);
-            
-            if (base64Chart == null) {
-                Map<String, Object> errorResponse = new HashMap<>();
-                errorResponse.put("status", "error");
-                errorResponse.put("message", "Failed to generate chart: No data available");
-                return ResponseEntity.badRequest().body(errorResponse);
-            }
-            
-            // Decode the base64 string to bytes
-            byte[] imageBytes = Base64.getDecoder().decode(base64Chart);
-            
-            // Create a filename with timestamp
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
             String filename = "sentiment_chart_" + companyName + "_" + timestamp + ".png";
-            
-            // Get the current project directory
             String projectDir = System.getProperty("user.dir");
             String filepath = projectDir + "/" + filename;
             
-            // Save the image to the project directory
             Files.write(Paths.get(filepath), imageBytes);
             
-            Map<String, Object> response = new HashMap<>();
-            response.put("status", "success");
-            response.put("message", "Chart generated and saved successfully");
-            response.put("company", companyName);
+            response.put("message", "Chart generated and saved locally successfully");
             response.put("file_path", filepath);
             response.put("file_name", filename);
-            response.put("chart", base64Chart); // Still include the base64 for reference
-            response.put("requested_by", username);
-            
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("status", "error");
-            errorResponse.put("message", "Failed to generate chart: " + e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse);
+            response.put("chart", "data:image/png;base64," + chartResult);
+            response.put("chart_type", "base64");
+            response.put("storage", "local");
         }
+        
+        return ResponseEntity.ok(response);
+    } catch (Exception e) {
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("status", "error");
+        errorResponse.put("message", "Failed to generate chart: " + e.getMessage());
+        return ResponseEntity.badRequest().body(errorResponse);
     }
+}
 }
 
 
