@@ -3,7 +3,7 @@ package com.insightflow.services;
 import com.insightflow.utils.AiUtil;
 import com.insightflow.utils.EmbeddingUtil;
 import com.insightflow.utils.FileUtil;
-import com.insightflow.utils.GeminiEmbeddingModel;
+import com.insightflow.utils.EmbeddingModelImpl;
 import com.insightflow.utils.ScrapingUtil;
 import com.insightflow.utils.TavilyUtil;
 import dev.langchain4j.chain.ConversationalRetrievalChain;
@@ -49,7 +49,7 @@ public class RagService {
     private FileUtil fileUtil;
 
     @Autowired
-    private GeminiEmbeddingModel embeddingModel;
+    private EmbeddingModelImpl embeddingModel;
 
     @Value("${ollama.base.url:http://localhost:11434}")
     private String ollamaBaseUrl;

@@ -55,7 +55,7 @@ public class RagServiceTest {
     private FileUtil fileUtil;
 
     @MockBean
-    private GeminiEmbeddingModel geminiEmbeddingModel;
+    private EmbeddingModelImpl embeddingModel;
 
     @BeforeEach
     public void setUp() {
@@ -104,7 +104,7 @@ public class RagServiceTest {
         // Fix GeminiEmbeddingModel mock
         Embedding embedding = new Embedding(new float[]{0.1f, 0.2f});
         Response<Embedding> embeddingResponse = Response.from(embedding);
-        Mockito.when(geminiEmbeddingModel.embed(anyString())).thenReturn(embeddingResponse);
+        Mockito.when(embeddingModel.embed(anyString())).thenReturn(embeddingResponse);
     }
 
     @Test
