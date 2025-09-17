@@ -1,10 +1,7 @@
 import React, { useState, useRef } from "react";
-import { Link } from "react-router-dom";
-import { LayoutDashboard } from "lucide-react";
 import Header from "../components/Header.js";
 import ServiceCard from "../components/ServiceCard.js";
 import ServiceModal from "../components/ServiceModal.js";
-import TestPage from "../components/TestPage.js";
 import Layout from "../components/Layout";
 import { services } from "../data/services";
 import type { Service, AnalysisResult } from "../types";
@@ -17,7 +14,6 @@ const Home: React.FC = () => {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(
     null
   );
-  const [showTestPage, setShowTestPage] = useState(false);
 
   const handleCardClick = (service: Service) => {
     setSelectedService(service);

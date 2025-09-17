@@ -1,12 +1,5 @@
 import React from "react";
-import {
-  BarChart3,
-  GitCompare,
-  PieChart,
-  Target,
-  TrendingUp,
-  Heart,
-} from "lucide-react";
+import { BarChart3, GitCompare, TrendingUp } from "lucide-react";
 
 interface TabNavigationProps {
   activeTab:

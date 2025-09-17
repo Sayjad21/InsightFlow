@@ -1,7 +1,5 @@
 // src/components/Header.tsx
 import React from "react";
-import { Link } from "react-router-dom";
-import { LayoutDashboard } from "lucide-react";
 import { cn } from "../lib/utils.js";
 import { Button } from "./ui/button.js";
 import CompanyAnalysis from "./CompanyAnalysis.js";
@@ -12,8 +10,6 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ onAnalysisComplete }) => {
-  const { user } = useAuth();
-
   return (
     <div className={cn("text-center mb-16 py-12 px-4 sm:px-6 lg:px-8")}>
       {/* User Profile Bar */}

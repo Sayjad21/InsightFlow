@@ -4,7 +4,6 @@ import {
   LogOut,
   Calendar,
   Building2,
-  CheckCircle,
   Clock,
   Settings,
   ChartNoAxesCombined,

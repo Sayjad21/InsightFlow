@@ -1,9 +1,12 @@
 import type { AnalysisResult, UserAnalysis } from "../types";
 
-const API_BASE_URL = "http://localhost:8000";
+// Get API base URL from environment variables with fallback
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 // Log the API base URL for debugging
 console.log("API Base URL:", API_BASE_URL);
+console.log("Environment:", import.meta.env.MODE);
 
 // Authentication and User interfaces
 export interface SignupRequest {
@@ -254,7 +257,7 @@ export class ApiService {
         error.message.includes("NetworkError")
       ) {
         throw new Error(
-          "Unable to connect to server. Please ensure the backend is running on http://localhost:8000"
+          `Unable to connect to server. Please ensure the backend is running on {API_BASE_URL}`
         );
       }
       throw error;
@@ -291,7 +294,7 @@ export class ApiService {
         error.message.includes("NetworkError")
       ) {
         throw new Error(
-          "Unable to connect to server. Please ensure the backend is running on http://localhost:8000"
+          `Unable to connect to server. Please ensure the backend is running on {API_BASE_URL}`
         );
       }
       throw error;
@@ -417,7 +420,7 @@ export class ApiService {
         error.message.includes("NetworkError")
       ) {
         throw new Error(
-          "Unable to connect to server. Please ensure the backend is running on http://localhost:8000 and CORS is properly configured."
+          `Unable to connect to server. Please ensure the backend is running on {API_BASE_URL}`
         );
       }
       throw error;
@@ -483,7 +486,7 @@ export class ApiService {
         error.message.includes("NetworkError")
       ) {
         throw new Error(
-          "Unable to connect to server. Please ensure the backend is running on http://localhost:8000"
+          `Unable to connect to server. Please ensure the backend is running on {API_BASE_URL}`
         );
       }
       throw error;
@@ -563,7 +566,7 @@ export class ApiService {
         error.message.includes("NetworkError")
       ) {
         throw new Error(
-          "Unable to connect to server. Please ensure the backend is running on http://localhost:8000"
+          `Unable to connect to server. Please ensure the backend is running on {API_BASE_URL}`
         );
       }
       throw error;
