@@ -1,9 +1,12 @@
 import type { AnalysisResult, UserAnalysis } from "../types";
 
-const API_BASE_URL = "http://localhost:8000";
+// Get API base URL from environment variables with fallback
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 // Log the API base URL for debugging
 console.log("API Base URL:", API_BASE_URL);
+console.log("Environment:", import.meta.env.MODE);
 
 // Authentication and User interfaces
 export interface SignupRequest {
