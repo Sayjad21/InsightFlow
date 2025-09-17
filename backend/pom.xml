@@ -86,13 +86,6 @@
 			<version>1.21.2</version>
 		</dependency>
 
-		<!-- Apache PDFBox for PDF text extraction -->
-		<dependency>
-			<groupId>org.apache.pdfbox</groupId>
-			<artifactId>pdfbox</artifactId>
-			<version>2.0.29</version>
-		</dependency>
-
 		<!-- Apache Tika for multiple document format parsing -->
 		<dependency>
 			<groupId>org.apache.tika</groupId>
