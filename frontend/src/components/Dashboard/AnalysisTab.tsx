@@ -52,7 +52,6 @@ interface AnalysisTabProps {
 
 const AnalysisTab: React.FC<AnalysisTabProps> = ({
   userAnalyses,
-  userProfile,
   analysisCurrentPage,
   setAnalysisCurrentPage,
   analysisTotalPages,

@@ -10,7 +10,6 @@ import {
   Building2,
   Target,
   Shield,
-  Trash2,
   Loader2,
   Clock,
   Download,
@@ -46,16 +45,11 @@ const ComparisonTab: React.FC<ComparisonTabProps> = ({
   comparisonCurrentPage,
   setComparisonCurrentPage,
   comparisonTotalPages,
-  totalComparisons,
   expandedComparison = null,
   setExpandedComparison = () => {},
   setSelectedComparison = () => {},
-  onComparisonDeleted = () => {},
   isLoading = false, // NEW
 }) => {
-  const [deletingComparison, setDeletingComparison] = useState<string | null>(
-    null
-  );
   const [exportingComparison, setExportingComparison] = useState<{
     id: string;
     type: "txt" | "markdown" | "html" | "pdf";

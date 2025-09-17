@@ -8,11 +8,9 @@ import {
   Users2,
   BarChart3,
   Link as LinkIcon,
-  Lightbulb,
   LinkedinIcon,
 } from "lucide-react";
 import type { AnalysisResult } from "../types";
-import { LucideLinkedin } from "lucide-react";
 
 interface AnalysisModalProps {
   analysisResult: AnalysisResult;
@@ -124,8 +122,8 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              {/* Strengths */}
-              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-5">
+                {/* Strengths */}
+                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-5">
                   <div className="flex items-center mb-3">
                     <Shield className="h-5 w-5 text-blue-400 mr-2" />
                     <h5 className="font-semibold text-blue-300">Strengths</h5>
@@ -145,11 +143,13 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
                   </ul>
                 </div>
 
-              {/* Weaknesses */}
-              <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-5">
+                {/* Weaknesses */}
+                <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-5">
                   <div className="flex items-center mb-3">
                     <AlertTriangle className="h-5 w-5 text-orange-400 mr-2" />
-                    <h5 className="font-semibold text-orange-300">Weaknesses</h5>
+                    <h5 className="font-semibold text-orange-300">
+                      Weaknesses
+                    </h5>
                   </div>
                   <ul className="space-y-2">
                     {analysisResult.swot_lists.weaknesses.map(
@@ -166,8 +166,8 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
                   </ul>
                 </div>
 
-              {/* Opportunities */}
-              <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-5">
+                {/* Opportunities */}
+                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-5">
                   <div className="flex items-center mb-3">
                     <TrendingUp className="h-5 w-5 text-green-400 mr-2" />
                     <h5 className="font-semibold text-green-300">
@@ -189,8 +189,8 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({
                   </ul>
                 </div>
 
-              {/* Threats */}
-              <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-5">
+                {/* Threats */}
+                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-5">
                   <div className="flex items-center mb-3">
                     <AlertTriangle className="h-5 w-5 text-red-400 mr-2" />
                     <h5 className="font-semibold text-red-300">Threats</h5>

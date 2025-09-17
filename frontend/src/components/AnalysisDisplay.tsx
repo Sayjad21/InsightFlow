@@ -17,7 +17,6 @@ interface AnalysisDisplayProps {
 
 const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
   analysisResult,
-  companyName,
 }) => {
   if (!analysisResult) return null;
 

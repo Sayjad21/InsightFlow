@@ -4,6 +4,7 @@
 # Build production image
 function Build-Production {
     Write-Host "Building InsightFlow Frontend (Production)..." -ForegroundColor Green
+    Write-Host "🌐 Configuring for Render deployment: insightflow-frontend-1m77.onrender.com" -ForegroundColor Cyan
     docker build --target production -t insightflow-frontend:prod `
       --build-arg VITE_API_BASE_URL=https://insightflow-q8ds.onrender.com `
       --build-arg VITE_APP_NAME=InsightFlow `
@@ -12,6 +13,7 @@ function Build-Production {
     if ($LASTEXITCODE -eq 0) {
         Write-Host "✅ Production build completed successfully!" -ForegroundColor Green
         Write-Host "🌐 API Base URL: https://insightflow-q8ds.onrender.com" -ForegroundColor Cyan
+        Write-Host "🏠 Allowed hosts: localhost, insightflow-frontend-1m77.onrender.com, *.onrender.com" -ForegroundColor Cyan
     } else {
         Write-Host "❌ Production build failed!" -ForegroundColor Red
     }

@@ -25,9 +25,6 @@ const SignUp: React.FC = () => {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [profileImage, setProfileImage] = useState<File | null>(null);
-  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(
-    null
-  );
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const { signup, isLoading } = useAuth();
   const navigate = useNavigate();
@@ -43,7 +40,6 @@ const SignUp: React.FC = () => {
 
   const handleImageChange = (file: File | null, previewUrl: string | null) => {
     setProfileImage(file);
-    setProfileImagePreview(previewUrl);
     setIsUploadingImage(false);
   };
 

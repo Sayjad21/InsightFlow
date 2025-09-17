@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { Camera, Upload, X, Loader2 } from "lucide-react";
 import { ImageUploadService } from "../../services/imageUploadService";
 import { useAuth } from "../../contexts/AuthContext";
@@ -27,7 +27,6 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [imageLoadError, setImageLoadError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { user } = useAuth();
 
   const sizeClasses = {
     small: "w-16 h-16",

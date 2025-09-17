@@ -47,26 +47,26 @@ const CompanyAnalysis: React.FC<CompanyAnalysisProps> = ({
     }
   };
 
-  const handleGenerateFile = async () => {
-    if (!companyName.trim()) {
-      setFileError("Please enter a company name to generate analysis file");
-      return;
-    }
+  // const handleGenerateFile = async () => {
+  //   if (!companyName.trim()) {
+  //     setFileError("Please enter a company name to generate analysis file");
+  //     return;
+  //   }
 
-    setFileGenerating(true);
-    setFileError(null);
+  //   setFileGenerating(true);
+  //   setFileError(null);
 
-    try {
-      await ApiService.generateCompanyFile(companyName, file || undefined);
-      // Success message could be added here if needed
-    } catch (err) {
-      setFileError(
-        err instanceof Error ? err.message : "Failed to generate file"
-      );
-    } finally {
-      setFileGenerating(false);
-    }
-  };
+  //   try {
+  //     await ApiService.generateCompanyFile(companyName, file || undefined);
+  //     // Success message could be added here if needed
+  //   } catch (err) {
+  //     setFileError(
+  //       err instanceof Error ? err.message : "Failed to generate file"
+  //     );
+  //   } finally {
+  //     setFileGenerating(false);
+  //   }
+  // };
 
   if (!isVisible) return null;
 
@@ -90,9 +90,7 @@ const CompanyAnalysis: React.FC<CompanyAnalysisProps> = ({
                 Choose File
               </span>
               <span className="text-black-400">
-                {file
-                  ? `Uploaded ${file.name}`
-                  : "No file selected"}
+                {file ? `Uploaded ${file.name}` : "No file selected"}
               </span>
             </div>
           </div>
