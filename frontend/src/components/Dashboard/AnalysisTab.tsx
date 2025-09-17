@@ -168,11 +168,20 @@ const AnalysisTab: React.FC<AnalysisTabProps> = ({
   };
 
   const handleCompanyFileChange = (index: number, file: File | null) => {
-    setNewCompanyFiles((prev: (File | null)[]) => {
+    // Update state
+    setNewCompanyFiles((prev) => {
       const updated = [...prev];
       updated[index] = file;
       return updated;
     });
+
+    // Reset input if file removed
+    if (!file) {
+      const input = document.getElementById(
+        `file-${index}`
+      ) as HTMLInputElement;
+      if (input) input.value = "";
+    }
   };
 
   const addCompanyField = () => {

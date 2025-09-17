@@ -74,9 +74,9 @@ const CompanyAnalysis: React.FC<CompanyAnalysisProps> = ({
     <div className="mt-8 space-y-6">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex flex-col gap-2">
-          <label htmlFor="file-upload" className="text-black/80">
+          {/* <label htmlFor="file-upload" className="text-black/80">
             Upload .txt Document
-          </label>
+          </label> */}
           <div className="relative">
             <input
               id="file-upload"
@@ -91,8 +91,8 @@ const CompanyAnalysis: React.FC<CompanyAnalysisProps> = ({
               </span>
               <span className="text-black-400">
                 {file
-                  ? `${file.name} (Differentiation analysis enabled)`
-                  : "No file selected (Basic analysis)"}
+                  ? `Uploaded ${file.name}`
+                  : "No file selected"}
               </span>
             </div>
           </div>
@@ -109,7 +109,7 @@ const CompanyAnalysis: React.FC<CompanyAnalysisProps> = ({
           <button
             type="submit"
             disabled={loading || fileGenerating}
-            className="px-6 py-2 bg-gradient-to-r from-green-500 to-green-600 text-black rounded-lg hover:from-green-600 hover:to-green-700 disabled:opacity-50"
+            className="px-6 py-2 bg-gradient-to-r from-green-500 to-green-600 text-black rounded-lg hover:from-green-600 hover:to-green-700 cursor-pointer disabled:opacity-50"
           >
             {loading ? "Analyzing..." : "Analyze"}
           </button>

@@ -8,7 +8,6 @@ import {
   Loader2,
   Save,
   ChartNoAxesCombined,
-  FileText,
   BarChart3,
   Trash2,
   Info,
@@ -162,6 +161,27 @@ const Settings: React.FC = () => {
       fetchComparisons();
     }
   }, [user, activeTab, comparisonCurrentPage]);
+
+  // Add smooth scrolling animation for About tab
+  useEffect(() => {
+    if (activeTab === "about") {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("animate-fade-in-up");
+            }
+          });
+        },
+        { threshold: 0.1 }
+      );
+
+      const elements = document.querySelectorAll(".fade-in-on-scroll");
+      elements.forEach((el) => observer.observe(el));
+
+      return () => observer.disconnect();
+    }
+  }, [activeTab]);
 
   const handleImageChange = (file: File | null, _: string | null) => {
     setProfileImage(file);
@@ -351,13 +371,17 @@ const Settings: React.FC = () => {
               <button
                 key={tab.id}
                 onClick={() => handleTabChange(tab.id)}
-                className={`flex items-center px-3 py-2 border-b-2 font-medium text-sm transition-colors ${
-                  isActive
-                    ? tabClasses[tab.id].active
-                    : tabClasses[tab.id].inactive
-                }`}
+                className={`flex items-center px-3 py-2 border-b-2 font-medium text-sm cursor-pointer
+                      transition-colors duration-300 ease-in-out
+                      ${
+                        isActive
+                          ? tabClasses[tab.id].active
+                          : `${
+                              tabClasses[tab.id].inactive
+                            } hover:text-opacity-90`
+                      }`}
               >
-                <Icon className="h-4 w-4 mr-2" />
+                <Icon className="h-4 w-4 mr-2 transition-colors duration-300 ease-in-out" />
                 {tab.label}
               </button>
             );
@@ -429,7 +453,7 @@ const Settings: React.FC = () => {
                   />
 
                   {/* Name Fields */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in-up">
                     <div>
                       <label
                         htmlFor="firstName"
@@ -442,8 +466,8 @@ const Settings: React.FC = () => {
                         type="text"
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 focus:border-blue-500"
                         placeholder="Enter first name"
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 focus:border-blue-500 transition duration-300 ease-in-out hover:scale-[1.02] hover:shadow-md"
                       />
                     </div>
 
@@ -459,14 +483,14 @@ const Settings: React.FC = () => {
                         type="text"
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 focus:border-blue-500"
                         placeholder="Enter last name"
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 focus:border-blue-500 transition duration-300 ease-in-out hover:scale-[1.02] hover:shadow-md"
                       />
                     </div>
                   </div>
 
                   {/* Bio Field */}
-                  <div>
+                  <div className="animate-fade-in-up delay-100">
                     <label
                       htmlFor="bio"
                       className="block text-sm font-medium text-gray-700 mb-2"
@@ -479,8 +503,8 @@ const Settings: React.FC = () => {
                       value={bio}
                       onChange={(e) => setBio(e.target.value)}
                       maxLength={500}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-green-900 text-2xl focus:border-blue-500 resize-none"
                       placeholder="Tell us about yourself... (max 500 characters)"
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 focus:border-blue-500 resize-none transition duration-300 ease-in-out hover:scale-[1.01] hover:shadow-md"
                     />
                     <p className="mt-1 text-sm text-gray-500">
                       {bio.length}/500 characters
@@ -488,11 +512,11 @@ const Settings: React.FC = () => {
                   </div>
 
                   {/* Save Button */}
-                  <div className="flex justify-end">
+                  <div className="flex justify-end animate-fade-in-up delay-200">
                     <button
                       onClick={handleSaveProfile}
                       disabled={isSaving || isUploadingImage}
-                      className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="flex items-center px-6 py-2 bg-gradient-to-r from-blue-600 to-teal-600 cursor-pointer text-white rounded-lg hover:from-blue-700 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-[1.02]"
                     >
                       {isSaving || isUploadingImage ? (
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -772,8 +796,8 @@ const Settings: React.FC = () => {
           )} */}
 
           {activeTab === "about" && (
-            <>
-              <div className="px-6 py-4 border-b border-gray-200">
+            <div className="animate-fade-in" key={activeTab}>
+              <div className="px-6 py-4 border-b border-gray-200 fade-in-on-scroll">
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center">
                   <Info className="h-5 w-5 mr-2" />
                   About InsightFlow
@@ -786,7 +810,7 @@ const Settings: React.FC = () => {
 
               <div className="p-6 space-y-8">
                 {/* Mission Section */}
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-6">
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-6 fade-in-on-scroll">
                   <div className="flex items-center mb-4">
                     <Target className="h-6 w-6 text-blue-600 mr-3" />
                     <h3 className="text-xl font-semibold text-gray-900">
@@ -803,13 +827,13 @@ const Settings: React.FC = () => {
                 </div>
 
                 {/* Key Features */}
-                <div>
+                <div className="fade-in-on-scroll">
                   <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
                     <Zap className="h-6 w-6 text-yellow-500 mr-3" />
                     Key Features
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                    <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
                       <div className="flex items-center mb-2">
                         <BarChart3 className="h-5 w-5 text-purple-600 mr-2" />
                         <h4 className="font-medium text-gray-900">
@@ -821,7 +845,7 @@ const Settings: React.FC = () => {
                         to uncover hidden patterns and trends.
                       </p>
                     </div>
-                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                    <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
                       <div className="flex items-center mb-2">
                         <TrendingUp className="h-5 w-5 text-green-600 mr-2" />
                         <h4 className="font-medium text-gray-900">
@@ -833,7 +857,7 @@ const Settings: React.FC = () => {
                         competition with our predictive models.
                       </p>
                     </div>
-                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                    <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
                       <div className="flex items-center mb-2">
                         <Users className="h-5 w-5 text-blue-600 mr-2" />
                         <h4 className="font-medium text-gray-900">
@@ -845,7 +869,7 @@ const Settings: React.FC = () => {
                         analysis projects in real-time.
                       </p>
                     </div>
-                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                    <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
                       <div className="flex items-center mb-2">
                         <Shield className="h-5 w-5 text-red-600 mr-2" />
                         <h4 className="font-medium text-gray-900">
@@ -861,7 +885,7 @@ const Settings: React.FC = () => {
                 </div>
 
                 {/* Technology Stack */}
-                <div>
+                <div className="fade-in-on-scroll">
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">
                     Technology Stack
                   </h3>
@@ -916,13 +940,13 @@ const Settings: React.FC = () => {
                 </div>
 
                 {/* Company Values */}
-                <div>
+                <div className="fade-in-on-scroll">
                   <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
                     <Heart className="h-6 w-6 text-red-500 mr-3" />
                     Our Values
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="text-center p-4">
+                    <div className="text-center p-4 hover:bg-blue-50 rounded-lg transition-colors duration-300">
                       <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
                         <Users className="h-6 w-6 text-blue-600" />
                       </div>
@@ -934,7 +958,7 @@ const Settings: React.FC = () => {
                         success in mind.
                       </p>
                     </div>
-                    <div className="text-center p-4">
+                    <div className="text-center p-4 hover:bg-green-50 rounded-lg transition-colors duration-300">
                       <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
                         <TrendingUp className="h-6 w-6 text-green-600" />
                       </div>
@@ -946,7 +970,7 @@ const Settings: React.FC = () => {
                         with AI and analytics.
                       </p>
                     </div>
-                    <div className="text-center p-4">
+                    <div className="text-center p-4 hover:bg-purple-50 rounded-lg transition-colors duration-300">
                       <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
                         <Shield className="h-6 w-6 text-purple-600" />
                       </div>
@@ -962,7 +986,7 @@ const Settings: React.FC = () => {
                 </div>
 
                 {/* Version & Credits */}
-                <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-6">
+                <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-6 fade-in-on-scroll">
                   <div className="text-center">
                     <h3 className="text-xl font-semibold text-gray-900 mb-4">
                       InsightFlow v1.0
@@ -981,11 +1005,11 @@ const Settings: React.FC = () => {
                 </div>
 
                 {/* Contact & Support */}
-                <div>
+                <div className="fade-in-on-scroll">
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">
                     Get in Touch
                   </h3>
-                  <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow duration-300">
                     <p className="text-gray-600 mb-4">
                       Have questions, feedback, or suggestions? We'd love to
                       hear from you!
@@ -1013,7 +1037,7 @@ const Settings: React.FC = () => {
                   </div>
                 </div>
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>
@@ -1145,5 +1169,55 @@ const Settings: React.FC = () => {
     </Layout>
   );
 };
+
+// Add styles for fade-in animations similar to Landing page
+const styles = `
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUpCustom {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s ease-out forwards;
+}
+
+.animate-fade-in {
+  animation: fadeInUpCustom 0.9s ease-out both;
+}
+
+.fade-in-on-scroll {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+`;
+
+// Inject styles
+if (typeof document !== "undefined") {
+  const existingStyle = document.getElementById("settings-animations");
+  if (!existingStyle) {
+    const styleElement = document.createElement("style");
+    styleElement.id = "settings-animations";
+    styleElement.textContent = styles;
+    document.head.appendChild(styleElement);
+  }
+}
 
 export default Settings;

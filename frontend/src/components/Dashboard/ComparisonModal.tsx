@@ -1202,7 +1202,7 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
                 <button
                   onClick={handleExportText}
                   disabled={exportingType === "txt"}
-                  className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50/10 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50/10 rounded-lg transition-all cursor-pointer duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Export as TXT"
                 >
                   {exportingType === "txt" ? (
@@ -1214,7 +1214,7 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
                 <button
                   onClick={handleExportMarkdown}
                   disabled={exportingType === "markdown"}
-                  className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50/10 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50/10 rounded-lg transition-all cursor-pointer duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Export as Markdown"
                 >
                   {exportingType === "markdown" ? (
@@ -1226,7 +1226,7 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
                 <button
                   onClick={handleExportHTML}
                   disabled={exportingType === "html"}
-                  className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50/10 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50/10 rounded-lg transition-all cursor-pointer duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Export as HTML"
                 >
                   {exportingType === "html" ? (
@@ -1238,7 +1238,7 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({
                 <button
                   onClick={handleExportPDF}
                   disabled={exportingType === "pdf"}
-                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50/10 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50/10 rounded-lg transition-all cursor-pointer duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Export as PDF"
                 >
                   {exportingType === "pdf" ? (

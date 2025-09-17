@@ -51,15 +51,15 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({ analysisResult }) => {
 
   return (
     <div className="border-t pt-4 mt-4">
-      <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-        <Download className="w-4 h-4 mr-2" />
+      <h4 className="text-sm font-bold text-teal-500 mb-3 flex items-center">
+        <Download className="w-4 h-4 mr-2 text-teal-500" />
         Export Analysis
       </h4>
       <div className="flex flex-wrap gap-2">
         <button
           onClick={handleTxtExport}
           disabled={exportingType === "txt"}
-          className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50/10 cursor-pointer rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           title="Export as TXT"
         >
           {exportingType === "txt" ? (
@@ -72,7 +72,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({ analysisResult }) => {
         <button
           onClick={handleMarkdownExport}
           disabled={exportingType === "markdown"}
-          className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="p-2 text-gray-400 hover:text-green-500 hover:bg-green-50/10 cursor-pointer rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           title="Export as Markdown"
         >
           {exportingType === "markdown" ? (
@@ -85,7 +85,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({ analysisResult }) => {
         <button
           onClick={handlePdfExport}
           disabled={exportingType === "pdf"}
-          className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50/10 cursor-pointer rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           title="Export as PDF"
         >
           {exportingType === "pdf" ? (
@@ -95,7 +95,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({ analysisResult }) => {
           )}
         </button>
       </div>
-      <p className="text-xs text-gray-500 mt-2">
+      <p className="text-xs text-teal-500 mt-2">
         Choose your preferred format to download the complete analysis report.
       </p>
     </div>

@@ -133,11 +133,12 @@ public class VisualizationService {
 
             // Try to upload to Firebase as fallback
             // if (firebaseStorageService.isAvailable()) {
-            //     String firebaseUrl = firebaseStorageService.uploadImageFromStream(baos, "swot_analysis.png",
-            //             "image/png");
-            //     if (firebaseUrl != null) {
-            //         return firebaseUrl;
-            //     }
+            // String firebaseUrl = firebaseStorageService.uploadImageFromStream(baos,
+            // "swot_analysis.png",
+            // "image/png");
+            // if (firebaseUrl != null) {
+            // return firebaseUrl;
+            // }
             // }
 
             // Fallback to base64 if both uploads fail
@@ -222,14 +223,15 @@ public class VisualizationService {
                     return supabaseUrl;
                 }
             }
-            
+
             // Try to upload to Firebase, fallback to base64 if Firebase is not available
             // if (firebaseStorageService.isAvailable()) {
-            //     String firebaseUrl = firebaseStorageService.uploadImageFromStream(baos, "pestel_analysis.png",
-            //             "image/png");
-            //     if (firebaseUrl != null) {
-            //         return firebaseUrl;
-            //     }
+            // String firebaseUrl = firebaseStorageService.uploadImageFromStream(baos,
+            // "pestel_analysis.png",
+            // "image/png");
+            // if (firebaseUrl != null) {
+            // return firebaseUrl;
+            // }
             // }
 
             // Fallback to base64 if Firebase upload fails
@@ -357,14 +359,15 @@ public class VisualizationService {
                     return supabaseUrl;
                 }
             }
-            
+
             // Try to upload to Firebase, fallback to base64 if Firebase is not available
             // if (firebaseStorageService.isAvailable()) {
-            //     String firebaseUrl = firebaseStorageService.uploadImageFromStream(baos, "porter_forces.png",
-            //             "image/png");
-            //     if (firebaseUrl != null) {
-            //         return firebaseUrl;
-            //     }
+            // String firebaseUrl = firebaseStorageService.uploadImageFromStream(baos,
+            // "porter_forces.png",
+            // "image/png");
+            // if (firebaseUrl != null) {
+            // return firebaseUrl;
+            // }
             // }
 
             // Fallback to base64 if Firebase upload fails
@@ -511,13 +514,14 @@ public class VisualizationService {
                     return supabaseUrl;
                 }
             }
-            
+
             // Try to upload to Firebase, fallback to base64 if Firebase is not available
             // if (firebaseStorageService.isAvailable()) {
-            //     String firebaseUrl = firebaseStorageService.uploadImageFromStream(baos, "bcg_matrix.png", "image/png");
-            //     if (firebaseUrl != null) {
-            //         return firebaseUrl;
-            //     }
+            // String firebaseUrl = firebaseStorageService.uploadImageFromStream(baos,
+            // "bcg_matrix.png", "image/png");
+            // if (firebaseUrl != null) {
+            // return firebaseUrl;
+            // }
             // }
 
             // Fallback to base64 if Firebase upload fails
@@ -595,7 +599,17 @@ public class VisualizationService {
                 // Draw connecting line
                 g2d.setColor(Color.GRAY);
                 g2d.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                g2d.drawLine(centerX, centerY, x, y);
+                // Calculate the direction vector from center to outer circle
+                double dx = x - centerX;
+                double dy = y - centerY;
+                double dist = Math.sqrt(dx * dx + dy * dy);
+
+                // Normalize and offset by the center circle radius
+                double startX = centerX + dx / dist * centerRadius;
+                double startY = centerY + dy / dist * centerRadius;
+
+                // Draw the line from edge of center circle to outer circle center
+                g2d.drawLine((int) startX, (int) startY, x, y);
 
                 // Draw outer circle
                 g2d.setColor(colors.get(elements[i]));
@@ -635,10 +649,11 @@ public class VisualizationService {
 
             // Try to upload to Firebase, fallback to base64 if Firebase is not available
             // if (firebaseStorageService.isAvailable()) {
-            //     String firebaseUrl = firebaseStorageService.uploadImageFromStream(baos, "mckinsey_7s.png", "image/png");
-            //     if (firebaseUrl != null) {
-            //         return firebaseUrl;
-            //     }
+            // String firebaseUrl = firebaseStorageService.uploadImageFromStream(baos,
+            // "mckinsey_7s.png", "image/png");
+            // if (firebaseUrl != null) {
+            // return firebaseUrl;
+            // }
             // }
 
             // Fallback to base64 if Firebase upload fails
