@@ -21,7 +21,11 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/sentiment")
-@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:5173" })
+@CrossOrigin(origins = { 
+    "http://localhost:3000", 
+    "http://localhost:5173",
+    "https://insightflow-frontend-1m77.onrender.com" // ADD THIS LINE
+})
 public class SentimentController {
 
     @Autowired
