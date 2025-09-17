@@ -62,7 +62,9 @@ public class SecurityConfig {
                 "http://localhost:4173", // Vite preview server
                 "http://127.0.0.1:3000",
                 "http://127.0.0.1:5173",
-                "http://127.0.0.1:4173"));
+                "http://127.0.0.1:4173",
+                "https://insightflow-frontend-1m77.onrender.com" // Render deployment
+        ));
 
         configuration.addAllowedHeader("*");
         configuration.addAllowedMethod("*");
