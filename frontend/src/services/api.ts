@@ -257,7 +257,7 @@ export class ApiService {
         error.message.includes("NetworkError")
       ) {
         throw new Error(
-          "Unable to connect to server. Please ensure the backend is running on http://localhost:8000"
+          `Unable to connect to server. Please ensure the backend is running on {API_BASE_URL}`
         );
       }
       throw error;
@@ -294,7 +294,7 @@ export class ApiService {
         error.message.includes("NetworkError")
       ) {
         throw new Error(
-          "Unable to connect to server. Please ensure the backend is running on http://localhost:8000"
+          `Unable to connect to server. Please ensure the backend is running on {API_BASE_URL}`
         );
       }
       throw error;
@@ -420,7 +420,7 @@ export class ApiService {
         error.message.includes("NetworkError")
       ) {
         throw new Error(
-          "Unable to connect to server. Please ensure the backend is running on http://localhost:8000 and CORS is properly configured."
+          `Unable to connect to server. Please ensure the backend is running on {API_BASE_URL}`
         );
       }
       throw error;
@@ -486,7 +486,7 @@ export class ApiService {
         error.message.includes("NetworkError")
       ) {
         throw new Error(
-          "Unable to connect to server. Please ensure the backend is running on http://localhost:8000"
+          `Unable to connect to server. Please ensure the backend is running on {API_BASE_URL}`
         );
       }
       throw error;
@@ -566,7 +566,7 @@ export class ApiService {
         error.message.includes("NetworkError")
       ) {
         throw new Error(
-          "Unable to connect to server. Please ensure the backend is running on http://localhost:8000"
+          `Unable to connect to server. Please ensure the backend is running on {API_BASE_URL}`
         );
       }
       throw error;
