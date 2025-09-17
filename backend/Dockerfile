@@ -1,27 +1,14 @@
-# Use Eclipse Temurin JDK 17 as base (adjust if pom.xml uses a different version)
-FROM eclipse-temurin:17-jdk AS build
+# Use official Java runtime image
+FROM openjdk:17-jdk-alpine
 
+# Set the working directory in the container
 WORKDIR /app
 
-# Copy Maven wrapper and project files
-COPY mvnw .
-COPY .mvn .mvn
-COPY pom.xml .
-COPY src src
+# Copy the built jar file (adjust jar name as per your build)
+COPY target\insightflow-0.0.1-SNAPSHOT.jar app.jar
 
-# Build the application using Maven wrapper
-RUN ./mvnw clean package -DskipTests
-
-# Use a smaller JDK image for running
-FROM eclipse-temurin:17-jre
-
-WORKDIR /app
-
-# Copy built jar from build stage
-COPY --from=build /app/target/*.jar app.jar
-
-# Expose default Spring Boot port
+# Expose port, must match spring.server.port
 EXPOSE 8000
 
-# Run the application
+# Run the jar file
 ENTRYPOINT ["java", "-jar", "app.jar"]
