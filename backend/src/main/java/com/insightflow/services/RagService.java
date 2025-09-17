@@ -54,7 +54,7 @@ public class RagService {
     @Value("${ollama.base.url:http://localhost:11434}")
     private String ollamaBaseUrl;
 
-    @Value("${ollama.model:llama3}")
+    @Value("${ollama.model:llama3.2:latest}")
     private String ollamaModel;
 
     /**
