@@ -7,8 +7,8 @@ FROM maven:3.9.4-eclipse-temurin-17 AS build
 WORKDIR /app
 
 # Copy Maven pom.xml and source code
-COPY backend/pom.xml .
-COPY backend/src ./src
+COPY pom.xml .
+COPY src ./src
 
 # Build the JAR (skip tests for faster build)
 RUN ./mvnw package -DskipTests
