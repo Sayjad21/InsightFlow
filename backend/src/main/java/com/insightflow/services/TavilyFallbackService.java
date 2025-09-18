@@ -40,14 +40,29 @@ public class TavilyFallbackService {
 
     /**
      * Fallback LinkedIn analysis using Tavily crawl API
+     * 
+     * @param companyName  The name of the company
+     * @param linkedinSlug Optional LinkedIn slug. If null, will be generated
+     *                     automatically
      */
-    public String getLinkedInAnalysisFallback(String companyName) {
-        logger.info("====== STARTING TAVILY FALLBACK ANALYSIS FOR: '{}' ======", companyName);
+    public String getLinkedInAnalysisFallback(String companyName, String linkedinSlug) {
+        logger.info("====== STARTING TAVILY FALLBACK ANALYSIS FOR: '{}' (slug: '{}') ======", companyName,
+                linkedinSlug);
         long analysisStartTime = System.currentTimeMillis();
 
         try {
-            // Step 1: Crawl LinkedIn company page using Tavily
-            String linkedinUrl = "https://www.linkedin.com/company/" + generateLinkedInSlug(companyName) + "/";
+            // Step 1: Determine LinkedIn slug
+            String actualSlug;
+            if (linkedinSlug != null && !linkedinSlug.trim().isEmpty()) {
+                actualSlug = linkedinSlug.trim();
+                logger.info("Using provided LinkedIn slug: '{}'", actualSlug);
+            } else {
+                actualSlug = generateLinkedInSlug(companyName);
+                logger.info("Generated LinkedIn slug: '{}'", actualSlug);
+            }
+
+            // Step 2: Crawl LinkedIn company page using Tavily
+            String linkedinUrl = "https://www.linkedin.com/company/" + actualSlug + "/";
             logger.info("Crawling LinkedIn URL: {}", linkedinUrl);
 
             String crawlResponse = crawlLinkedInPage(linkedinUrl);
@@ -56,14 +71,14 @@ public class TavilyFallbackService {
                 return generateMinimalAnalysis(companyName);
             }
 
-            // Step 2: Extract and process content
+            // Step 3: Extract and process content
             String processedContent = extractAndProcessContent(crawlResponse, companyName);
             if (processedContent.length() < 100) {
                 logger.warn("Insufficient content extracted, generating minimal analysis");
                 return generateMinimalAnalysis(companyName);
             }
 
-            // Step 3: Generate AI analysis
+            // Step 4: Generate AI analysis
             String analysis = generateAIAnalysis(companyName, processedContent);
 
             long analysisEndTime = System.currentTimeMillis();
@@ -83,17 +98,26 @@ public class TavilyFallbackService {
     }
 
     /**
+     * Fallback LinkedIn analysis using Tavily crawl API (legacy method for backward
+     * compatibility)
+     */
+    public String getLinkedInAnalysisFallback(String companyName) {
+        return getLinkedInAnalysisFallback(companyName, null);
+    }
+
+    /**
      * Crawl LinkedIn company page using Tavily API
      */
     private String crawlLinkedInPage(String linkedinUrl) {
         try {
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("url", linkedinUrl);
-            requestBody.put("instructions", 
-                "Extract meaningful data about the company. Focus on company description, about section, recent posts, " +
-                "company size, industry information, and key business activities. " +
-                "Ignore LinkedIn login/signup elements, navigation menus, and unrelated content. " +
-                "Prioritize plain text content over images or external URLs.");
+            requestBody.put("instructions",
+                    "Extract meaningful data about the company. Focus on company description, about section, recent posts, "
+                            +
+                            "company size, industry information, and key business activities. " +
+                            "Ignore LinkedIn login/signup elements, navigation menus, and unrelated content. " +
+                            "Prioritize plain text content over images or external URLs.");
             requestBody.put("extract_depth", "advanced");
             requestBody.put("categories", Arrays.asList("About", "Careers", "Enterprise", "Documentation"));
 
@@ -156,7 +180,7 @@ public class TavilyFallbackService {
             }
 
             String finalContent = processedContent.toString().trim();
-            
+
             // Truncate if too long (similar to original scraping service)
             if (finalContent.length() > 25000) {
                 finalContent = finalContent.substring(0, 25000) + "... [Truncated for analysis]";
@@ -182,35 +206,37 @@ public class TavilyFallbackService {
 
         StringBuilder cleanedContent = new StringBuilder();
         String[] lines = rawContent.split("\n");
-        
+
         // Patterns to filter out irrelevant content
         Pattern skipPatterns = Pattern.compile(
-            "(?i)(log in|sign up|skip to|back to main|menu|navigation|cookie|manage cookies|" +
-            "opens in a new window|subscribe|follow us|download|contact sales|help center|" +
-            "terms of use|privacy policy|home|search|filter|sort by)"
-        );
+                "(?i)(log in|sign up|skip to|back to main|menu|navigation|cookie|manage cookies|" +
+                        "opens in a new window|subscribe|follow us|download|contact sales|help center|" +
+                        "terms of use|privacy policy|home|search|filter|sort by)");
 
         Pattern relevantPatterns = Pattern.compile(
-            "(?i)(about|company|business|mission|vision|values|products|services|team|" +
-            "employees|founded|headquarters|industry|revenue|customers|clients|innovation|" +
-            "technology|leadership|strategy|growth|market|solutions)"
-        );
+                "(?i)(about|company|business|mission|vision|values|products|services|team|" +
+                        "employees|founded|headquarters|industry|revenue|customers|clients|innovation|" +
+                        "technology|leadership|strategy|growth|market|solutions)");
 
         for (String line : lines) {
             String trimmedLine = line.trim();
-            
+
             // Skip empty lines
-            if (trimmedLine.isEmpty()) continue;
-            
+            if (trimmedLine.isEmpty())
+                continue;
+
             // Skip navigation and irrelevant elements
-            if (skipPatterns.matcher(trimmedLine).find()) continue;
-            
+            if (skipPatterns.matcher(trimmedLine).find())
+                continue;
+
             // Skip very short lines (likely navigation elements)
-            if (trimmedLine.length() < 10) continue;
-            
+            if (trimmedLine.length() < 10)
+                continue;
+
             // Skip lines that are just symbols or numbers
-            if (trimmedLine.matches("^[\\d\\s\\-\\|\\*\\+\\.]+$")) continue;
-            
+            if (trimmedLine.matches("^[\\d\\s\\-\\|\\*\\+\\.]+$"))
+                continue;
+
             // Prioritize relevant content
             if (relevantPatterns.matcher(trimmedLine).find()) {
                 cleanedContent.append(trimmedLine).append("\n");
@@ -221,7 +247,7 @@ public class TavilyFallbackService {
         }
 
         String result = cleanedContent.toString().trim();
-        
+
         // Remove duplicate lines
         Set<String> uniqueLines = new LinkedHashSet<>();
         for (String line : result.split("\n")) {
@@ -229,7 +255,7 @@ public class TavilyFallbackService {
                 uniqueLines.add(line.trim());
             }
         }
-        
+
         return String.join("\n", uniqueLines);
     }
 
@@ -238,25 +264,25 @@ public class TavilyFallbackService {
      */
     private boolean containsBusinessContent(String line) {
         String lowerLine = line.toLowerCase();
-        
+
         // Check for business-related keywords
         String[] businessKeywords = {
-            "company", "business", "enterprise", "solution", "service", "product", 
-            "customer", "client", "market", "industry", "technology", "innovation",
-            "team", "employee", "revenue", "growth", "strategy", "mission", "vision"
+                "company", "business", "enterprise", "solution", "service", "product",
+                "customer", "client", "market", "industry", "technology", "innovation",
+                "team", "employee", "revenue", "growth", "strategy", "mission", "vision"
         };
-        
+
         for (String keyword : businessKeywords) {
             if (lowerLine.contains(keyword)) {
                 return true;
             }
         }
-        
+
         // Check if it's a substantial sentence (contains verbs and nouns)
         if (line.split("\\s+").length > 8 && line.contains(" ")) {
             return true;
         }
-        
+
         return false;
     }
 
@@ -266,18 +292,17 @@ public class TavilyFallbackService {
     private String generateAIAnalysis(String companyName, String processedContent) {
         try {
             String template = aiUtil.getLinkedInAnalysisTemplate();
-            
+
             // Prepare content similar to original scraping service
             String optimizedContent = prepareContentForAnalysis(companyName, processedContent);
-            
+
             Map<String, Object> variables = Map.of(
-                "content", optimizedContent,
-                "company_name", companyName,
-                "source", "Tavily Crawl API"
-            );
-            
+                    "content", optimizedContent,
+                    "company_name", companyName,
+                    "source", "Tavily Crawl API");
+
             String analysis = aiUtil.invokeWithTemplate(template, variables);
-            
+
             // Format for HTML similar to original service
             if (analysis != null && !analysis.trim().isEmpty() && analysis.length() > 200) {
                 return formatAnalysisForHtml(analysis);
@@ -285,7 +310,7 @@ public class TavilyFallbackService {
                 logger.warn("AI analysis insufficient, using fallback");
                 return generateSimpleFallback(companyName, processedContent);
             }
-            
+
         } catch (Exception e) {
             logger.error("AI analysis generation failed: {}", e.getMessage());
             return generateSimpleFallback(companyName, processedContent);
@@ -297,17 +322,17 @@ public class TavilyFallbackService {
      */
     private String prepareContentForAnalysis(String companyName, String rawContent) {
         StringBuilder content = new StringBuilder();
-        
+
         content.append("=== COMPANY PROFILE ===\n");
         content.append("Company: ").append(companyName).append("\n");
         content.append("Source: LinkedIn (via Tavily crawl API)\n\n");
-        
+
         content.append("=== EXTRACTED CONTENT ===\n");
         content.append(rawContent).append("\n\n");
-        
+
         content.append("=== ANALYSIS REQUEST ===\n");
         content.append("Please analyze this company's LinkedIn presence and provide strategic insights.\n");
-        
+
         return content.toString();
     }
 
@@ -330,23 +355,24 @@ public class TavilyFallbackService {
      */
     private String generateSimpleFallback(String companyName, String content) {
         StringBuilder fallback = new StringBuilder();
-        
+
         fallback.append("#### Strategic Analysis: ").append(companyName).append(" (Fallback)<br><br>");
-        
+
         fallback.append("#### I. Company Overview<br><br>");
         fallback.append("**Company:** ").append(companyName).append("<br>");
         fallback.append("**Analysis Method:** Tavily crawl API fallback<br>");
-        
+
         if (content.length() > 100) {
             String shortContent = content.length() > 300 ? content.substring(0, 300) + "..." : content;
-            fallback.append("**Available Information:** ").append(shortContent.replaceAll("\n", " ")).append("<br><br>");
+            fallback.append("**Available Information:** ").append(shortContent.replaceAll("\n", " "))
+                    .append("<br><br>");
         }
-        
+
         fallback.append("#### II. Analysis Limitations<br><br>");
         fallback.append("**Data Source:** Public web content only<br>");
         fallback.append("**Scope:** Limited to publicly accessible information<br>");
         fallback.append("**Recommendation:** For comprehensive analysis, consider additional data sources<br>");
-        
+
         return fallback.toString();
     }
 
@@ -355,10 +381,10 @@ public class TavilyFallbackService {
      */
     private String generateMinimalAnalysis(String companyName) {
         return "<strong>Company Analysis: " + companyName + "</strong><br><br>" +
-               "<em>Analysis could not be completed due to data access limitations.</em><br><br>" +
-               "<strong>Company:</strong> " + companyName + "<br>" +
-               "<strong>Status:</strong> Unable to retrieve sufficient data<br>" +
-               "<strong>Recommendation:</strong> Try again later or use alternative data sources";
+                "<em>Analysis could not be completed due to data access limitations.</em><br><br>" +
+                "<strong>Company:</strong> " + companyName + "<br>" +
+                "<strong>Status:</strong> Unable to retrieve sufficient data<br>" +
+                "<strong>Recommendation:</strong> Try again later or use alternative data sources";
     }
 
     /**
