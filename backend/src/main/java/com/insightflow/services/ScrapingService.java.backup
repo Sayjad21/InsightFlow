@@ -2,35 +2,19 @@ package com.insightflow.services;
 
 import com.insightflow.utils.AiUtil;
 import com.insightflow.utils.TavilyUtil;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
+import com.insightflow.utils.ChromeDriverUtil;
+import com.insightflow.utils.RateLimitingUtil;
+import com.insightflow.utils.LinkedInSearchUtil;
+import com.insightflow.utils.ContentExtractionUtil;
+import com.insightflow.utils.AnalysisOrchestrationUtil;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import io.github.bonigarcia.wdm.WebDriverManager;
 
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Random;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Service
 public class ScrapingService {
@@ -50,65 +34,22 @@ public class ScrapingService {
     private TavilyUtil tavilyUtil;
 
     @Autowired
+    private ChromeDriverUtil chromeDriverUtil;
+
+    @Autowired
+    private RateLimitingUtil rateLimitingUtil;
+
+    @Autowired
+    private LinkedInSearchUtil linkedInSearchUtil;
+
+    @Autowired
+    private ContentExtractionUtil contentExtractionUtil;
+
+    @Autowired
+    private AnalysisOrchestrationUtil analysisOrchestrationUtil;
+
+    @Autowired
     private TavilyFallbackService tavilyFallbackService;
-
-    private final Random random = new Random();
-    private final String[] userAgents = {
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
-    };
-
-    // Track usage to avoid rate limiting - increased intervals to avoid CAPTCHA
-    private long lastRequestTime = 0;
-    private int requestCount = 0;
-    private static final long MIN_REQUEST_INTERVAL = 600000; // 10 minutes between requests (increased)
-    private static final int MAX_REQUESTS_PER_HOUR = 5; // Reduced from 10 to 5
-
-    /**
-     * Helper class to store LinkedIn company candidate information
-     */
-    private static class CompanyCandidate {
-        final String slug;
-        final String url;
-        final String title;
-        final String content;
-        int followerCount = -1;
-        double relevanceScore = 0.0;
-        String selectionMethod = "unknown";
-
-        CompanyCandidate(String slug, String url, String title, String content) {
-            this.slug = slug;
-            this.url = url;
-            this.title = title != null ? title : "";
-            this.content = content != null ? content : "";
-        }
-    }
-
-    /**
-     * Cleanup any orphaned Chrome processes that might interfere with new sessions
-     */
-    private void cleanupChromeProcesses() {
-        try {
-            if (System.getProperty("os.name").toLowerCase().contains("win")) {
-                // Windows cleanup
-                ProcessBuilder pb = new ProcessBuilder("taskkill", "/f", "/im", "chrome.exe");
-                pb.start().waitFor();
-                pb = new ProcessBuilder("taskkill", "/f", "/im", "chromedriver.exe");
-                pb.start().waitFor();
-            } else {
-                // Linux/Mac cleanup
-                ProcessBuilder pb = new ProcessBuilder("pkill", "-f", "chrome");
-                pb.start().waitFor();
-                pb = new ProcessBuilder("pkill", "-f", "chromedriver");
-                pb.start().waitFor();
-            }
-            logger.info("Cleaned up any orphaned Chrome processes");
-        } catch (Exception e) {
-            logger.warn("Could not clean up Chrome processes: {}", e.getMessage());
-        }
     }
 
     public String getLinkedInAnalysis(String companyName) {

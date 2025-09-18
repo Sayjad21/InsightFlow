@@ -1,6 +1,6 @@
 package com.insightflow;
 
-import com.insightflow.services.ScrapingService;
+import com.insightflow.services.ModularScrapingService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class ScrapingServiceTest {
 
     @Autowired
-    private ScrapingService scrapingService;
+    private ModularScrapingService scrapingService;
 
     @Test
     public void testGetLinkedInAnalysis() {

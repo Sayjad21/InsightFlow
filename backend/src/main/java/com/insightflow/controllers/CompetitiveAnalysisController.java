@@ -2,7 +2,7 @@ package com.insightflow.controllers;
 
 import com.insightflow.services.AnalysisService;
 import com.insightflow.services.RagService;
-import com.insightflow.services.ScrapingService;
+import com.insightflow.services.ModularScrapingService;
 import com.insightflow.services.VisualizationService;
 import com.insightflow.utils.FileUtil;
 import com.insightflow.utils.TimeUtil;
@@ -41,7 +41,7 @@ public class CompetitiveAnalysisController {
     private AnalysisService analysisService;
 
     @Autowired
-    private ScrapingService scrapingService;
+    private ModularScrapingService scrapingService;
 
     @Autowired
     private VisualizationService visualizationService;

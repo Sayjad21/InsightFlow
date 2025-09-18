@@ -8,7 +8,7 @@ import com.insightflow.services.AnalysisService;
 import com.insightflow.services.ComparisonService;
 import com.insightflow.services.ComparisonVisualizationService;
 import com.insightflow.services.RagService;
-import com.insightflow.services.ScrapingService;
+import com.insightflow.services.ModularScrapingService;
 import com.insightflow.services.UserService;
 import com.insightflow.services.VisualizationService;
 import com.insightflow.services.TavilyFallbackService;
@@ -44,7 +44,7 @@ public class ComparisonController {
     private AnalysisService analysisService;
 
     @Autowired
-    private ScrapingService scrapingService;
+    private ModularScrapingService scrapingService;
 
     @Autowired
     private ComparisonVisualizationService visualizationService;
