@@ -155,7 +155,7 @@ public class ScrapingService {
             logger.info("Cleaning up orphaned Chrome processes...");
             cleanupChromeProcesses();
 
-            logger.info("Initializing WebDriverManager for Chrome...");
+            logger.info("Initializing ChromeDriver setup...");
 
             // Check if running in container environment (Render/Docker)
             String chromeBinary = System.getenv("CHROME_BIN");
@@ -165,6 +165,7 @@ public class ScrapingService {
             if (isContainerEnvironment && chromeDriver != null && !chromeDriver.isEmpty()) {
                 logger.info("Container environment detected, using system ChromeDriver: {}", chromeDriver);
                 System.setProperty("webdriver.chrome.driver", chromeDriver);
+                // Do NOT use WebDriverManager in container environment
             } else {
                 logger.info("Using WebDriverManager to setup ChromeDriver");
                 WebDriverManager.chromedriver().setup();
@@ -195,45 +196,41 @@ public class ScrapingService {
             logger.info("  - User Data Dir: {}", tempUserDataDir);
             logger.info("  - Container Environment: {}", isContainerEnvironment);
 
-            options.addArguments("--headless=new"); // Use "--headless=new" for Chrome 109+
-            options.addArguments("--disable-gpu");
-            options.addArguments("--no-sandbox");
-            options.addArguments("--disable-dev-shm-usage");
-            options.addArguments("--disable-blink-features=AutomationControlled");
-            options.addArguments("--window-size=" + windowSize);
-            options.addArguments("--disable-notifications");
-            options.addArguments("--user-data-dir=" + tempUserDataDir);
-            options.addArguments("--disable-background-timer-throttling");
-            options.addArguments("--disable-backgrounding-occluded-windows");
-            options.addArguments("--disable-renderer-backgrounding");
-            options.addArguments("--disable-features=TranslateUI");
-            options.addArguments("--disable-ipc-flooding-protection");
-            options.addArguments("user-agent=" + selectedUserAgent);
-
-            // Additional container-specific options for better stability
             if (isContainerEnvironment) {
-                options.addArguments("--disable-web-security");
-                options.addArguments("--disable-features=VizDisplayCompositor");
+                // Container-optimized minimal Chrome arguments
+                options.addArguments("--headless");
+                options.addArguments("--no-sandbox");
+                options.addArguments("--disable-dev-shm-usage");
+                options.addArguments("--disable-gpu");
                 options.addArguments("--disable-extensions");
                 options.addArguments("--disable-plugins");
-                // Note: Removed --disable-images and --disable-javascript as they break
-                // LinkedIn scraping
-                options.addArguments("--run-all-compositor-stages-before-draw");
-                options.addArguments("--disable-background-networking");
-                options.addArguments("--disable-default-apps");
-                options.addArguments("--disable-sync");
-                options.addArguments("--metrics-recording-only");
+                options.addArguments("--disable-images");
+                options.addArguments("--disable-background-timer-throttling");
+                options.addArguments("--disable-backgrounding-occluded-windows");
+                options.addArguments("--disable-renderer-backgrounding");
                 options.addArguments("--no-first-run");
-                options.addArguments("--disable-component-update");
-                options.addArguments("--remote-debugging-port=0");
-                options.addArguments("--single-process");
-                options.addArguments("--disable-crash-reporter");
-                options.addArguments("--disable-in-process-stack-traces");
-                options.addArguments("--disable-logging");
-                options.addArguments("--log-level=3");
-                options.addArguments("--silent");
-                options.addArguments("--disable-gpu-sandbox");
-                logger.info("Added container-specific Chrome arguments for stability");
+                options.addArguments("--disable-default-apps");
+                options.addArguments("--window-size=" + windowSize);
+                options.addArguments("--user-data-dir=" + tempUserDataDir);
+                options.addArguments("--user-agent=" + selectedUserAgent);
+                logger.info("Using container-optimized Chrome arguments");
+            } else {
+                // Local development Chrome arguments
+                options.addArguments("--headless=new");
+                options.addArguments("--disable-gpu");
+                options.addArguments("--no-sandbox");
+                options.addArguments("--disable-dev-shm-usage");
+                options.addArguments("--disable-blink-features=AutomationControlled");
+                options.addArguments("--window-size=" + windowSize);
+                options.addArguments("--disable-notifications");
+                options.addArguments("--user-data-dir=" + tempUserDataDir);
+                options.addArguments("--disable-background-timer-throttling");
+                options.addArguments("--disable-backgrounding-occluded-windows");
+                options.addArguments("--disable-renderer-backgrounding");
+                options.addArguments("--disable-features=TranslateUI");
+                options.addArguments("--disable-ipc-flooding-protection");
+                options.addArguments("user-agent=" + selectedUserAgent);
+                logger.info("Using local development Chrome arguments");
             }
 
             logger.info("Creating Chrome WebDriver instance...");
@@ -274,7 +271,55 @@ public class ScrapingService {
                     }
                 }
 
-                throw e; // Re-throw the exception
+                // Test Chrome binary directly in container environment
+                if (isContainerEnvironment && chromeBinary != null) {
+                    try {
+                        logger.warn("Testing Chrome binary directly...");
+                        ProcessBuilder pb = new ProcessBuilder(chromeBinary, "--version");
+                        pb.redirectErrorStream(true);
+                        Process process = pb.start();
+
+                        java.io.BufferedReader reader = new java.io.BufferedReader(
+                                new java.io.InputStreamReader(process.getInputStream()));
+                        String line;
+                        StringBuilder output = new StringBuilder();
+                        while ((line = reader.readLine()) != null) {
+                            output.append(line).append("\n");
+                        }
+
+                        int exitCode = process.waitFor();
+                        logger.warn("Chrome binary test - Exit code: {}, Output: {}", exitCode, output.toString());
+
+                        if (exitCode != 0) {
+                            logger.error("Chrome binary failed to run - this is likely the root cause");
+                        }
+                    } catch (Exception testEx) {
+                        logger.error("Failed to test Chrome binary directly: {}", testEx.getMessage());
+                    }
+                }
+
+                // If in container environment, try fallback with minimal arguments
+                if (isContainerEnvironment) {
+                    logger.warn("Attempting fallback with absolute minimal Chrome arguments...");
+                    try {
+                        ChromeOptions fallbackOptions = new ChromeOptions();
+                        fallbackOptions.setBinary(chromeBinary);
+
+                        // Only the most essential arguments - nothing else
+                        fallbackOptions.addArguments("--headless");
+                        fallbackOptions.addArguments("--no-sandbox");
+                        fallbackOptions.addArguments("--disable-dev-shm-usage");
+
+                        driver = new ChromeDriver(fallbackOptions);
+                        logger.info("✅ Minimal fallback Chrome WebDriver instance created successfully");
+                    } catch (Exception fallbackException) {
+                        logger.error("❌ Minimal fallback Chrome WebDriver creation also failed: {}",
+                                fallbackException.getMessage());
+                        throw e; // Throw the original exception
+                    }
+                } else {
+                    throw e; // Re-throw the exception for non-container environments
+                }
             }
 
             // Remove Firefox-specific JS for navigator.webdriver (Chrome handles this

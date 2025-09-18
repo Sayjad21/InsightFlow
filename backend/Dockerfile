@@ -14,15 +14,10 @@ RUN apk add --no-cache \
     fontconfig \
     ttf-dejavu \
     freetype \
-    freetype-dev \
     chromium \
     chromium-chromedriver \
-    wget \
-    unzip \
-    libxrender \
-    libxtst \
-    dbus \
-    xvfb
+    nss \
+    ca-certificates
 
 # Create a non-root user for running Chrome (security best practice)
 RUN adduser -D -s /bin/sh chromium-user
