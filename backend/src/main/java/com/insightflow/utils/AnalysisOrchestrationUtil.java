@@ -556,4 +556,96 @@ public class AnalysisOrchestrationUtil {
 
         return content.toString();
     }
+
+    /**
+     * Enhanced content preparation with strategic analysis
+     */
+    public String prepareStrategicContentForLLM(String companyName, String profileName, String description, List<String> posts) {
+        StringBuilder content = new StringBuilder();
+        
+        // Basic company info
+        content.append("=== COMPANY PROFILE ===\n");
+        content.append("Company: ").append(companyName).append("\n");
+        
+        if (!profileName.isEmpty() && !profileName.equals(companyName)) {
+            content.append("LinkedIn Profile Name: ").append(profileName).append("\n");
+        }
+        
+        // Industry context analysis
+        String industryContext = analyzeIndustryContext(companyName, description, posts);
+        if (!industryContext.isEmpty()) {
+            content.append("Industry Context: ").append(industryContext).append("\n");
+        }
+        
+        // Enhanced description with metrics
+        if (!description.isEmpty()) {
+            content.append("\n=== COMPANY DESCRIPTION ===\n");
+            content.append(description).append("\n");
+            
+            String metrics = extractBusinessMetrics(description);
+            if (!metrics.isEmpty()) {
+                content.append("\n=== KEY METRICS ===\n");
+                content.append(metrics).append("\n");
+            }
+        }
+        
+        // Strategic post analysis
+        if (!posts.isEmpty()) {
+            content.append("\n=== STRATEGIC ACTIVITIES ===\n");
+            Map<String, List<String>> themes = analyzeStrategicThemes(posts);
+            
+            for (Map.Entry<String, List<String>> entry : themes.entrySet()) {
+                content.append("\n").append(entry.getKey().toUpperCase()).append(":\n");
+                for (String post : entry.getValue()) {
+                    content.append("• ").append(post).append("\n");
+                }
+            }
+        }
+        
+        return content.toString();
+    }
+
+    /**
+     * Analyzes industry context and competitive landscape
+     */
+    private String analyzeIndustryContext(String companyName, String description, List<String> posts) {
+        String combined = (companyName + " " + description + " " + String.join(" ", posts)).toLowerCase();
+        
+        if (combined.contains("ai ") || combined.contains("artificial intelligence")) {
+            return "AI/ML Technology - competing with OpenAI, Google, Microsoft";
+        }
+        if (combined.contains("cloud") || combined.contains("aws") || combined.contains("azure")) {
+            return "Cloud Computing - competing with AWS, Microsoft Azure, Google Cloud";
+        }
+        if (combined.contains("social") || combined.contains("platform")) {
+            return "Social Media Platform - competing with Meta, Twitter/X, TikTok";
+        }
+        if (combined.contains("electric") || combined.contains("automotive")) {
+            return "Electric Vehicle - competing with Tesla, BYD, Toyota";
+        }
+        
+        return "Technology sector";
+    }
+
+    /**
+     * Extracts business metrics from company description
+     */
+    private String extractBusinessMetrics(String description) {
+        StringBuilder metrics = new StringBuilder();
+        String desc = description.toLowerCase();
+        
+        if (desc.contains("countries")) {
+            metrics.append("Global presence across multiple countries\n");
+        }
+        if (desc.contains("billion")) {
+            metrics.append("Billion-scale operations mentioned\n");
+        }
+        if (desc.contains("employees") && (desc.contains("thousand") || desc.contains("million"))) {
+            metrics.append("Large workforce scale\n");
+        }
+        
+        return metrics.toString();
+    }
+
+    
 }

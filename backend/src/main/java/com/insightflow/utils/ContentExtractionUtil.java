@@ -359,182 +359,31 @@ public class ContentExtractionUtil {
     }
 
     /**
-     * Prepares content for LLM analysis with strategic formatting
+     * Simple content preparation - ONLY formatting, no analysis
      */
     public String prepareContentForLLM(String companyName, String profileName, String description, List<String> posts) {
         StringBuilder content = new StringBuilder();
-
-        // Company basic info with competitive context
+        
         content.append("=== COMPANY PROFILE ===\n");
         content.append("Company: ").append(companyName).append("\n");
         
         if (!profileName.isEmpty() && !profileName.equals(companyName)) {
             content.append("LinkedIn Profile Name: ").append(profileName).append("\n");
         }
-
+        
         if (!description.isEmpty()) {
             content.append("Description: ").append(description).append("\n");
         }
-
-        content.append("\n=== STRATEGIC CONTENT ANALYSIS ===\n");
-
+        
+        content.append("\n=== RECENT POSTS ===\n");
         if (!posts.isEmpty()) {
-            // Prioritize strategic posts
-            List<String> strategicPosts = prioritizeStrategicPosts(posts);
-            
-            content.append("Strategic Posts (").append(strategicPosts.size()).append(" of ")
-                   .append(posts.size()).append(" total):\n");
-            
-            for (int i = 0; i < strategicPosts.size() && i < 15; i++) {
-                content.append(i + 1).append(". ").append(strategicPosts.get(i)).append("\n");
-            }
-
-            // Add industry context
-            String industryContext = getIndustryContext(companyName, description, posts);
-            if (!industryContext.isEmpty()) {
-                content.append("\n=== INDUSTRY CONTEXT ===\n");
-                content.append(industryContext).append("\n");
-            }
-
-            // Extract key metrics if available
-            String keyMetrics = extractKeyMetrics(description);
-            if (!keyMetrics.isEmpty()) {
-                content.append("\n=== KEY METRICS ===\n");
-                content.append(keyMetrics).append("\n");
+            for (int i = 0; i < Math.min(posts.size(), 10); i++) {
+                content.append(i + 1).append(". ").append(posts.get(i)).append("\n");
             }
         } else {
-            content.append("Limited LinkedIn activity detected.\n");
+            content.append("No recent posts available.\n");
         }
-
-        return content.toString();
-    }
-
-    /**
-     * Prioritizes posts based on strategic significance
-     */
-    private List<String> prioritizeStrategicPosts(List<String> posts) {
-        return posts.stream()
-                .filter(this::isStrategicallySignificant)
-                .sorted((p1, p2) -> Integer.compare(getStrategicScore(p2), getStrategicScore(p1)))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Determines if a post is strategically significant
-     */
-    private boolean isStrategicallySignificant(String post) {
-        String lowerPost = post.toLowerCase();
         
-        String[] strategicKeywords = {
-            "strategy", "growth", "expansion", "market", "competitive", "innovation",
-            "product", "technology", "partnership", "acquisition", "funding",
-            "revenue", "profit", "performance", "milestone", "achievement",
-            "launch", "development", "research", "industry", "trend"
-        };
-
-        for (String keyword : strategicKeywords) {
-            if (lowerPost.contains(keyword)) {
-                return true;
-            }
-        }
-
-        return post.length() > 100; // Longer posts tend to be more substantial
-    }
-
-    /**
-     * Calculates strategic score for post ranking
-     */
-    private int getStrategicScore(String post) {
-        int score = 0;
-        String lowerPost = post.toLowerCase();
-
-        // High-value keywords
-        String[] highValueKeywords = {
-            "strategy", "growth", "market", "competitive", "innovation", "partnership"
-        };
-        for (String keyword : highValueKeywords) {
-            if (lowerPost.contains(keyword)) {
-                score += 10;
-            }
-        }
-
-        // Medium-value keywords
-        String[] mediumValueKeywords = {
-            "product", "technology", "development", "research", "industry", "performance"
-        };
-        for (String keyword : mediumValueKeywords) {
-            if (lowerPost.contains(keyword)) {
-                score += 5;
-            }
-        }
-
-        // Length bonus (longer posts often more informative)
-        if (post.length() > 200) score += 3;
-        if (post.length() > 400) score += 2;
-
-        return score;
-    }
-
-    /**
-     * Extracts industry context from company data
-     */
-    private String getIndustryContext(String companyName, String description, List<String> posts) {
-        StringBuilder context = new StringBuilder();
-
-        // Analyze description for industry indicators
-        if (!description.isEmpty()) {
-            String lowerDesc = description.toLowerCase();
-            if (lowerDesc.contains("technology") || lowerDesc.contains("software") || lowerDesc.contains("ai")) {
-                context.append("Technology sector company focusing on ");
-                if (lowerDesc.contains("ai") || lowerDesc.contains("artificial intelligence")) {
-                    context.append("artificial intelligence and machine learning solutions.\n");
-                } else if (lowerDesc.contains("software")) {
-                    context.append("software development and digital solutions.\n");
-                } else {
-                    context.append("technology innovation and digital transformation.\n");
-                }
-            }
-        }
-
-        // Analyze posts for market positioning
-        long strategicPostCount = posts.stream()
-                .mapToLong(post -> post.toLowerCase().contains("strategy") || 
-                          post.toLowerCase().contains("market") || 
-                          post.toLowerCase().contains("competitive") ? 1 : 0)
-                .sum();
-
-        if (strategicPostCount > 0) {
-            context.append("Active in strategic communications with ")
-                   .append(strategicPostCount).append(" strategy-focused posts.\n");
-        }
-
-        return context.toString();
-    }
-
-    /**
-     * Extracts key metrics from company description
-     */
-    private String extractKeyMetrics(String description) {
-        if (description.isEmpty()) {
-            return "";
-        }
-
-        StringBuilder metrics = new StringBuilder();
-        String lowerDesc = description.toLowerCase();
-
-        // Look for common metric patterns
-        if (lowerDesc.contains("employee") || lowerDesc.contains("staff") || lowerDesc.contains("team")) {
-            metrics.append("People-focused organization with emphasis on team scale.\n");
-        }
-
-        if (lowerDesc.contains("global") || lowerDesc.contains("international") || lowerDesc.contains("worldwide")) {
-            metrics.append("Global presence and international operations.\n");
-        }
-
-        if (lowerDesc.contains("billion") || lowerDesc.contains("million")) {
-            metrics.append("Large-scale operations with significant financial metrics.\n");
-        }
-
-        return metrics.toString();
+        return content.toString();
     }
 }
