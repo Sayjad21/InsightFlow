@@ -49,6 +49,9 @@ public class ScrapingService {
     @Autowired
     private TavilyUtil tavilyUtil;
 
+    @Autowired
+    private TavilyFallbackService tavilyFallbackService;
+
     private final Random random = new Random();
     private final String[] userAgents = {
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -693,8 +696,18 @@ public class ScrapingService {
             logger.error("Error Message: {}", e.getMessage());
             logger.error("Stack Trace:", e);
 
-            throw new RuntimeException("Failed to perform LinkedIn analysis for " + companyName +
-                    " after " + totalDuration + "ms. Error: " + e.getMessage(), e);
+            // Try Tavily fallback for CAPTCHA or other scraping failures
+            try {
+                logger.warn("🔄 Attempting Tavily fallback for LinkedIn analysis...");
+                String fallbackResult = tavilyFallbackService.getLinkedInAnalysisFallback(companyName);
+                logger.info("✅ Tavily fallback successful for company: {}", companyName);
+                return fallbackResult;
+            } catch (Exception fallbackException) {
+                logger.error("❌ Tavily fallback also failed: {}", fallbackException.getMessage());
+                throw new RuntimeException("Failed to perform LinkedIn analysis for " + companyName +
+                        " after " + totalDuration + "ms. Primary error: " + e.getMessage() +
+                        ". Fallback error: " + fallbackException.getMessage(), e);
+            }
         } finally {
             logger.info("Phase 5: Cleanup - Closing WebDriver and cleaning temporary files");
             if (driver != null) {
@@ -734,7 +747,7 @@ public class ScrapingService {
      * Creates a dynamic irrelevant post pattern based on common patterns
      */
     private Pattern createIrrelevantPostPattern(String companyName) {
-        // Build pattern for common irrelevant content
+        // Build pattern for common promotional/engagement content
         StringBuilder patternBuilder = new StringBuilder("(?i)^(");
 
         // Common promotional/engagement patterns
