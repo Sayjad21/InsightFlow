@@ -3,7 +3,6 @@ package com.insightflow.services;
 import com.insightflow.utils.AiUtil;
 import com.insightflow.utils.TavilyUtil;
 import com.insightflow.utils.ChromeDriverUtil;
-import com.insightflow.utils.RateLimitingUtil;
 import com.insightflow.utils.LinkedInSearchUtil;
 import com.insightflow.utils.ContentExtractionUtil;
 import com.insightflow.utils.AnalysisOrchestrationUtil;
@@ -49,9 +48,6 @@ public class ModularScrapingService {
     private ChromeDriverUtil chromeDriverUtil;
 
     @Autowired
-    private RateLimitingUtil rateLimitingUtil;
-
-    @Autowired
     private LinkedInSearchUtil linkedInSearchUtil;
 
     @Autowired
@@ -76,24 +72,19 @@ public class ModularScrapingService {
 
         WebDriver driver = null;
 
-
         try {
-            // Phase 1: Rate limiting using dedicated utility
-            logger.info("Phase 1: Enforcing rate limiting");
-            rateLimitingUtil.enforceRateLimit();
-
-            // Phase 2: WebDriver setup using dedicated utility
-            logger.info("Phase 2: Setting up Chrome WebDriver");
+            // Phase 2: WebDriver setup using dedicated utility (now becomes Phase 1)
+            logger.info("Phase 1: Setting up Chrome WebDriver");
             driver = chromeDriverUtil.createWebDriver();
 
-            // Phase 3: LinkedIn company identification using dedicated utility
-            logger.info("Phase 3: Getting LinkedIn company ID for '{}'", companyName);
+            // Phase 3: LinkedIn company identification (now becomes Phase 2)
+            logger.info("Phase 2: Getting LinkedIn company ID for '{}'", companyName);
             String linkedinCompanyId = linkedInSearchUtil.getLinkedInCompanyId(companyName);
             logger.info("✅ Found LinkedIn company ID: '{}'", linkedinCompanyId);
 
-            // Phase 4: Navigate to LinkedIn page
+            // Phase 4: Navigate to LinkedIn page (now becomes Phase 3)
+            logger.info("Phase 3: Navigating to LinkedIn page");
             String companyUrl = "https://www.linkedin.com/company/" + linkedinCompanyId + "/";
-            logger.info("Phase 4: Navigating to LinkedIn page: {}", companyUrl);
             driver.get(companyUrl);
             Thread.sleep(3000); // Wait for page load
 
@@ -153,12 +144,5 @@ public class ModularScrapingService {
             chromeDriverUtil.cleanupChromeProcesses();
             logger.info("====== CLEANUP COMPLETED ======");
         }
-    }
-
-    /**
-     * Get rate limiting status for monitoring
-     */
-    public RateLimitingUtil.RateLimitStatus getRateLimitingStatus() {
-        return rateLimitingUtil.getStatus();
     }
 }

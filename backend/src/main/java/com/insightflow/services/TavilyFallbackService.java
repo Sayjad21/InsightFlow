@@ -74,7 +74,7 @@ public class TavilyFallbackService {
             logger.info("Total Duration: {} ms ({} seconds)", totalDuration, totalDuration / 1000.0);
             logger.info("Content Length: {} characters", analysis.length());
 
-            return "<strong>LinkedIn Analysis of " + companyName + " (Fallback Method)</strong><br><br>" + analysis;
+            return "<strong>LinkedIn Analysis of " + companyName + "</strong><br><br>" + analysis;
 
         } catch (Exception e) {
             logger.error("Tavily fallback analysis failed for {}: {}", companyName, e.getMessage(), e);
