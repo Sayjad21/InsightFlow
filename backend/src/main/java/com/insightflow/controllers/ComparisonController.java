@@ -11,6 +11,7 @@ import com.insightflow.services.RagService;
 import com.insightflow.services.ScrapingService;
 import com.insightflow.services.UserService;
 import com.insightflow.services.VisualizationService;
+import com.insightflow.services.TavilyFallbackService;
 import com.insightflow.utils.AnalysisConversionUtil;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,8 @@ import java.util.*;
     "https://insightflow-frontend-1m77.onrender.com" // ADD THIS LINE
 })
 public class ComparisonController {
+
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(ComparisonController.class);
 
     @Autowired
     private RagService ragService;
@@ -57,6 +60,9 @@ public class ComparisonController {
 
     @Autowired
     private ComparisonResultRepository comparisonResultRepository;
+
+    @Autowired
+    private TavilyFallbackService tavilyFallbackService;
 
     // Get user's existing analyses for comparison selection
     @GetMapping("/analyses")
@@ -610,6 +616,306 @@ public class ComparisonController {
             error.put("error", "Comparison failed: " + e.getMessage());
             return ResponseEntity.internalServerError().body(error);
         }
+    }
+
+    /**
+     * Test endpoint to verify Tavily fallback service functionality
+     */
+    @GetMapping("/test-tavily-fallback")
+    public ResponseEntity<Map<String, Object>> testTavilyFallback(
+            @RequestParam String companyName,
+            Authentication authentication) {
+        
+        String username = authentication.getName();
+        logger.info("Testing Tavily fallback for company: {} by user: {}", companyName, username);
+        
+        long startTime = System.currentTimeMillis();
+        
+        try {
+            String analysis = tavilyFallbackService.getLinkedInAnalysisFallback(companyName);
+            long endTime = System.currentTimeMillis();
+            long duration = endTime - startTime;
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "success");
+            response.put("company", companyName);
+            response.put("analysis", analysis);
+            response.put("method", "tavily_fallback");
+            response.put("duration_ms", duration);
+            response.put("duration_seconds", duration / 1000.0);
+            response.put("analysis_length", analysis.length());
+            response.put("requested_by", username);
+            response.put("timestamp", java.time.LocalDateTime.now());
+            
+            logger.info("✅ Tavily fallback test successful for {} in {} ms", companyName, duration);
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            long endTime = System.currentTimeMillis();
+            long duration = endTime - startTime;
+            
+            logger.error("❌ Tavily fallback test failed for {}: {}", companyName, e.getMessage());
+            
+            Map<String, Object> error = new HashMap<>();
+            error.put("status", "error");
+            error.put("company", companyName);
+            error.put("error", e.getMessage());
+            error.put("error_type", e.getClass().getSimpleName());
+            error.put("method", "tavily_fallback");
+            error.put("duration_ms", duration);
+            error.put("requested_by", username);
+            error.put("timestamp", java.time.LocalDateTime.now());
+            
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+
+    /**
+     * Test endpoint to compare Chrome scraping vs Tavily fallback
+     */
+    @GetMapping("/test-scraping-comparison")
+    public ResponseEntity<Map<String, Object>> testScrapingComparison(
+            @RequestParam String companyName,
+            @RequestParam(defaultValue = "false") boolean forceChrome,
+            Authentication authentication) {
+        
+        String username = authentication.getName();
+        logger.info("Testing scraping comparison for company: {} by user: {} (forceChrome: {})", 
+                    companyName, username, forceChrome);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("company", companyName);
+        response.put("requested_by", username);
+        response.put("timestamp", java.time.LocalDateTime.now());
+        
+        // Test Tavily fallback
+        logger.info("=== TESTING TAVILY FALLBACK ===");
+        long tavilyStart = System.currentTimeMillis();
+        try {
+            String tavilyAnalysis = tavilyFallbackService.getLinkedInAnalysisFallback(companyName);
+            long tavilyEnd = System.currentTimeMillis();
+            
+            Map<String, Object> tavilyResult = new HashMap<>();
+            tavilyResult.put("status", "success");
+            tavilyResult.put("analysis", tavilyAnalysis);
+            tavilyResult.put("duration_ms", tavilyEnd - tavilyStart);
+            tavilyResult.put("analysis_length", tavilyAnalysis.length());
+            
+            response.put("tavily_fallback", tavilyResult);
+            logger.info("✅ Tavily test completed in {} ms", tavilyEnd - tavilyStart);
+            
+        } catch (Exception e) {
+            long tavilyEnd = System.currentTimeMillis();
+            
+            Map<String, Object> tavilyResult = new HashMap<>();
+            tavilyResult.put("status", "error");
+            tavilyResult.put("error", e.getMessage());
+            tavilyResult.put("error_type", e.getClass().getSimpleName());
+            tavilyResult.put("duration_ms", tavilyEnd - tavilyStart);
+            
+            response.put("tavily_fallback", tavilyResult);
+            logger.error("❌ Tavily test failed: {}", e.getMessage());
+        }
+        
+        // Test Chrome scraping (only if forced, to avoid CAPTCHA issues)
+        if (forceChrome) {
+            logger.info("=== TESTING CHROME SCRAPING ===");
+            long chromeStart = System.currentTimeMillis();
+            try {
+                String chromeAnalysis = scrapingService.getLinkedInAnalysis(companyName);
+                long chromeEnd = System.currentTimeMillis();
+                
+                Map<String, Object> chromeResult = new HashMap<>();
+                chromeResult.put("status", "success");
+                chromeResult.put("analysis", chromeAnalysis);
+                chromeResult.put("duration_ms", chromeEnd - chromeStart);
+                chromeResult.put("analysis_length", chromeAnalysis.length());
+                
+                response.put("chrome_scraping", chromeResult);
+                logger.info("✅ Chrome test completed in {} ms", chromeEnd - chromeStart);
+                
+            } catch (Exception e) {
+                long chromeEnd = System.currentTimeMillis();
+                
+                Map<String, Object> chromeResult = new HashMap<>();
+                chromeResult.put("status", "error");
+                chromeResult.put("error", e.getMessage());
+                chromeResult.put("error_type", e.getClass().getSimpleName());
+                chromeResult.put("duration_ms", chromeEnd - chromeStart);
+                
+                response.put("chrome_scraping", chromeResult);
+                logger.error("❌ Chrome test failed: {}", e.getMessage());
+            }
+        } else {
+            Map<String, Object> chromeResult = new HashMap<>();
+            chromeResult.put("status", "skipped");
+            chromeResult.put("reason", "Chrome scraping skipped to avoid CAPTCHA. Use forceChrome=true to test.");
+            response.put("chrome_scraping", chromeResult);
+        }
+        
+        // Add comparison summary
+        Map<String, Object> summary = new HashMap<>();
+        
+        Object tavilyResult = response.get("tavily_fallback");
+        if (tavilyResult instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> tavily = (Map<String, Object>) tavilyResult;
+            summary.put("tavily_success", "success".equals(tavily.get("status")));
+            summary.put("tavily_duration", tavily.get("duration_ms"));
+        }
+        
+        Object chromeResult = response.get("chrome_scraping");
+        if (chromeResult instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> chrome = (Map<String, Object>) chromeResult;
+            summary.put("chrome_success", "success".equals(chrome.get("status")));
+            summary.put("chrome_duration", chrome.get("duration_ms"));
+            summary.put("chrome_tested", !"skipped".equals(chrome.get("status")));
+        }
+        
+        response.put("summary", summary);
+        
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Test endpoint to simulate the fallback chain (Chrome -> Tavily -> Minimal)
+     */
+    @GetMapping("/test-fallback-chain")
+    public ResponseEntity<Map<String, Object>> testFallbackChain(
+            @RequestParam String companyName,
+            @RequestParam(defaultValue = "true") boolean simulateChromeFailure,
+            Authentication authentication) {
+        
+        String username = authentication.getName();
+        logger.info("Testing fallback chain for company: {} by user: {} (simulateFailure: {})", 
+                    companyName, username, simulateChromeFailure);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("company", companyName);
+        response.put("requested_by", username);
+        response.put("timestamp", java.time.LocalDateTime.now());
+        response.put("simulate_chrome_failure", simulateChromeFailure);
+        
+        List<Map<String, Object>> chainResults = new ArrayList<>();
+        
+        // Step 1: Chrome scraping (or simulate failure)
+        if (simulateChromeFailure) {
+            Map<String, Object> chromeStep = new HashMap<>();
+            chromeStep.put("step", 1);
+            chromeStep.put("method", "chrome_scraping");
+            chromeStep.put("status", "simulated_failure");
+            chromeStep.put("reason", "Simulated Chrome failure to test fallback chain");
+            chromeStep.put("duration_ms", 0);
+            chainResults.add(chromeStep);
+            
+            logger.info("🔄 Step 1: Simulated Chrome failure");
+        } else {
+            // Actually try Chrome scraping
+            Map<String, Object> chromeStep = new HashMap<>();
+            chromeStep.put("step", 1);
+            chromeStep.put("method", "chrome_scraping");
+            
+            long chromeStart = System.currentTimeMillis();
+            try {
+                String chromeAnalysis = scrapingService.getLinkedInAnalysis(companyName);
+                long chromeEnd = System.currentTimeMillis();
+                
+                chromeStep.put("status", "success");
+                chromeStep.put("analysis", chromeAnalysis);
+                chromeStep.put("duration_ms", chromeEnd - chromeStart);
+                chromeStep.put("analysis_length", chromeAnalysis.length());
+                
+                chainResults.add(chromeStep);
+                response.put("final_result", chromeAnalysis);
+                response.put("successful_method", "chrome_scraping");
+                
+                logger.info("✅ Step 1: Chrome scraping successful");
+                
+            } catch (Exception e) {
+                long chromeEnd = System.currentTimeMillis();
+                
+                chromeStep.put("status", "error");
+                chromeStep.put("error", e.getMessage());
+                chromeStep.put("error_type", e.getClass().getSimpleName());
+                chromeStep.put("duration_ms", chromeEnd - chromeStart);
+                
+                chainResults.add(chromeStep);
+                logger.info("❌ Step 1: Chrome scraping failed: {}", e.getMessage());
+            }
+        }
+        
+        // Step 2: Tavily fallback (if Chrome failed or was simulated to fail)
+        boolean needsTavilyFallback = simulateChromeFailure || 
+                                     chainResults.get(0).get("status").equals("error");
+        
+        if (needsTavilyFallback) {
+            Map<String, Object> tavilyStep = new HashMap<>();
+            tavilyStep.put("step", 2);
+            tavilyStep.put("method", "tavily_fallback");
+            
+            long tavilyStart = System.currentTimeMillis();
+            try {
+                String tavilyAnalysis = tavilyFallbackService.getLinkedInAnalysisFallback(companyName);
+                long tavilyEnd = System.currentTimeMillis();
+                
+                tavilyStep.put("status", "success");
+                tavilyStep.put("analysis", tavilyAnalysis);
+                tavilyStep.put("duration_ms", tavilyEnd - tavilyStart);
+                tavilyStep.put("analysis_length", tavilyAnalysis.length());
+                
+                chainResults.add(tavilyStep);
+                response.put("final_result", tavilyAnalysis);
+                response.put("successful_method", "tavily_fallback");
+                
+                logger.info("✅ Step 2: Tavily fallback successful");
+                
+            } catch (Exception e) {
+                long tavilyEnd = System.currentTimeMillis();
+                
+                tavilyStep.put("status", "error");
+                tavilyStep.put("error", e.getMessage());
+                tavilyStep.put("error_type", e.getClass().getSimpleName());
+                tavilyStep.put("duration_ms", tavilyEnd - tavilyStart);
+                
+                chainResults.add(tavilyStep);
+                
+                // Step 3: Minimal fallback
+                Map<String, Object> minimalStep = new HashMap<>();
+                minimalStep.put("step", 3);
+                minimalStep.put("method", "minimal_fallback");
+                minimalStep.put("status", "success");
+                minimalStep.put("duration_ms", 0);
+                
+                String minimalAnalysis = "<strong>Company Analysis: " + companyName + "</strong><br><br>" +
+                                       "<em>Analysis could not be completed due to data access limitations.</em><br><br>" +
+                                       "<strong>Company:</strong> " + companyName + "<br>" +
+                                       "<strong>Status:</strong> All automated methods failed<br>" +
+                                       "<strong>Recommendation:</strong> Try again later or use alternative data sources";
+                
+                minimalStep.put("analysis", minimalAnalysis);
+                minimalStep.put("analysis_length", minimalAnalysis.length());
+                
+                chainResults.add(minimalStep);
+                response.put("final_result", minimalAnalysis);
+                response.put("successful_method", "minimal_fallback");
+                
+                logger.info("⚠️ Step 2: Tavily fallback failed: {}", e.getMessage());
+                logger.info("🔧 Step 3: Using minimal fallback");
+            }
+        }
+        
+        response.put("chain_results", chainResults);
+        response.put("total_steps", chainResults.size());
+        
+        // Calculate total duration
+        long totalDuration = chainResults.stream()
+                .mapToLong(step -> ((Number) step.getOrDefault("duration_ms", 0)).longValue())
+                .sum();
+        response.put("total_duration_ms", totalDuration);
+        response.put("total_duration_seconds", totalDuration / 1000.0);
+        
+        return ResponseEntity.ok(response);
     }
 
     /**
