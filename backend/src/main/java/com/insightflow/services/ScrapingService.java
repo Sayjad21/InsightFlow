@@ -115,43 +115,45 @@ public class ScrapingService {
         logger.info("====== STARTING LINKEDIN ANALYSIS FOR: '{}' ======", companyName);
         long analysisStartTime = System.currentTimeMillis();
 
-        // Rate limiting to avoid CAPTCHA
-        synchronized (this) {
-            long currentTime = System.currentTimeMillis();
-            logger.info("Rate limiting check - Current requests: {}/{}, Last request: {} ms ago",
-                    requestCount, MAX_REQUESTS_PER_HOUR, currentTime - lastRequestTime);
-
-            if (currentTime - lastRequestTime < MIN_REQUEST_INTERVAL) {
-                long waitTime = MIN_REQUEST_INTERVAL - (currentTime - lastRequestTime);
-                logger.warn("Rate limiting: waiting {} ms before next request", waitTime);
-                try {
-                    Thread.sleep(waitTime);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    logger.error("Request interrupted due to rate limiting", e);
-                    throw new RuntimeException("Request interrupted due to rate limiting", e);
-                }
-            }
-
-            // Reset hourly counter
-            if (currentTime - lastRequestTime > 3600000) { // 1 hour
-                logger.info("Resetting hourly rate limit counter (was: {})", requestCount);
-                requestCount = 0;
-            }
-
-            if (requestCount >= MAX_REQUESTS_PER_HOUR) {
-                logger.error("Hourly request limit ({}) exceeded for LinkedIn analysis", MAX_REQUESTS_PER_HOUR);
-                throw new RuntimeException("Hourly request limit exceeded. Please wait before making more requests.");
-            }
-
-            lastRequestTime = currentTime;
-            requestCount++;
-            logger.info("Rate limiting passed - Updated count: {}/{}", requestCount, MAX_REQUESTS_PER_HOUR);
-        }
-
         WebDriver driver = null;
         String tempUserDataDir = null;
+
         try {
+            // ✅ MOVE RATE LIMITING INSIDE THE try-catch BLOCK
+            // Rate limiting to avoid CAPTCHA
+            synchronized (this) {
+                long currentTime = System.currentTimeMillis();
+                logger.info("Rate limiting check - Current requests: {}/{}, Last request: {} ms ago",
+                        requestCount, MAX_REQUESTS_PER_HOUR, currentTime - lastRequestTime);
+
+                if (currentTime - lastRequestTime < MIN_REQUEST_INTERVAL) {
+                    long waitTime = MIN_REQUEST_INTERVAL - (currentTime - lastRequestTime);
+                    logger.warn("Rate limiting: waiting {} ms before next request", waitTime);
+                    try {
+                        Thread.sleep(waitTime);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        logger.error("Request interrupted due to rate limiting", e);
+                        throw new RuntimeException("Request interrupted due to rate limiting", e);
+                    }
+                }
+
+                // Reset hourly counter
+                if (currentTime - lastRequestTime > 3600000) { // 1 hour
+                    logger.info("Resetting hourly rate limit counter (was: {})", requestCount);
+                    requestCount = 0;
+                }
+
+                if (requestCount >= MAX_REQUESTS_PER_HOUR) {
+                    logger.error("Hourly request limit ({}) exceeded for LinkedIn analysis", MAX_REQUESTS_PER_HOUR);
+                    throw new RuntimeException("Hourly request limit exceeded. Please wait before making more requests.");
+                }
+
+                lastRequestTime = currentTime;
+                requestCount++;
+                logger.info("Rate limiting passed - Updated count: {}/{}", requestCount, MAX_REQUESTS_PER_HOUR);
+            }
+
             logger.info("Phase 1: Setting up Chrome WebDriver for LinkedIn analysis");
 
             // Clean up any orphaned processes first
@@ -686,6 +688,7 @@ public class ScrapingService {
             return "<strong>LinkedIn Analysis of " + companyName + "</strong><br><br>" + content;
 
         } catch (Exception e) {
+            // ✅ NOW ALL EXCEPTIONS (INCLUDING RATE LIMITING) WILL REACH TAVILY FALLBACK
             long analysisEndTime = System.currentTimeMillis();
             long totalDuration = analysisEndTime - analysisStartTime;
 
