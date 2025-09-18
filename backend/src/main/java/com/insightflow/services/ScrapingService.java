@@ -51,18 +51,18 @@ public class ScrapingService {
 
     private final Random random = new Random();
     private final String[] userAgents = {
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:119.0) Gecko/20100101 Firefox/119.0",
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:119.0) Gecko/20100101 Firefox/119.0",
-            "Mozilla/5.0 (X11; Linux x86_64; rv:119.0) Gecko/20100101 Firefox/119.0",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:118.0) Gecko/20100101 Firefox/118.0",
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:118.0) Gecko/20100101 Firefox/118.0"
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
     };
 
-    // Track usage to avoid rate limiting
+    // Track usage to avoid rate limiting - increased intervals to avoid CAPTCHA
     private long lastRequestTime = 0;
     private int requestCount = 0;
-    private static final long MIN_REQUEST_INTERVAL = 300000; // 5 minutes between requests
-    private static final int MAX_REQUESTS_PER_HOUR = 10;
+    private static final long MIN_REQUEST_INTERVAL = 600000; // 10 minutes between requests (increased)
+    private static final int MAX_REQUESTS_PER_HOUR = 5; // Reduced from 10 to 5
 
     /**
      * Helper class to store LinkedIn company candidate information
@@ -197,14 +197,14 @@ public class ScrapingService {
             logger.info("  - Container Environment: {}", isContainerEnvironment);
 
             if (isContainerEnvironment) {
-                // Container-optimized minimal Chrome arguments
+                // Container-optimized Chrome arguments with better anti-detection
                 options.addArguments("--headless");
                 options.addArguments("--no-sandbox");
                 options.addArguments("--disable-dev-shm-usage");
                 options.addArguments("--disable-gpu");
                 options.addArguments("--disable-extensions");
                 options.addArguments("--disable-plugins");
-                options.addArguments("--disable-images");
+                // Removed --disable-images as it breaks LinkedIn functionality
                 options.addArguments("--disable-background-timer-throttling");
                 options.addArguments("--disable-backgrounding-occluded-windows");
                 options.addArguments("--disable-renderer-backgrounding");
@@ -213,7 +213,13 @@ public class ScrapingService {
                 options.addArguments("--window-size=" + windowSize);
                 options.addArguments("--user-data-dir=" + tempUserDataDir);
                 options.addArguments("--user-agent=" + selectedUserAgent);
-                logger.info("Using container-optimized Chrome arguments");
+                // Additional anti-detection arguments
+                options.addArguments("--disable-blink-features=AutomationControlled");
+                options.addArguments("--exclude-switches=enable-automation");
+                options.addArguments("--disable-web-security");
+                options.addArguments("--allow-running-insecure-content");
+                options.addArguments("--disable-features=VizDisplayCompositor");
+                logger.info("Using container-optimized Chrome arguments with anti-detection");
             } else {
                 // Local development Chrome arguments
                 options.addArguments("--headless=new");
@@ -322,19 +328,32 @@ public class ScrapingService {
                 }
             }
 
-            // Remove Firefox-specific JS for navigator.webdriver (Chrome handles this
-            // differently)
-            logger.info("Executing JavaScript to hide automation markers...");
-            ((JavascriptExecutor) driver)
-                    .executeScript("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})");
+            // Enhanced JavaScript to hide automation markers
+            logger.info("Executing enhanced JavaScript to hide automation markers...");
+            JavascriptExecutor jsExecutor = (JavascriptExecutor) driver;
+
+            // Hide webdriver property
+            jsExecutor.executeScript("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})");
+
+            // Remove automation indicators
+            jsExecutor.executeScript(
+                    "window.chrome = { runtime: {} }; Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] }); Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });");
+
+            // Add realistic properties
+            jsExecutor.executeScript(
+                    "Object.defineProperty(navigator, 'permissions', { get: () => ({ query: () => Promise.resolve({ state: 'granted' }) }) });");
+
+            // Mimic human mouse behavior
+            jsExecutor.executeScript(
+                    "['mousedown', 'mouseup', 'mousemove'].forEach(event => { document.addEventListener(event, () => {}, true); });");
 
             logger.info("Setting WebDriver timeouts...");
             driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(60));
             driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(15));
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
 
-            // Random delay before starting
-            int initialDelay = 2000 + random.nextInt(3000);
+            // Random delay before starting - increased to be more human-like
+            int initialDelay = 5000 + random.nextInt(5000); // 5-10 seconds
             logger.info("Initial human-like delay: {} ms", initialDelay);
             Thread.sleep(initialDelay);
 
@@ -386,7 +405,21 @@ public class ScrapingService {
 
             if (currentUrl.contains("checkpoint") || currentUrl.contains("captcha")) {
                 logger.error("❌ CAPTCHA or security checkpoint detected at URL: {}", currentUrl);
-                throw new RuntimeException("CAPTCHA encountered during LinkedIn login. URL: " + currentUrl);
+                logger.warn("⚠ Attempting fallback strategy without login...");
+
+                // Try to get public LinkedIn company data without login
+                try {
+                    String publicAnalysis = getPublicLinkedInAnalysis(driver, companyName);
+                    if (publicAnalysis != null && !publicAnalysis.isEmpty()) {
+                        logger.info("✅ Successfully retrieved public LinkedIn data without login");
+                        return publicAnalysis;
+                    }
+                } catch (Exception fallbackEx) {
+                    logger.warn("❌ Fallback strategy also failed: {}", fallbackEx.getMessage());
+                }
+
+                throw new RuntimeException(
+                        "CAPTCHA encountered during LinkedIn login and fallback failed. URL: " + currentUrl);
             }
 
             logger.info("✅ Login successful, no CAPTCHA detected");
@@ -1914,6 +1947,89 @@ public class ScrapingService {
 
         logger.warn("No valid LinkedIn slug found for company: {}", companyName);
         return null;
+    }
+
+    /**
+     * Attempt to get public LinkedIn company information without login
+     * This is a fallback strategy when CAPTCHA is encountered
+     */
+    private String getPublicLinkedInAnalysis(WebDriver driver, String companyName) {
+        try {
+            logger.info("🔓 Attempting public LinkedIn analysis for '{}'", companyName);
+
+            // Try to navigate directly to a public LinkedIn company page
+            String searchQuery = companyName.replace(" ", "%20");
+            String searchUrl = "https://www.linkedin.com/search/results/companies/?keywords=" + searchQuery;
+
+            logger.info("Navigating to LinkedIn company search: {}", searchUrl);
+            driver.get(searchUrl);
+
+            Thread.sleep(3000 + random.nextInt(2000)); // Random delay
+
+            // Look for the first company result
+            List<WebElement> companyCards = driver
+                    .findElements(By.cssSelector("[data-view-name='search-entity-result-universal-template']"));
+
+            if (!companyCards.isEmpty()) {
+                WebElement firstCard = companyCards.get(0);
+
+                // Try to extract basic company information from search results
+                String companyTitle = "";
+                String companyDescription = "";
+
+                try {
+                    WebElement titleElement = firstCard.findElement(By.cssSelector("span[dir='ltr'] span"));
+                    companyTitle = titleElement.getText();
+                    logger.info("Found public company title: {}", companyTitle);
+                } catch (Exception e) {
+                    logger.warn("Could not extract company title from public search");
+                }
+
+                try {
+                    WebElement descElement = firstCard.findElement(By.cssSelector("p.entity-result__summary"));
+                    companyDescription = descElement.getText();
+                    logger.info("Found public company description length: {}", companyDescription.length());
+                } catch (Exception e) {
+                    logger.warn("Could not extract company description from public search");
+                }
+
+                // Create a basic analysis from public data
+                if (!companyTitle.isEmpty() || !companyDescription.isEmpty()) {
+                    StringBuilder publicAnalysis = new StringBuilder();
+                    publicAnalysis.append("<strong>Public LinkedIn Analysis of ").append(companyName)
+                            .append("</strong><br><br>");
+                    publicAnalysis.append(
+                            "<em>Note: This analysis was performed using publicly available LinkedIn data without login due to security restrictions.</em><br><br>");
+
+                    if (!companyTitle.isEmpty()) {
+                        publicAnalysis.append("<strong>Company Name:</strong> ").append(companyTitle)
+                                .append("<br><br>");
+                    }
+
+                    if (!companyDescription.isEmpty()) {
+                        publicAnalysis.append("<strong>Company Description:</strong><br>").append(companyDescription)
+                                .append("<br><br>");
+                    }
+
+                    publicAnalysis.append("<strong>Analysis Limitations:</strong><br>");
+                    publicAnalysis.append("• Unable to access detailed company posts and updates<br>");
+                    publicAnalysis.append("• Cannot provide employee count or growth metrics<br>");
+                    publicAnalysis.append("• Limited to publicly searchable information<br><br>");
+
+                    publicAnalysis.append(
+                            "<em>For more detailed analysis, please try again later when login access is restored.</em>");
+
+                    return publicAnalysis.toString();
+                }
+            }
+
+            logger.warn("No public company information found for: {}", companyName);
+            return null;
+
+        } catch (Exception e) {
+            logger.error("Failed to retrieve public LinkedIn analysis: {}", e.getMessage());
+            return null;
+        }
     }
 
 }

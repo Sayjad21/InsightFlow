@@ -25,32 +25,116 @@ public class AiUtil {
     @Value("${ollama.model:llama3.2:latest}")
     private String ollamaModel;
 
+    @Value("${ollama.timeout.seconds:120}")
+    private int defaultTimeoutSeconds;
+
+    @Value("${ollama.max.retries:3}")
+    private int defaultMaxRetries;
+
     public OllamaChatModel getModel() {
         return OllamaChatModel.builder()
                 .baseUrl(ollamaBaseUrl)
                 .modelName(ollamaModel)
                 .temperature(0.3)
-                .timeout(Duration.ofSeconds(60))
+                .timeout(Duration.ofSeconds(defaultTimeoutSeconds))
+                .maxRetries(defaultMaxRetries)
+                .build();
+    }
+
+    /**
+     * Get model with extended timeout and more retries for complex operations
+     */
+    private OllamaChatModel getExtendedModel(int timeoutSeconds, int maxRetries) {
+        return OllamaChatModel.builder()
+                .baseUrl(ollamaBaseUrl)
+                .modelName(ollamaModel)
+                .temperature(0.3)
+                .timeout(Duration.ofSeconds(timeoutSeconds))
+                .maxRetries(maxRetries)
                 .build();
     }
 
     public String invoke(String prompt) {
         logger.info("Invoking LLM with prompt: {}", prompt);
-        OllamaChatModel model = getModel();
-        String response = model.chat(prompt);
-        logger.info("LLM response: {}", response);
-        return response;
+        try {
+            OllamaChatModel model = getModel();
+            String response = model.chat(prompt);
+            logger.info("LLM response: {}", response);
+            return response;
+        } catch (dev.langchain4j.exception.TimeoutException e) {
+            logger.error("LLM request timed out after {} seconds. Retrying with extended timeout...",
+                    defaultTimeoutSeconds);
+            try {
+                // Retry with extended model
+                OllamaChatModel extendedModel = getExtendedModel(defaultTimeoutSeconds * 2, defaultMaxRetries + 2);
+                String response = extendedModel.chat(prompt);
+                logger.info("LLM response (extended timeout): {}", response);
+                return response;
+            } catch (Exception retryException) {
+                logger.error("LLM request failed even with extended timeout: {}", retryException.getMessage());
+                throw new RuntimeException("AI service is currently unavailable. Please try again later.",
+                        retryException);
+            }
+        } catch (Exception e) {
+            logger.error("LLM request failed with unexpected error: {}", e.getMessage());
+            throw new RuntimeException("AI service error: " + e.getMessage(), e);
+        }
     }
 
     public String invokeWithTemplate(String template, Map<String, Object> variables) {
         logger.info("Template before substitution: {}", template);
         logger.info("Variables: {}", variables);
+
+        try {
+            PromptTemplate promptTemplate = PromptTemplate.from(template);
+            Prompt prompt = promptTemplate.apply(variables);
+            String promptText = prompt.text();
+            logger.info("Prompt after substitution: {}", promptText);
+
+            OllamaChatModel model = getModel();
+            String response = model.chat(promptText);
+            logger.info("LLM response: {}", response);
+            return response;
+        } catch (dev.langchain4j.exception.TimeoutException e) {
+            logger.error("LLM template request timed out after {} seconds. Retrying with extended timeout...",
+                    defaultTimeoutSeconds);
+            try {
+                // Retry with extended model
+                PromptTemplate promptTemplate = PromptTemplate.from(template);
+                Prompt prompt = promptTemplate.apply(variables);
+                String promptText = prompt.text();
+
+                OllamaChatModel extendedModel = getExtendedModel(defaultTimeoutSeconds * 2, defaultMaxRetries + 2);
+                String response = extendedModel.chat(promptText);
+                logger.info("LLM response (extended timeout): {}", response);
+                return response;
+            } catch (Exception retryException) {
+                logger.error("LLM template request failed even with extended timeout: {}", retryException.getMessage());
+                throw new RuntimeException("AI service is currently unavailable. Please try again later.",
+                        retryException);
+            }
+        } catch (Exception e) {
+            logger.error("LLM template request failed with unexpected error: {}", e.getMessage());
+            throw new RuntimeException("AI service error: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Special method for investment recommendations with extended timeout
+     */
+    public String invokeWithTemplateExtended(String template, Map<String, Object> variables) {
+        logger.info("Invoking LLM with extended timeout for complex analysis");
+        logger.info("Template before substitution: {}", template);
+        logger.info("Variables: {}", variables);
+
+        // Create model with extended timeout for investment recommendations
+        OllamaChatModel extendedModel = getExtendedModel(300, 5); // 5 minutes with 5 retries
+
         PromptTemplate promptTemplate = PromptTemplate.from(template);
         Prompt prompt = promptTemplate.apply(variables);
         String promptText = prompt.text();
         logger.info("Prompt after substitution: {}", promptText);
-        OllamaChatModel model = getModel();
-        String response = model.chat(promptText);
+        String response = extendedModel.chat(promptText);
         logger.info("LLM response: {}", response);
         return response;
     }
@@ -58,7 +142,9 @@ public class AiUtil {
     public Map<String, Object> parseJsonToMap(String json) {
         try {
             ObjectMapper mapper = new ObjectMapper();
-            return mapper.readValue(json, Map.class);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> result = mapper.readValue(json, Map.class);
+            return result;
         } catch (Exception e) {
             // Optionally log or handle error
             return Map.of("error", "Failed to parse JSON", "raw", json);

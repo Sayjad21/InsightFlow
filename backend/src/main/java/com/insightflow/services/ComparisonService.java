@@ -468,11 +468,11 @@ public class ComparisonService {
                         .append("\n\n");
             }
 
-            // Use AI to generate investment recommendations
+            // Use AI to generate investment recommendations with extended timeout
             Map<String, Object> variables = new HashMap<>();
             variables.put("metrics_data", metricsData.toString());
 
-            return aiUtil.invokeWithTemplate(aiUtil.getInvestmentRecommendationTemplate(), variables);
+            return aiUtil.invokeWithTemplateExtended(aiUtil.getInvestmentRecommendationTemplate(), variables);
 
         } catch (Exception e) {
             logger.error("Failed to generate investment recommendations: {}", e.getMessage());

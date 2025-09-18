@@ -5,6 +5,7 @@ import com.insightflow.services.RagService;
 import com.insightflow.services.ScrapingService;
 import com.insightflow.services.VisualizationService;
 import com.insightflow.utils.FileUtil;
+import com.insightflow.utils.TimeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -26,10 +27,10 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = { 
-    "http://localhost:3000", 
-    "http://localhost:5173",
-    "https://insightflow-frontend-1m77.onrender.com" // ADD THIS LINE
+@CrossOrigin(origins = {
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "https://insightflow-frontend-1m77.onrender.com" // ADD THIS LINE
 })
 public class CompetitiveAnalysisController {
 
@@ -47,6 +48,9 @@ public class CompetitiveAnalysisController {
 
     @Autowired
     private FileUtil fileUtil;
+
+    @Autowired
+    private TimeUtil timeUtil;
 
     @PostMapping("/analyze")
     public ResponseEntity<Map<String, Object>> analyze(
@@ -382,7 +386,7 @@ public class CompetitiveAnalysisController {
             result.put("linkedin_analysis", linkedinAnalysis);
             result.put("analysis_duration_ms", duration);
             result.put("status", "success");
-            result.put("timestamp", java.time.LocalDateTime.now().toString());
+            result.put("timestamp", timeUtil.nowAsString());
 
             System.out.println("LinkedIn analysis completed in " + duration + "ms");
             return ResponseEntity.ok(result);
@@ -395,7 +399,7 @@ public class CompetitiveAnalysisController {
             error.put("error", "LinkedIn analysis failed: " + e.getMessage());
             error.put("exception_type", e.getClass().getSimpleName());
             error.put("status", "failed");
-            error.put("timestamp", java.time.LocalDateTime.now().toString());
+            error.put("timestamp", timeUtil.nowAsString());
 
             return ResponseEntity.internalServerError().body(error);
         }
