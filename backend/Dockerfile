@@ -20,13 +20,27 @@ RUN apk add --no-cache \
     wget \
     unzip \
     libxrender \
-    libxtst
+    libxtst \
+    dbus \
+    xvfb
 
+# Create a non-root user for running Chrome (security best practice)
+RUN adduser -D -s /bin/sh chromium-user
 
 # Set Chrome binary path for Selenium
 ENV CHROME_BIN=/usr/bin/chromium-browser
 ENV CHROME_DRIVER=/usr/bin/chromedriver
+ENV DISPLAY=:99
 
+# Make sure ChromeDriver is executable
+RUN chmod +x /usr/bin/chromedriver
+
+# Copy application
 COPY --from=build /app/target/insightflow-0.0.1-SNAPSHOT.jar app.jar
+
 EXPOSE 8000
-ENTRYPOINT ["java", "-jar", "app.jar"]
+
+# Set JVM memory limits for container environment
+ENV JAVA_OPTS="-Xms256m -Xmx1024m -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
+
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

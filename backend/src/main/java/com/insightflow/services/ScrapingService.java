@@ -156,8 +156,28 @@ public class ScrapingService {
             cleanupChromeProcesses();
 
             logger.info("Initializing WebDriverManager for Chrome...");
-            WebDriverManager.chromedriver().setup();
+
+            // Check if running in container environment (Render/Docker)
+            String chromeBinary = System.getenv("CHROME_BIN");
+            String chromeDriver = System.getenv("CHROME_DRIVER");
+            boolean isContainerEnvironment = chromeBinary != null && !chromeBinary.isEmpty();
+
+            if (isContainerEnvironment && chromeDriver != null && !chromeDriver.isEmpty()) {
+                logger.info("Container environment detected, using system ChromeDriver: {}", chromeDriver);
+                System.setProperty("webdriver.chrome.driver", chromeDriver);
+            } else {
+                logger.info("Using WebDriverManager to setup ChromeDriver");
+                WebDriverManager.chromedriver().setup();
+            }
+
             ChromeOptions options = new ChromeOptions();
+
+            if (isContainerEnvironment) {
+                logger.info("Container environment detected, using Chromium binary: {}", chromeBinary);
+                options.setBinary(chromeBinary);
+            } else {
+                logger.info("Local development environment detected, using system Chrome");
+            }
 
             // Create unique temporary user data directory for each session
             tempUserDataDir = System.getProperty("java.io.tmpdir") + "chrome_user_data_" +
@@ -173,6 +193,7 @@ public class ScrapingService {
             logger.info("  - Window Size: {}", windowSize);
             logger.info("  - Headless Mode: Enabled");
             logger.info("  - User Data Dir: {}", tempUserDataDir);
+            logger.info("  - Container Environment: {}", isContainerEnvironment);
 
             options.addArguments("--headless=new"); // Use "--headless=new" for Chrome 109+
             options.addArguments("--disable-gpu");
@@ -189,8 +210,72 @@ public class ScrapingService {
             options.addArguments("--disable-ipc-flooding-protection");
             options.addArguments("user-agent=" + selectedUserAgent);
 
+            // Additional container-specific options for better stability
+            if (isContainerEnvironment) {
+                options.addArguments("--disable-web-security");
+                options.addArguments("--disable-features=VizDisplayCompositor");
+                options.addArguments("--disable-extensions");
+                options.addArguments("--disable-plugins");
+                // Note: Removed --disable-images and --disable-javascript as they break
+                // LinkedIn scraping
+                options.addArguments("--run-all-compositor-stages-before-draw");
+                options.addArguments("--disable-background-networking");
+                options.addArguments("--disable-default-apps");
+                options.addArguments("--disable-sync");
+                options.addArguments("--metrics-recording-only");
+                options.addArguments("--no-first-run");
+                options.addArguments("--disable-component-update");
+                options.addArguments("--remote-debugging-port=0");
+                options.addArguments("--single-process");
+                options.addArguments("--disable-crash-reporter");
+                options.addArguments("--disable-in-process-stack-traces");
+                options.addArguments("--disable-logging");
+                options.addArguments("--log-level=3");
+                options.addArguments("--silent");
+                options.addArguments("--disable-gpu-sandbox");
+                logger.info("Added container-specific Chrome arguments for stability");
+            }
+
             logger.info("Creating Chrome WebDriver instance...");
-            driver = new ChromeDriver(options);
+            try {
+                driver = new ChromeDriver(options);
+                logger.info("✅ Chrome WebDriver instance created successfully");
+            } catch (Exception e) {
+                logger.error("❌ Failed to create Chrome WebDriver instance");
+                logger.error("Chrome Binary Path: {}", chromeBinary != null ? chromeBinary : "system default");
+                logger.error("ChromeDriver Path: {}", chromeDriver != null ? chromeDriver : "WebDriverManager managed");
+                logger.error("Is Container Environment: {}", isContainerEnvironment);
+                logger.error("Java Version: {}", System.getProperty("java.version"));
+                logger.error("OS Name: {}", System.getProperty("os.name"));
+                logger.error("OS Arch: {}", System.getProperty("os.arch"));
+                logger.error("Temp Dir: {}", tempUserDataDir);
+
+                // Check if Chrome binary exists
+                if (chromeBinary != null) {
+                    try {
+                        java.nio.file.Path chromePath = java.nio.file.Paths.get(chromeBinary);
+                        boolean exists = java.nio.file.Files.exists(chromePath);
+                        boolean executable = java.nio.file.Files.isExecutable(chromePath);
+                        logger.error("Chrome binary exists: {}, executable: {}", exists, executable);
+                    } catch (Exception pathEx) {
+                        logger.error("Error checking Chrome binary path: {}", pathEx.getMessage());
+                    }
+                }
+
+                // Check if ChromeDriver exists
+                if (chromeDriver != null) {
+                    try {
+                        java.nio.file.Path driverPath = java.nio.file.Paths.get(chromeDriver);
+                        boolean exists = java.nio.file.Files.exists(driverPath);
+                        boolean executable = java.nio.file.Files.isExecutable(driverPath);
+                        logger.error("ChromeDriver exists: {}, executable: {}", exists, executable);
+                    } catch (Exception pathEx) {
+                        logger.error("Error checking ChromeDriver path: {}", pathEx.getMessage());
+                    }
+                }
+
+                throw e; // Re-throw the exception
+            }
 
             // Remove Firefox-specific JS for navigator.webdriver (Chrome handles this
             // differently)
@@ -1747,12 +1832,13 @@ public class ScrapingService {
 
         // AI company variations (very important for deepseek case)
         // if (lower.contains("ai") || lower.contains("artificial")) {
-        //     slugCandidates.add(basicSlug + "-ai");
-        //     slugCandidates.add(basicSlug.replace("ai", "").replaceAll("-+", "-") + "-ai");
-        //     if (lower.contains("deep") && lower.contains("seek")) {
-        //         slugCandidates.add("deepseek-ai");
-        //         slugCandidates.add("deep-seek-ai");
-        //     }
+        // slugCandidates.add(basicSlug + "-ai");
+        // slugCandidates.add(basicSlug.replace("ai", "").replaceAll("-+", "-") +
+        // "-ai");
+        // if (lower.contains("deep") && lower.contains("seek")) {
+        // slugCandidates.add("deepseek-ai");
+        // slugCandidates.add("deep-seek-ai");
+        // }
         // }
 
         // Corporate suffixes
