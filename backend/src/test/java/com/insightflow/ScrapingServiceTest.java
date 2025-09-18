@@ -28,15 +28,43 @@ public class ScrapingServiceTest {
             assertTrue(result.contains("<strong>Analyse LinkedIn de " + companyName + "</strong>"),
                     "Result does not contain expected header");
             assertTrue(result.contains("<br>"), "Result does not contain <br> tags");
+
+        } catch (Exception e) {
+            System.out.println("=== Test failed with exception: " + e.getMessage() + " ===");
+            e.printStackTrace();
+            fail("Exception thrown: " + e.getMessage());
+        }
+    }
+
+    @Test
+    public void testGetLinkedInAnalysisWithSlug() {
+        String companyName = "OpenAI";
+        String linkedinSlug = "openai";
+        try {
+            System.out.println("=== Starting LinkedIn scraping test with slug for: " + companyName + " (slug: "
+                    + linkedinSlug + ") ===");
+            String result = scrapingService.getLinkedInAnalysis(companyName, linkedinSlug);
+            System.out.println("=== ScrapingService returned result ===");
+            System.out.println(result);
+
+            // Assertions
+            assertNotNull(result, "Result is null");
+            assertFalse(result.isBlank(), "Result is empty or blank");
+            assertTrue(result.contains("<strong>Analyse LinkedIn de " + companyName + "</strong>"),
+                    "Result does not contain expected header");
+            assertTrue(result.contains("<br>"), "Result does not contain <br> tags");
             assertTrue(result.contains("<strong>"), "Result does not contain <strong> tags");
 
             // Check for LLM fallback response
-            if (result.contains("I don't see any content provided") || result.contains("Please provide the LinkedIn content")) {
+            if (result.contains("I don't see any content provided")
+                    || result.contains("Please provide the LinkedIn content")) {
                 fail("No real LinkedIn data was scraped. Check linkedin_openai.html and linkedin_openai_fulltext.txt for page source and content.");
             }
 
             // Check for OpenAI-specific content
-            assertTrue(result.toLowerCase().contains("openai") || result.toLowerCase().contains("artificial intelligence") ||
+            assertTrue(
+                    result.toLowerCase().contains("openai") || result.toLowerCase().contains("artificial intelligence")
+                            ||
                             result.toLowerCase().contains("ai research") || result.toLowerCase().contains("chatgpt"),
                     "Result does not contain OpenAI-specific content");
 

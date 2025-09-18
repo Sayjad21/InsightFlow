@@ -5,6 +5,7 @@ import com.insightflow.services.RagService;
 import com.insightflow.services.ModularScrapingService;
 import com.insightflow.services.VisualizationService;
 import com.insightflow.utils.FileUtil;
+import com.insightflow.utils.LinkedInSlugUtil;
 import com.insightflow.utils.TimeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
@@ -52,6 +53,9 @@ public class CompetitiveAnalysisController {
     @Autowired
     private TimeUtil timeUtil;
 
+    @Autowired
+    private LinkedInSlugUtil linkedInSlugUtil;
+
     @PostMapping("/analyze")
     public ResponseEntity<Map<String, Object>> analyze(
             @RequestPart("company_name") String companyName,
@@ -82,7 +86,8 @@ public class CompetitiveAnalysisController {
             String bcgImage = visualizationService.generateBcgImage(bcg);
             String mckinseyImage = visualizationService.generateMckinseyImage(mckinsey);
 
-            String linkedinAnalysis = scrapingService.getLinkedInAnalysis(companyName);
+            String linkedinSlug = linkedInSlugUtil.getLinkedInCompanySlug(companyName);
+            String linkedinAnalysis = scrapingService.getLinkedInAnalysis(companyName, linkedinSlug);
 
             // Enhanced sources handling with fallback
             @SuppressWarnings("unchecked")
@@ -220,7 +225,8 @@ public class CompetitiveAnalysisController {
             analysis.append("2. LINKEDIN INTELLIGENCE ANALYSIS\n");
             analysis.append("-".repeat(50)).append("\n");
             try {
-                String linkedinAnalysis = scrapingService.getLinkedInAnalysis(companyName);
+                String linkedinSlug = linkedInSlugUtil.getLinkedInCompanySlug(companyName);
+                String linkedinAnalysis = scrapingService.getLinkedInAnalysis(companyName, linkedinSlug);
                 // Remove HTML tags for text file
                 String cleanLinkedIn = linkedinAnalysis.replaceAll("<[^>]+>", "")
                         .replaceAll("&nbsp;", " ")
@@ -366,23 +372,29 @@ public class CompetitiveAnalysisController {
     public ResponseEntity<Map<String, Object>> testLinkedInAnalysis(@RequestBody Map<String, String> request) {
         try {
             String companyName = request.get("companyName");
+            String linkedinSlug = linkedInSlugUtil.getLinkedInCompanySlug(companyName);
+
             if (companyName == null || companyName.trim().isEmpty()) {
                 Map<String, Object> error = new HashMap<>();
                 error.put("error", "Company name is required");
-                error.put("usage", "POST /api/test-linkedin-analysis with JSON: {\"companyName\": \"company-name\"}");
+                error.put("usage",
+                        "POST /api/test-linkedin-analysis with JSON: {\"companyName\": \"company-name\", \"linkedinSlug\": \"optional-slug\"}");
                 return ResponseEntity.badRequest().body(error);
             }
 
-            System.out.println("Testing LinkedIn analysis for company: " + companyName);
+            System.out.println("Testing LinkedIn analysis for company: " + companyName +
+                    (linkedinSlug != null && !linkedinSlug.trim().isEmpty() ? " (slug: " + linkedinSlug + ")" : ""));
             long startTime = System.currentTimeMillis();
 
-            String linkedinAnalysis = scrapingService.getLinkedInAnalysis(companyName.trim());
+            String linkedinAnalysis = scrapingService.getLinkedInAnalysis(companyName.trim(), linkedinSlug);
 
             long endTime = System.currentTimeMillis();
             long duration = endTime - startTime;
 
             Map<String, Object> result = new HashMap<>();
             result.put("company_name", companyName);
+            result.put("linkedin_slug",
+                    linkedinSlug != null && !linkedinSlug.trim().isEmpty() ? linkedinSlug.trim() : "auto-generated");
             result.put("linkedin_analysis", linkedinAnalysis);
             result.put("analysis_duration_ms", duration);
             result.put("status", "success");
