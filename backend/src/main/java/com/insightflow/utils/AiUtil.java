@@ -32,6 +32,8 @@ public class AiUtil {
     private int defaultMaxRetries;
 
     public OllamaChatModel getModel() {
+        logger.info("Creating OllamaChatModel with baseUrl: {}, model: {}, timeout: {}s, retries: {}",
+                ollamaBaseUrl, ollamaModel, defaultTimeoutSeconds, defaultMaxRetries);
         return OllamaChatModel.builder()
                 .baseUrl(ollamaBaseUrl)
                 .modelName(ollamaModel)
@@ -82,29 +84,46 @@ public class AiUtil {
     }
 
     public String invokeWithTemplate(String template, Map<String, Object> variables) {
+        logger.info("=== AiUtil.invokeWithTemplate START ===");
         logger.info("Template before substitution: {}", template);
         logger.info("Variables: {}", variables);
 
         try {
+            logger.info("Step 1: Creating PromptTemplate from template...");
             PromptTemplate promptTemplate = PromptTemplate.from(template);
+            logger.info("PromptTemplate created successfully");
+
+            logger.info("Step 2: Applying variables to template...");
             Prompt prompt = promptTemplate.apply(variables);
+            logger.info("Variables applied successfully");
+
+            logger.info("Step 3: Extracting prompt text...");
             String promptText = prompt.text();
             logger.info("Prompt after substitution: {}", promptText);
 
+            logger.info("Step 4: Getting Ollama model...");
             OllamaChatModel model = getModel();
+            logger.info("Model retrieved successfully");
+
+            logger.info("Step 5: Calling model.chat()");
             String response = model.chat(promptText);
+            logger.info("=== MODEL RESPONSE RECEIVED ===");
             logger.info("LLM response: {}", response);
+            logger.info("=== AiUtil.invokeWithTemplate SUCCESS ===");
             return response;
         } catch (dev.langchain4j.exception.TimeoutException e) {
             logger.error("LLM template request timed out after {} seconds. Retrying with extended timeout...",
                     defaultTimeoutSeconds);
             try {
                 // Retry with extended model
+                logger.info("RETRY: Creating PromptTemplate for retry...");
                 PromptTemplate promptTemplate = PromptTemplate.from(template);
                 Prompt prompt = promptTemplate.apply(variables);
                 String promptText = prompt.text();
 
+                logger.info("RETRY: Getting extended model...");
                 OllamaChatModel extendedModel = getExtendedModel(defaultTimeoutSeconds * 2, defaultMaxRetries + 2);
+                logger.info("RETRY: Calling extended model.chat()...");
                 String response = extendedModel.chat(promptText);
                 logger.info("LLM response (extended timeout): {}", response);
                 return response;
@@ -115,6 +134,8 @@ public class AiUtil {
             }
         } catch (Exception e) {
             logger.error("LLM template request failed with unexpected error: {}", e.getMessage());
+            logger.error("Exception type: {}", e.getClass().getSimpleName());
+            e.printStackTrace();
             throw new RuntimeException("AI service error: " + e.getMessage(), e);
         }
     }

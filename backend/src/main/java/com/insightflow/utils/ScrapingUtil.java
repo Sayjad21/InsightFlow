@@ -1,6 +1,7 @@
 package com.insightflow.utils;
 
 import org.apache.tika.Tika;
+import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.stereotype.Component;
@@ -30,10 +31,17 @@ public class ScrapingUtil {
 
             // Detect content type first using URLConnection
             URLConnection connection = new URL(url).openConnection();
+            connection.setConnectTimeout(10000); // 10 second connection timeout
+            connection.setReadTimeout(10000); // 10 second read timeout
             connection.setRequestProperty("User-Agent",
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
-            String contentType = connection.getContentType();
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:118.0) Gecko/20100101 Firefox/118.0");
 
+            System.out.println("Step 2: Getting content type...");
+            long startTime = System.currentTimeMillis();
+            String contentType = connection.getContentType();
+            long endTime = System.currentTimeMillis();
+
+            System.out.println("Content type received in " + (endTime - startTime) + "ms: " + contentType);
             System.out.println("Processing URL: " + url + " with content type: " + contentType);
 
             // Handle different content types appropriately
@@ -98,26 +106,47 @@ public class ScrapingUtil {
      */
     private String extractWithJsoup(String url) {
         try {
-            Document doc = Jsoup.connect(url)
+            System.out.println("=== JSOUP EXTRACTION START ===");
+            System.out.println("URL: " + url);
+            System.out.println("Step 1: Creating Jsoup connection...");
+
+            Connection connection = Jsoup.connect(url)
                     .userAgent(
-                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:118.0) Gecko/20100101 Firefox/118.0")
                     .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
                     .header("Accept-Language", "en-US,en;q=0.5")
                     .header("Accept-Encoding", "gzip, deflate")
                     .header("Cache-Control", "no-cache")
-                    .timeout(10000)
+                    .timeout(15000) // Increased timeout to 15 seconds
                     .followRedirects(true)
-                    .ignoreHttpErrors(true)
-                    .get();
+                    .ignoreHttpErrors(true);
 
+            System.out.println("Step 2: Executing GET request...");
+            System.out.println("Waiting for response from: " + url);
+
+            long startTime = System.currentTimeMillis();
+            Document doc = connection.get();
+            long endTime = System.currentTimeMillis();
+
+            System.out.println("Step 3: Response received in " + (endTime - startTime) + "ms");
+            System.out.println("Document title: " + (doc.title() != null ? doc.title() : "No title"));
+
+            System.out.println("Step 4: Cleaning document...");
             // Remove scripts/styles and unwanted elements
             doc.select("script, style, nav, footer, aside, .advertisement, .ads, .cookie-banner").remove();
 
+            System.out.println("Step 5: Extracting text...");
             String text = doc.text().trim();
+            System.out.println("Text extracted - length: " + text.length());
+            System.out.println(text.substring(0, Math.min(100, text.length())) + "...(from jsoup)");
+            System.out.println(text.length());
+
             if (text.length() < 100) {
                 System.out.println("Jsoup extraction returned insufficient content for: " + url);
                 return null;
             }
+
+            System.out.println("After checking...");
 
             return text.length() > 5000 ? text.substring(0, 5000) : text;
 
