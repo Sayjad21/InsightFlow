@@ -215,7 +215,7 @@ public class LinkedInSlugUtil {
     /**
      * Enhanced method for extracting LinkedIn slug from URL with better parsing
      */
-    private String extractLinkedInSlugFromUrl(String url) {
+    public String extractLinkedInSlugFromUrl(String url) {
         logger.debug("Extracting LinkedIn slug from URL: {}", url);
         try {
             if (url == null || !url.contains("linkedin.com/company/")) {
@@ -241,7 +241,7 @@ public class LinkedInSlugUtil {
     /**
      * Validates if a LinkedIn slug is relevant to the company name
      */
-    private boolean isValidLinkedInSlug(String slug, String companyName) {
+    public boolean isValidLinkedInSlug(String slug, String companyName) {
         logger.debug("Validating LinkedIn slug: '{}' for company: '{}'", slug, companyName);
 
         if (slug == null || slug.trim().isEmpty()) {
@@ -286,7 +286,7 @@ public class LinkedInSlugUtil {
     /**
      * Enhanced candidate selection with comprehensive fallback strategies
      */
-    private String selectBestLinkedInCandidate(String companyName, List<CompanyCandidate> candidates) {
+    public String selectBestLinkedInCandidate(String companyName, List<CompanyCandidate> candidates) {
         logger.info("=== SELECTING BEST LINKEDIN CANDIDATE FOR: {} ===", companyName);
         logger.info("Total candidates to evaluate: {}", candidates.size());
 
@@ -727,7 +727,7 @@ public class LinkedInSlugUtil {
     /**
      * Validates if a LinkedIn company URL exists using HEAD request
      */
-    private boolean validateLinkedInCompanyExists(String slug) {
+    public boolean validateLinkedInCompanyExists(String slug) {
         if (slug == null || slug.trim().isEmpty()) {
             return false;
         }
@@ -760,7 +760,7 @@ public class LinkedInSlugUtil {
     /**
      * Generates and tests LinkedIn slug variations for a company
      */
-    private String findValidLinkedInSlug(String companyName) {
+    public String findValidLinkedInSlug(String companyName) {
         logger.info("Finding valid LinkedIn slug for company: {}", companyName);
 
         List<String> slugCandidates = new ArrayList<>();
@@ -807,7 +807,7 @@ public class LinkedInSlugUtil {
      * Generates fallback slug when no valid candidates found but search results
      * exist
      */
-    private String generateFallbackSlug(String companyName, List<Map<String, Object>> searchResults) {
+    public String generateFallbackSlug(String companyName, List<Map<String, Object>> searchResults) {
         logger.info("Attempting to generate fallback slug for '{}' from {} search results", companyName,
                 searchResults.size());
 
@@ -841,7 +841,7 @@ public class LinkedInSlugUtil {
     /**
      * Enhanced fallback slug generation with multiple variations
      */
-    private String generateEnhancedFallbackSlug(String companyName) {
+    public String generateEnhancedFallbackSlug(String companyName) {
         logger.info("Generating enhanced fallback slug for: {}", companyName);
 
         // Try multiple common LinkedIn slug patterns
