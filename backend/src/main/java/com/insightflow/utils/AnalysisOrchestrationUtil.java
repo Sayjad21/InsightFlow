@@ -1,6 +1,7 @@
 package com.insightflow.utils;
 
 import com.insightflow.utils.AiUtil;
+import com.insightflow.utils.IndustryContextUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,8 +14,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Utility class for orchestrating AI analysis workflows and strategic insights generation.
- * Handles complex analysis coordination, industry context generation, and strategic content preparation.
+ * Utility class for orchestrating AI analysis workflows and strategic insights
+ * generation.
+ * Handles complex analysis coordination, industry context generation, and
+ * strategic content preparation.
  */
 @Component
 public class AnalysisOrchestrationUtil {
@@ -23,6 +26,9 @@ public class AnalysisOrchestrationUtil {
 
     @Autowired
     private AiUtil aiUtil;
+
+    @Autowired
+    private IndustryContextUtil industryContextUtil;
 
     /**
      * Data class to hold strategic analysis results
@@ -34,9 +40,9 @@ public class AnalysisOrchestrationUtil {
         public final List<String> strategicInsights;
         public final String formattedAnalysis;
 
-        public StrategicAnalysis(String industryContext, String keyMetrics, 
-                               Map<String, List<String>> strategicThemes, 
-                               List<String> strategicInsights, String formattedAnalysis) {
+        public StrategicAnalysis(String industryContext, String keyMetrics,
+                Map<String, List<String>> strategicThemes,
+                List<String> strategicInsights, String formattedAnalysis) {
             this.industryContext = industryContext;
             this.keyMetrics = keyMetrics;
             this.strategicThemes = strategicThemes;
@@ -51,27 +57,27 @@ public class AnalysisOrchestrationUtil {
      * @param companyName The company name
      * @param profileName LinkedIn profile name (may differ from company name)
      * @param description Company description
-     * @param posts List of company posts
+     * @param posts       List of company posts
      * @return Complete AI analysis result
      */
-    public String orchestrateLinkedInAnalysis(String companyName, String profileName, 
-                                            String description, List<String> posts) {
+    public String orchestrateLinkedInAnalysis(String companyName, String profileName,
+            String description, List<String> posts) {
         logger.info("Starting AI analysis orchestration for company: {}", companyName);
 
         try {
             // Phase 1: Prepare strategic analysis components
             StrategicAnalysis strategicData = performStrategicAnalysis(companyName, description, posts);
-            
+
             // Phase 2: Prepare optimized content for LLM
-            String optimizedContent = prepareContentForLLM(companyName, profileName, 
-                                                         description, posts, strategicData);
-            
+            String optimizedContent = prepareContentForLLM(companyName, profileName,
+                    description, posts, strategicData);
+
             // Phase 3: Generate AI analysis
             String aiAnalysis = generateAIAnalysis(optimizedContent, companyName);
-            
+
             // Phase 4: Enhance and format final result
             String finalAnalysis = enhanceAnalysisOutput(aiAnalysis, companyName, strategicData, posts.size());
-            
+
             logger.info("AI analysis orchestration completed successfully for: {}", companyName);
             return finalAnalysis;
 
@@ -89,38 +95,38 @@ public class AnalysisOrchestrationUtil {
 
         // Generate industry context
         String industryContext = getIndustryContext(companyName, description, posts);
-        
+
         // Extract key metrics
         String keyMetrics = extractKeyMetrics(description);
-        
+
         // Analyze strategic themes
         List<String> strategicPosts = prioritizeStrategicPosts(posts);
         Map<String, List<String>> strategicThemes = analyzeStrategicThemes(strategicPosts);
-        
+
         // Extract strategic insights
         List<String> strategicInsights = strategicPosts.stream()
                 .map(this::extractStrategicInsight)
                 .collect(Collectors.toList());
 
         // Format comprehensive analysis
-        String formattedAnalysis = formatStrategicAnalysis(companyName, industryContext, 
-                                                         keyMetrics, strategicThemes, strategicInsights);
+        String formattedAnalysis = formatStrategicAnalysis(companyName, industryContext,
+                keyMetrics, strategicThemes, strategicInsights);
 
-        return new StrategicAnalysis(industryContext, keyMetrics, strategicThemes, 
-                                   strategicInsights, formattedAnalysis);
+        return new StrategicAnalysis(industryContext, keyMetrics, strategicThemes,
+                strategicInsights, formattedAnalysis);
     }
 
     /**
      * Prepares optimized content for LLM analysis with strategic context
      */
     private String prepareContentForLLM(String companyName, String profileName, String description,
-                                      List<String> posts, StrategicAnalysis strategicData) {
+            List<String> posts, StrategicAnalysis strategicData) {
         StringBuilder content = new StringBuilder();
 
         // Company basic info with competitive context
         content.append("=== COMPANY PROFILE ===\n");
         content.append("Company: ").append(companyName).append("\n");
-        
+
         if (!profileName.equals(companyName)) {
             content.append("LinkedIn Profile: ").append(profileName).append("\n");
         }
@@ -165,22 +171,22 @@ public class AnalysisOrchestrationUtil {
         logger.debug("Generating AI analysis for: {}", companyName);
 
         String prompt = String.format("""
-            Analyze this LinkedIn company profile and provide a comprehensive strategic business analysis.
-            Focus on competitive positioning, market strategy, and key insights for business intelligence.
-            
-            ANALYSIS REQUIREMENTS:
-            1. **Strategic Market Position**: Company's market positioning and competitive advantages
-            2. **Business Strategy Insights**: Key strategic initiatives and market approach  
-            3. **Competitive Intelligence**: How they position against competitors
-            4. **Growth & Innovation**: Innovation focus and growth strategies
-            5. **Market Opportunities**: Potential opportunities and strategic recommendations
-            
-            CONTENT TO ANALYZE:
-            %s
-            
-            Provide a structured analysis with clear business insights and strategic recommendations.
-            Focus on actionable intelligence that would be valuable for competitive analysis.
-            """, optimizedContent);
+                Analyze this LinkedIn company profile and provide a comprehensive strategic business analysis.
+                Focus on competitive positioning, market strategy, and key insights for business intelligence.
+
+                ANALYSIS REQUIREMENTS:
+                1. **Strategic Market Position**: Company's market positioning and competitive advantages
+                2. **Business Strategy Insights**: Key strategic initiatives and market approach
+                3. **Competitive Intelligence**: How they position against competitors
+                4. **Growth & Innovation**: Innovation focus and growth strategies
+                5. **Market Opportunities**: Potential opportunities and strategic recommendations
+
+                CONTENT TO ANALYZE:
+                %s
+
+                Provide a structured analysis with clear business insights and strategic recommendations.
+                Focus on actionable intelligence that would be valuable for competitive analysis.
+                """, optimizedContent);
 
         try {
             String analysis = aiUtil.invoke(prompt);
@@ -200,15 +206,15 @@ public class AnalysisOrchestrationUtil {
     /**
      * Enhances and formats the final analysis output
      */
-    private String enhanceAnalysisOutput(String aiAnalysis, String companyName, 
-                                       StrategicAnalysis strategicData, int postCount) {
+    private String enhanceAnalysisOutput(String aiAnalysis, String companyName,
+            StrategicAnalysis strategicData, int postCount) {
         StringBuilder enhanced = new StringBuilder();
 
         // Add executive summary header
         enhanced.append("<div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); ")
-               .append("color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;'>");
+                .append("color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;'>");
         enhanced.append("<h2 style='margin: 0; font-size: 24px;'>📊 Strategic Analysis: ")
-               .append(companyName).append("</h2>");
+                .append(companyName).append("</h2>");
         enhanced.append("<p style='margin: 10px 0 0 0; opacity: 0.9;'>Comprehensive LinkedIn Intelligence Report</p>");
         enhanced.append("</div>");
 
@@ -218,9 +224,9 @@ public class AnalysisOrchestrationUtil {
         // Add strategic data summary
         if (!strategicData.strategicThemes.isEmpty()) {
             enhanced.append("<div style='margin-top: 30px; padding: 20px; ")
-                   .append("background-color: #f8f9fa; border-radius: 8px;'>");
+                    .append("background-color: #f8f9fa; border-radius: 8px;'>");
             enhanced.append("<h3 style='color: #495057; margin-top: 0;'>📈 Strategic Activity Summary</h3>");
-            
+
             for (Map.Entry<String, List<String>> theme : strategicData.strategicThemes.entrySet()) {
                 enhanced.append("<div style='margin-bottom: 15px;'>");
                 enhanced.append("<strong style='color: #6c757d;'>").append(theme.getKey()).append(":</strong> ");
@@ -232,11 +238,12 @@ public class AnalysisOrchestrationUtil {
 
         // Add metadata footer
         enhanced.append("<div style='margin-top: 30px; padding: 15px; ")
-               .append("background-color: #e9ecef; border-radius: 5px; font-size: 14px; color: #6c757d;'>");
+                .append("background-color: #e9ecef; border-radius: 5px; font-size: 14px; color: #6c757d;'>");
         enhanced.append("<strong>Analysis Metadata:</strong> ");
         enhanced.append("Posts Analyzed: ").append(postCount).append(" | ");
         enhanced.append("Strategic Themes: ").append(strategicData.strategicThemes.size()).append(" | ");
-        enhanced.append("Industry Context: ").append(!strategicData.industryContext.isEmpty() ? "Available" : "Limited");
+        enhanced.append("Industry Context: ")
+                .append(!strategicData.industryContext.isEmpty() ? "Available" : "Limited");
         enhanced.append("</div>");
 
         return enhanced.toString();
@@ -244,53 +251,10 @@ public class AnalysisOrchestrationUtil {
 
     /**
      * Provides general industry context based on company description and posts
+     * Uses centralized IndustryContextUtil for consistent analysis
      */
     private String getIndustryContext(String companyName, String description, List<String> posts) {
-        String combined = (companyName + " " + description + " " + String.join(" ", posts)).toLowerCase();
-
-        List<String> industries = new ArrayList<>();
-        Map<String, String> competitors = new HashMap<>();
-
-        // Technology indicators
-        if (combined.contains("artificial intelligence") || combined.contains(" ai ") ||
-                combined.contains("machine learning") || combined.contains("gpt") || combined.contains("llm")) {
-            industries.add("AI/ML");
-            competitors.put("AI/ML", "Google, OpenAI, Anthropic, Microsoft");
-        }
-
-        if (combined.contains("cloud") || combined.contains("azure") || combined.contains("aws")) {
-            industries.add("Cloud Computing");
-            competitors.put("Cloud Computing", "AWS, Microsoft Azure, Google Cloud");
-        }
-
-        if (combined.contains("social") || combined.contains("platform") || combined.contains("network")) {
-            industries.add("Social Media/Platforms");
-            competitors.put("Social Media/Platforms", "Meta, Twitter/X, TikTok, LinkedIn");
-        }
-
-        if (combined.contains("search") || combined.contains("advertising") || combined.contains("marketing")) {
-            industries.add("Digital Advertising");
-            competitors.put("Digital Advertising", "Google, Meta, Amazon, Microsoft");
-        }
-
-        if (combined.contains("electric") || combined.contains("automotive") || combined.contains("vehicle")) {
-            industries.add("Electric Vehicles");
-            competitors.put("Electric Vehicles", "Tesla, BYD, Toyota, Volkswagen");
-        }
-
-        if (combined.contains("entertainment") || combined.contains("streaming") || combined.contains("media")) {
-            industries.add("Digital Media");
-            competitors.put("Digital Media", "Netflix, Disney, Amazon Prime, Apple");
-        }
-
-        // Build context string
-        if (industries.isEmpty()) {
-            return "Technology sector with various digital services";
-        }
-
-        String primaryIndustry = industries.get(0);
-        String competitorList = competitors.get(primaryIndustry);
-        return primaryIndustry + (competitorList != null ? ", competing with " + competitorList : "");
+        return industryContextUtil.getIndustryContext(companyName, description, posts);
     }
 
     /**
@@ -351,14 +315,22 @@ public class AnalysisOrchestrationUtil {
         String postLower = post.toLowerCase();
 
         // High-value strategic indicators
-        if (postLower.contains("acquisition") || postLower.contains("merger")) score += 10;
-        if (postLower.contains("partnership") || postLower.contains("alliance")) score += 8;
-        if (postLower.contains("launch") || postLower.contains("release")) score += 7;
-        if (postLower.contains("expansion") || postLower.contains("market")) score += 6;
-        if (postLower.contains("investment") || postLower.contains("funding")) score += 6;
-        if (postLower.contains("billion") || postLower.contains("million")) score += 5;
-        if (postLower.contains("global") || postLower.contains("international")) score += 4;
-        if (postLower.contains("competition") || postLower.contains("vs") || postLower.contains("versus")) score += 4;
+        if (postLower.contains("acquisition") || postLower.contains("merger"))
+            score += 10;
+        if (postLower.contains("partnership") || postLower.contains("alliance"))
+            score += 8;
+        if (postLower.contains("launch") || postLower.contains("release"))
+            score += 7;
+        if (postLower.contains("expansion") || postLower.contains("market"))
+            score += 6;
+        if (postLower.contains("investment") || postLower.contains("funding"))
+            score += 6;
+        if (postLower.contains("billion") || postLower.contains("million"))
+            score += 5;
+        if (postLower.contains("global") || postLower.contains("international"))
+            score += 4;
+        if (postLower.contains("competition") || postLower.contains("vs") || postLower.contains("versus"))
+            score += 4;
 
         return score;
     }
@@ -374,13 +346,17 @@ public class AnalysisOrchestrationUtil {
 
             if (postLower.contains("acquisition") || postLower.contains("merger") || postLower.contains("investment")) {
                 themes.computeIfAbsent("Market Consolidation", k -> new ArrayList<>()).add(post);
-            } else if (postLower.contains("partnership") || postLower.contains("alliance") || postLower.contains("collaboration")) {
+            } else if (postLower.contains("partnership") || postLower.contains("alliance")
+                    || postLower.contains("collaboration")) {
                 themes.computeIfAbsent("Strategic Partnerships", k -> new ArrayList<>()).add(post);
-            } else if (postLower.contains("launch") || postLower.contains("release") || postLower.contains("introducing")) {
+            } else if (postLower.contains("launch") || postLower.contains("release")
+                    || postLower.contains("introducing")) {
                 themes.computeIfAbsent("Product Innovation", k -> new ArrayList<>()).add(post);
-            } else if (postLower.contains("expansion") || postLower.contains("global") || postLower.contains("international") || postLower.contains("market")) {
+            } else if (postLower.contains("expansion") || postLower.contains("global")
+                    || postLower.contains("international") || postLower.contains("market")) {
                 themes.computeIfAbsent("Market Expansion", k -> new ArrayList<>()).add(post);
-            } else if (postLower.contains("competition") || postLower.contains("vs") || postLower.contains("versus") || postLower.contains("challenge")) {
+            } else if (postLower.contains("competition") || postLower.contains("vs") || postLower.contains("versus")
+                    || postLower.contains("challenge")) {
                 themes.computeIfAbsent("Competitive Positioning", k -> new ArrayList<>()).add(post);
             } else {
                 themes.computeIfAbsent("Operational Updates", k -> new ArrayList<>()).add(post);
@@ -438,9 +414,9 @@ public class AnalysisOrchestrationUtil {
     /**
      * Formats strategic analysis for structured presentation
      */
-    private String formatStrategicAnalysis(String companyName, String industryContext, 
-                                         String keyMetrics, Map<String, List<String>> strategicThemes, 
-                                         List<String> strategicInsights) {
+    private String formatStrategicAnalysis(String companyName, String industryContext,
+            String keyMetrics, Map<String, List<String>> strategicThemes,
+            List<String> strategicInsights) {
         StringBuilder formatted = new StringBuilder();
 
         formatted.append("=== STRATEGIC ANALYSIS: ").append(companyName.toUpperCase()).append(" ===\n\n");
@@ -482,9 +458,11 @@ public class AnalysisOrchestrationUtil {
         return analysis
                 .replaceAll("\\*\\*(.*?)\\*\\*", "<strong>$1</strong>") // Bold formatting
                 .replaceAll("\\*(.*?)\\*", "<em>$1</em>") // Italic formatting
-                .replaceAll("(?m)^#{1,6}\\s*(.*?)$", "<h3 style='color: #495057; margin-top: 25px; margin-bottom: 15px;'>$1</h3>") // Headers
+                .replaceAll("(?m)^#{1,6}\\s*(.*?)$",
+                        "<h3 style='color: #495057; margin-top: 25px; margin-bottom: 15px;'>$1</h3>") // Headers
                 .replaceAll("(?m)^-\\s*(.*?)$", "<li style='margin-bottom: 8px;'>$1</li>") // List items
-                .replaceAll("(<li.*?</li>\\s*)+", "<ul style='padding-left: 20px; margin-bottom: 15px;'>$0</ul>") // Wrap lists
+                .replaceAll("(<li.*?</li>\\s*)+", "<ul style='padding-left: 20px; margin-bottom: 15px;'>$0</ul>") // Wrap
+                                                                                                                  // lists
                 .replaceAll("\\n\\n", "</p><p style='margin-bottom: 15px; line-height: 1.6;'>") // Paragraphs
                 .replaceAll("^", "<p style='margin-bottom: 15px; line-height: 1.6;'>") // Start paragraph
                 .replaceAll("$", "</p>") // End paragraph
@@ -495,23 +473,23 @@ public class AnalysisOrchestrationUtil {
     /**
      * Creates comprehensive fallback when AI analysis fails
      */
-    private String createComprehensiveFallback(String companyName, String description, 
-                                             int postCount, String profileName) {
+    private String createComprehensiveFallback(String companyName, String description,
+            int postCount, String profileName) {
         logger.info("Creating comprehensive fallback analysis for: {}", companyName);
 
         StringBuilder content = new StringBuilder();
 
         // Header with styling
         content.append("<div style='background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); ")
-               .append("color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;'>");
+                .append("color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;'>");
         content.append("<h2 style='margin: 0; font-size: 24px;'>⚠️ Limited Analysis: ")
-               .append(companyName).append("</h2>");
+                .append(companyName).append("</h2>");
         content.append("<p style='margin: 10px 0 0 0; opacity: 0.9;'>AI Analysis Currently Unavailable</p>");
         content.append("</div>");
 
         // Strategic positioning
         content.append("<h3 style='color: #495057; margin-top: 25px;'>I. Strategic Positioning</h3>");
-        
+
         if (!description.isEmpty() && description.length() > 20) {
             String industryContext = getIndustryContext(companyName, description, new ArrayList<>());
             content.append("<p><strong>Market Position:</strong> ");
@@ -522,32 +500,34 @@ public class AnalysisOrchestrationUtil {
                 content.append("<p><strong>Competitive Landscape:</strong> ").append(industryContext).append("</p>");
             }
         } else {
-            content.append("<p><strong>Market Position:</strong> Limited company description available for strategic analysis.</p>");
+            content.append(
+                    "<p><strong>Market Position:</strong> Limited company description available for strategic analysis.</p>");
         }
 
         // Activity analysis
         content.append("<h3 style='color: #495057; margin-top: 25px;'>II. Activity Analysis</h3>");
-        
+
         if (postCount > 0) {
             content.append("<p><strong>Communication Strategy:</strong> Active LinkedIn presence with ")
-                   .append(postCount).append(" recent posts indicating ongoing strategic communications.</p>");
+                    .append(postCount).append(" recent posts indicating ongoing strategic communications.</p>");
             content.append("<p><strong>Market Engagement:</strong> Regular stakeholder communication suggests ")
-                   .append("focus on brand positioning and market presence.</p>");
+                    .append("focus on brand positioning and market presence.</p>");
         } else {
             content.append("<p><strong>Communication Strategy:</strong> Limited recent LinkedIn activity detected, ")
-                   .append("suggesting either strategic communication focus elsewhere or private company approach.</p>");
+                    .append("suggesting either strategic communication focus elsewhere or private company approach.</p>");
         }
 
         // Strategic implications
         content.append("<h3 style='color: #495057; margin-top: 25px;'>III. Strategic Intelligence</h3>");
-        content.append("<p><strong>Analysis Limitation:</strong> Detailed strategic analysis requires additional data sources. ");
+        content.append(
+                "<p><strong>Analysis Limitation:</strong> Detailed strategic analysis requires additional data sources. ");
         content.append("Current LinkedIn activity provides limited visibility into strategic direction.</p>");
         content.append("<p><strong>Recommendation:</strong> Supplement with financial reports, press releases, and ")
-               .append("competitive intelligence for comprehensive strategic assessment.</p>");
+                .append("competitive intelligence for comprehensive strategic assessment.</p>");
 
         // Metadata
         content.append("<div style='margin-top: 30px; padding: 15px; ")
-               .append("background-color: #f8d7da; border-radius: 5px; font-size: 14px; color: #721c24;'>");
+                .append("background-color: #f8d7da; border-radius: 5px; font-size: 14px; color: #721c24;'>");
         content.append("<strong>Fallback Analysis Metadata:</strong> ");
         content.append("Posts Available: ").append(postCount).append(" | ");
         content.append("Description Length: ").append(description.length()).append(" chars | ");
@@ -560,40 +540,41 @@ public class AnalysisOrchestrationUtil {
     /**
      * Enhanced content preparation with strategic analysis
      */
-    public String prepareStrategicContentForLLM(String companyName, String profileName, String description, List<String> posts) {
+    public String prepareStrategicContentForLLM(String companyName, String profileName, String description,
+            List<String> posts) {
         StringBuilder content = new StringBuilder();
-        
+
         // Basic company info
         content.append("=== COMPANY PROFILE ===\n");
         content.append("Company: ").append(companyName).append("\n");
-        
+
         if (!profileName.isEmpty() && !profileName.equals(companyName)) {
             content.append("LinkedIn Profile Name: ").append(profileName).append("\n");
         }
-        
+
         // Industry context analysis
         String industryContext = analyzeIndustryContext(companyName, description, posts);
         if (!industryContext.isEmpty()) {
             content.append("Industry Context: ").append(industryContext).append("\n");
         }
-        
+
         // Enhanced description with metrics
         if (!description.isEmpty()) {
             content.append("\n=== COMPANY DESCRIPTION ===\n");
             content.append(description).append("\n");
-            
+
             String metrics = extractBusinessMetrics(description);
             if (!metrics.isEmpty()) {
                 content.append("\n=== KEY METRICS ===\n");
                 content.append(metrics).append("\n");
             }
         }
-        
+
         // Strategic post analysis
         if (!posts.isEmpty()) {
             content.append("\n=== STRATEGIC ACTIVITIES ===\n");
             Map<String, List<String>> themes = analyzeStrategicThemes(posts);
-            
+
             for (Map.Entry<String, List<String>> entry : themes.entrySet()) {
                 content.append("\n").append(entry.getKey().toUpperCase()).append(":\n");
                 for (String post : entry.getValue()) {
@@ -601,30 +582,16 @@ public class AnalysisOrchestrationUtil {
                 }
             }
         }
-        
+
         return content.toString();
     }
 
     /**
      * Analyzes industry context and competitive landscape
+     * Uses centralized IndustryContextUtil for consistent analysis
      */
     private String analyzeIndustryContext(String companyName, String description, List<String> posts) {
-        String combined = (companyName + " " + description + " " + String.join(" ", posts)).toLowerCase();
-        
-        if (combined.contains("ai ") || combined.contains("artificial intelligence")) {
-            return "AI/ML Technology - competing with OpenAI, Google, Microsoft";
-        }
-        if (combined.contains("cloud") || combined.contains("aws") || combined.contains("azure")) {
-            return "Cloud Computing - competing with AWS, Microsoft Azure, Google Cloud";
-        }
-        if (combined.contains("social") || combined.contains("platform")) {
-            return "Social Media Platform - competing with Meta, Twitter/X, TikTok";
-        }
-        if (combined.contains("electric") || combined.contains("automotive")) {
-            return "Electric Vehicle - competing with Tesla, BYD, Toyota";
-        }
-        
-        return "Technology sector";
+        return industryContextUtil.getIndustryContext(companyName, description, posts);
     }
 
     /**
@@ -633,7 +600,7 @@ public class AnalysisOrchestrationUtil {
     private String extractBusinessMetrics(String description) {
         StringBuilder metrics = new StringBuilder();
         String desc = description.toLowerCase();
-        
+
         if (desc.contains("countries")) {
             metrics.append("Global presence across multiple countries\n");
         }
@@ -643,9 +610,8 @@ public class AnalysisOrchestrationUtil {
         if (desc.contains("employees") && (desc.contains("thousand") || desc.contains("million"))) {
             metrics.append("Large workforce scale\n");
         }
-        
+
         return metrics.toString();
     }
 
-    
 }

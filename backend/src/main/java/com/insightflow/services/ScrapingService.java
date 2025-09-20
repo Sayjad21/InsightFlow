@@ -54,11 +54,11 @@ public class ScrapingService {
 
     private final Random random = new Random();
     private final String[] userAgents = {
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:119.0) Gecko/20100101 Firefox/119.0",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:119.0) Gecko/20100101 Firefox/119.0",
+            "Mozilla/5.0 (X11; Linux x86_64; rv:119.0) Gecko/20100101 Firefox/119.0",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:118.0) Gecko/20100101 Firefox/118.0",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:118.0) Gecko/20100101 Firefox/118.0"
     };
 
     // Track usage to avoid rate limiting - increased intervals to avoid CAPTCHA
@@ -146,7 +146,8 @@ public class ScrapingService {
 
                 if (requestCount >= MAX_REQUESTS_PER_HOUR) {
                     logger.error("Hourly request limit ({}) exceeded for LinkedIn analysis", MAX_REQUESTS_PER_HOUR);
-                    throw new RuntimeException("Hourly request limit exceeded. Please wait before making more requests.");
+                    throw new RuntimeException(
+                            "Hourly request limit exceeded. Please wait before making more requests.");
                 }
 
                 lastRequestTime = currentTime;

@@ -15,7 +15,8 @@ import java.util.Random;
 
 /**
  * Utility class for Chrome WebDriver management and anti-detection measures.
- * Handles WebDriver lifecycle, configuration, and human-like behavior simulation.
+ * Handles WebDriver lifecycle, configuration, and human-like behavior
+ * simulation.
  */
 @Component
 public class ChromeDriverUtil {
@@ -23,13 +24,13 @@ public class ChromeDriverUtil {
     private static final Logger logger = LoggerFactory.getLogger(ChromeDriverUtil.class);
 
     private final Random random = new Random();
-    
+
     private final String[] userAgents = {
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:119.0) Gecko/20100101 Firefox/119.0",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:119.0) Gecko/20100101 Firefox/119.0",
+            "Mozilla/5.0 (X11; Linux x86_64; rv:119.0) Gecko/20100101 Firefox/119.0",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:118.0) Gecko/20100101 Firefox/118.0",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:118.0) Gecko/20100101 Firefox/118.0"
     };
 
     /**
@@ -57,7 +58,9 @@ public class ChromeDriverUtil {
     }
 
     /**
-     * Creates and configures a Chrome WebDriver instance with anti-detection measures
+     * Creates and configures a Chrome WebDriver instance with anti-detection
+     * measures
+     * 
      * @return Configured WebDriver instance ready for use
      */
     public WebDriver createWebDriver() {
@@ -85,22 +88,22 @@ public class ChromeDriverUtil {
         try {
             WebDriver driver = new ChromeDriver(options);
             logger.info("✅ Chrome WebDriver instance created successfully");
-            
+
             // Configure timeouts and add anti-detection measures
             configureWebDriver(driver);
-            
+
             return driver;
         } catch (Exception e) {
             logger.error("❌ Failed to create Chrome WebDriver instance: {}", e.getMessage());
-            
+
             // Detailed error logging for debugging
             logEnvironmentDetails(chromeBinary, chromeDriver, isContainerEnvironment);
-            
+
             // Try fallback configuration in container environment
             if (isContainerEnvironment) {
                 return createFallbackWebDriver(chromeBinary);
             }
-            
+
             throw new RuntimeException("Failed to create Chrome WebDriver", e);
         }
     }
@@ -180,7 +183,7 @@ public class ChromeDriverUtil {
      */
     private void configureWebDriver(WebDriver driver) {
         logger.info("Configuring WebDriver timeouts and anti-detection measures");
-        
+
         // Set timeouts
         driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(60));
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(15));
@@ -221,15 +224,17 @@ public class ChromeDriverUtil {
 
             WebDriver driver = new ChromeDriver(fallbackOptions);
             logger.info("✅ Minimal fallback Chrome WebDriver instance created successfully");
-            
+
             // Basic configuration
             driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(60));
             driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(15));
-            
+
             return driver;
         } catch (Exception fallbackException) {
-            logger.error("❌ Minimal fallback Chrome WebDriver creation also failed: {}", fallbackException.getMessage());
-            throw new RuntimeException("Failed to create Chrome WebDriver even with fallback configuration", fallbackException);
+            logger.error("❌ Minimal fallback Chrome WebDriver creation also failed: {}",
+                    fallbackException.getMessage());
+            throw new RuntimeException("Failed to create Chrome WebDriver even with fallback configuration",
+                    fallbackException);
         }
     }
 
@@ -305,8 +310,9 @@ public class ChromeDriverUtil {
 
     /**
      * Simulates human-like typing with random delays between keystrokes
+     * 
      * @param element WebElement to type into
-     * @param text Text to type
+     * @param text    Text to type
      */
     public void typeHumanLike(WebElement element, String text) {
         try {
@@ -332,8 +338,9 @@ public class ChromeDriverUtil {
 
     /**
      * Performs a human-like delay with random variance
+     * 
      * @param baseDelayMs Base delay in milliseconds
-     * @param varianceMs Additional random variance in milliseconds
+     * @param varianceMs  Additional random variance in milliseconds
      */
     public void humanLikeDelay(int baseDelayMs, int varianceMs) {
         try {
@@ -348,6 +355,7 @@ public class ChromeDriverUtil {
 
     /**
      * Gets a random user agent from the predefined list
+     * 
      * @return Random user agent string
      */
     public String getRandomUserAgent() {
@@ -356,6 +364,7 @@ public class ChromeDriverUtil {
 
     /**
      * Safely closes WebDriver and cleans up resources
+     * 
      * @param driver WebDriver instance to close
      */
     public void closeWebDriver(WebDriver driver) {
